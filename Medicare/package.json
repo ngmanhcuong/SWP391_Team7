@@ -1,0 +1,17 @@
+{
+  "name": "medicare-ai-clinic-monorepo",
+  "version": "1.0.0",
+  "description": "Medicare AI Clinic - Fullstack Monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\" \"npm run dev --prefix BE\" \"npm run start --prefix FE\"",
+    "start": "concurrently --kill-others-on-fail --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\" \"npm run start --prefix BE\" \"npm run start --prefix FE\"",
+    "install:all": "npm install && npm install --prefix BE && npm install --prefix FE",
+    "build": "npm run build --prefix FE",
+    "backend": "npm run dev --prefix BE",
+    "frontend": "npm run start --prefix FE"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
