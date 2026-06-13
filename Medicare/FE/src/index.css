@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1a56db;
+  --primary-dark: #1342a8;
+  --primary-light: #e8f0fe;
+  --secondary: #10b981;
+  --danger: #ef4444;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --bg-main: #f9fafb;
+  --bg-card: #ffffff;
+  --border: #e5e7eb;
+  --radius-md: 12px;
+}
+
+.dark {
+  --primary-light: #1e3a5f;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --bg-main: #0f172a;
+  --bg-card: #1e293b;
+  --border: #334155;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@keyframes heroGlowPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.06); }
+}
+
+.hero-glow {
+  animation: heroGlowPulse 8s ease-in-out infinite;
+}
+
+.hero-glow-delayed {
+  animation: heroGlowPulse 10s ease-in-out infinite 2s;
+}
+
+.hero-image {
+  animation: heroImageZoom 24s ease-in-out infinite alternate;
+}
+
+@keyframes heroImageZoom {
+  0% { transform: scale(1.02); }
+  100% { transform: scale(1.06); }
+}
+
+@keyframes heroStatFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-stat-card {
+  animation: heroStatFadeIn 0.6s ease both;
+}
+
+.fade-in { animation: fadeIn 0.4s ease both; }
+
+.animate-spin { animation: spin 1s linear infinite; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
