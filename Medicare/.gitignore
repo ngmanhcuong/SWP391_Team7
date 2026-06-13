@@ -1,0 +1,13 @@
+node_modules/
+BE/node_modules/
+FE/node_modules/
+BE/.env
+FE/.env
+BE/uploads/avatars/*
+BE/uploads/documents/*
+!BE/uploads/avatars/.gitkeep
+!BE/uploads/documents/.gitkeep
+*.log
+.DS_Store
+FE/build/
+.cursor/
