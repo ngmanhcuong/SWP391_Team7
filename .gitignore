@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.local
+*.log
+.DS_Store
+.cursor/
+Medicare/BE/.env
+Medicare/FE/.env
+Medicare/BE/node_modules/
+Medicare/FE/node_modules/
+Medicare/node_modules/
+Medicare/FE/build/
+Medicare/BE/uploads/avatars/*
+Medicare/BE/uploads/documents/*
+!Medicare/BE/uploads/avatars/.gitkeep
+!Medicare/BE/uploads/documents/.gitkeep
