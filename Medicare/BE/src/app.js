@@ -1,0 +1,88 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+const rateLimit = require('express-rate-limit');
+
+const connectDB = require('./config/database');
+const passport = require('./config/passport');
+const authRoutes = require('./routes/authRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+
+const app = express();
+
+// Connect to MongoDB
+connectDB();
+
+// Security headers
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+// CORS
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Body parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// Passport init (no session - using JWT)
+app.use(passport.initialize());
+
+// Global rate limiter
+app.use('/api/', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  message: { success: false, message: 'Quá nhiều request, thử lại sau' },
+}));
+
+// Static files - serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ─── Routes ──────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: '🏥 MediCare AI Clinic API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: `Route ${req.originalUrl} không tồn tại` });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Lỗi server không xác định',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+});
+
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📚 API docs: http://localhost:${PORT}/api/health`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+});
+
+module.exports = app;
