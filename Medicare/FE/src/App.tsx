@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import { DashboardLayout, RoleProtectedRoute } from './pages';
 import ThemeSync from './components/ThemeSync';
 import { Spinner } from './components/ui';
 
@@ -16,6 +17,25 @@ const GoogleSuccessPage = lazy(() => import('./features/auth/components/GoogleSu
 const HomePage = lazy(() => import('./features/home/components/HomePage'));
 const ProfilePage = lazy(() => import('./features/profile/components/ProfilePage'));
 const SettingsPage = lazy(() => import('./features/profile/components/SettingsPage'));
+
+const PatientDashboardPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientDashboardPage })));
+const PatientAppointmentsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientAppointmentsPage })));
+const PatientHealthRecordsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientHealthRecordsPage })));
+
+const DoctorDashboardPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorDashboardPage })));
+const DoctorSchedulePage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorSchedulePage })));
+const DoctorPatientsPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorPatientsPage })));
+const DoctorRecordsPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorRecordsPage })));
+
+const ReceptionistDashboardPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistDashboardPage })));
+const ReceptionistCheckInPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistCheckInPage })));
+const ReceptionistAppointmentsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistAppointmentsPage })));
+const ReceptionistPatientsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistPatientsPage })));
+
+const AdminDashboardPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminDashboardPage })));
+const AdminUsersPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminUsersPage })));
+const AdminReportsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminReportsPage })));
+const AdminSettingsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminSettingsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,9 +70,37 @@ const App: React.FC = () => (
           {/* Public */}
           <Route path="/" element={<HomePage />} />
 
-          {/* Protected */}
+          {/* Protected — shared */}
           <Route path="/ho-so" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/cai-dat" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+
+          {/* Role-based dashboards */}
+          <Route path="/patient" element={<RoleProtectedRoute allowedRoles={['patient']}><DashboardLayout role="patient" /></RoleProtectedRoute>}>
+            <Route index element={<PatientDashboardPage />} />
+            <Route path="lich-hen" element={<PatientAppointmentsPage />} />
+            <Route path="ho-so" element={<PatientHealthRecordsPage />} />
+          </Route>
+
+          <Route path="/doctor" element={<RoleProtectedRoute allowedRoles={['doctor']}><DashboardLayout role="doctor" /></RoleProtectedRoute>}>
+            <Route index element={<DoctorDashboardPage />} />
+            <Route path="lich-kham" element={<DoctorSchedulePage />} />
+            <Route path="benh-nhan" element={<DoctorPatientsPage />} />
+            <Route path="benh-an" element={<DoctorRecordsPage />} />
+          </Route>
+
+          <Route path="/receptionist" element={<RoleProtectedRoute allowedRoles={['receptionist']}><DashboardLayout role="receptionist" /></RoleProtectedRoute>}>
+            <Route index element={<ReceptionistDashboardPage />} />
+            <Route path="tiep-nhan" element={<ReceptionistCheckInPage />} />
+            <Route path="lich-hen" element={<ReceptionistAppointmentsPage />} />
+            <Route path="benh-nhan" element={<ReceptionistPatientsPage />} />
+          </Route>
+
+          <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['admin']}><DashboardLayout role="admin" /></RoleProtectedRoute>}>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="nguoi-dung" element={<AdminUsersPage />} />
+            <Route path="bao-cao" element={<AdminReportsPage />} />
+            <Route path="cai-dat" element={<AdminSettingsPage />} />
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
