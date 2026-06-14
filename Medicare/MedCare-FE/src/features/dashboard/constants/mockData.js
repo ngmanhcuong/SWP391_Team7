@@ -1,0 +1,121 @@
+import {
+  Calendar,
+  CalendarClock,
+  FlaskConical,
+  Receipt,
+  FileText,
+  AlertTriangle,
+} from 'lucide-react';
+
+export const DASHBOARD_MOCK = {
+  welcome: {
+    subtitle: 'Hôm nay bạn có 3 lịch hẹn. Có 1 hóa đơn sau khám cần thanh toán.',
+    date: '15 Tháng 10, 2023',
+  },
+  stats: [
+    {
+      id: 'today-appointments',
+      label: 'Lịch hẹn hôm nay',
+      value: '3',
+      trend: '1 đã đến',
+      trendType: 'success',
+      icon: Calendar,
+      iconBg: 'bg-blue-50',
+    },
+    {
+      id: 'upcoming-appointments',
+      label: 'Lịch khám sắp tới',
+      value: '1',
+      trend: '20/10',
+      trendType: 'primary',
+      icon: CalendarClock,
+      iconBg: 'bg-indigo-50',
+    },
+    {
+      id: 'new-results',
+      label: 'Kết quả chưa xem',
+      value: '1',
+      trend: 'Mới hôm nay',
+      trendType: 'danger',
+      icon: FlaskConical,
+      iconBg: 'bg-red-50',
+    },
+    {
+      id: 'unpaid-invoices',
+      label: 'Chưa thanh toán sau khám',
+      value: '1',
+      trend: '850k VND',
+      trendType: 'warning',
+      icon: Receipt,
+      iconBg: 'bg-amber-50',
+    },
+  ],
+  appointments: [
+    {
+      id: 1,
+      type: 'checkup',
+      title: 'Tái khám định kỳ',
+      subtitle: 'BS. Nguyễn Văn Tuấn · 08:30 · Phòng khám 201',
+      status: 'Đã đến',
+      statusType: 'success',
+    },
+    {
+      id: 2,
+      type: 'lab',
+      title: 'Xét nghiệm máu',
+      subtitle: 'Phòng Lab B · 10:15',
+      status: 'Chờ khám',
+      statusType: 'pending',
+    },
+    {
+      id: 3,
+      type: 'consult',
+      title: 'Tư vấn dinh dưỡng',
+      subtitle: 'BS. Trần Thị Lan · 14:00 · Phòng 105',
+      status: 'Chờ khám',
+      statusType: 'pending',
+    },
+  ],
+  prescriptions: [
+    { id: 1, name: 'Paracetamol 500mg', dosage: '2 viên/ngày - Sau ăn' },
+    { id: 2, name: 'Amoxicillin 250mg', dosage: '3 viên/ngày - 7 ngày' },
+    { id: 3, name: 'Vitamin C', dosage: '1 viên/sáng - Sủi bọt' },
+  ],
+  examinationSteps: [
+    { id: 1, title: 'Đăng ký thành công', time: '08:00 AM - Quầy số 1', active: true },
+    { id: 2, title: 'Lấy mẫu xét nghiệm', time: '08:45 AM - Phòng Lab B', active: true },
+    { id: 3, title: 'Đang chờ kết quả', time: 'Dự kiến: 11:30 AM', active: false },
+  ],
+  notifications: [
+    {
+      id: 1,
+      title: 'Kết quả xét nghiệm máu của bạn đã có.',
+      time: '10 phút trước',
+      icon: FileText,
+      iconBg: 'bg-blue-100',
+      highlight: true,
+    },
+    {
+      id: 2,
+      title: 'Lịch tư vấn dinh dưỡng lúc 14:00 đã được dời sang 15:00.',
+      time: '1 giờ trước',
+      icon: CalendarClock,
+      iconBg: 'bg-emerald-100',
+    },
+    {
+      id: 3,
+      title: 'Thông báo: Bảo trì hệ thống dữ liệu lúc 22:00 tối nay.',
+      time: '3 giờ trước',
+      icon: AlertTriangle,
+      iconBg: 'bg-amber-100',
+    },
+  ],
+  healthReport: {
+    title: 'Báo cáo sức khỏe',
+    subtitle: 'Tổng kết tháng 10',
+    metrics: [
+      { label: 'Chỉ số BMI', value: '22.5 (Bình thường)', progress: 65 },
+      { label: 'Huyết áp', value: '120/80 mmHg', progress: 80 },
+    ],
+  },
+};
