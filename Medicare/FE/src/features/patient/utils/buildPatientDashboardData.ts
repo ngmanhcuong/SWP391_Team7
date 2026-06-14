@@ -5,6 +5,8 @@ import {
   PatientDashboardData,
   TodayAppointment,
 } from '../types';
+import { buildPatientNotificationsData, toDashboardNotifications } from './buildPatientNotificationsData';
+import { buildPatientPaymentsData, getDashboardBillStat } from './buildPatientPaymentsData';
 
 /** Một bệnh nhân thường có 0–1 lịch khám trong ngày */
 const getTodayAppointment = (): TodayAppointment | null => ({
@@ -114,7 +116,9 @@ export const buildPatientDashboardData = (user: User): PatientDashboardData => {
   const firstName = getFirstName(user.fullName);
   const todayAppointment = getTodayAppointment();
   const newLabCount = 2;
-  const unreadNotifications = 2;
+  const notificationData = buildPatientNotificationsData(user);
+  const paymentData = buildPatientPaymentsData(user);
+  const billStat = getDashboardBillStat(paymentData);
   const hasAppointment = !!todayAppointment;
 
   return {
@@ -150,38 +154,15 @@ export const buildPatientDashboardData = (user: User): PatientDashboardData => {
       {
         id: 'bills',
         label: 'Hóa đơn chưa thanh toán',
-        value: 1,
-        trend: '850.000 VND',
-        trendType: 'negative',
+        value: billStat.value,
+        trend: billStat.trend,
+        trendType: billStat.value > 0 ? 'negative' : 'positive',
         icon: 'receipt',
         iconBg: 'bg-[rgba(255,218,214,0.2)]',
       },
     ],
     todayAppointment,
-    notifications: [
-      {
-        id: '1',
-        title: `${firstName} ơi, kết quả xét nghiệm máu của bạn đã có.`,
-        timeAgo: '10 phút trước',
-        type: 'lab',
-        isUnread: true,
-      },
-      {
-        id: '2',
-        title: hasAppointment
-          ? `Nhắc lịch khám hôm nay ${todayAppointment!.time} — ${todayAppointment!.description}.`
-          : 'Bạn chưa đặt lịch khám tuần này.',
-        timeAgo: '1 giờ trước',
-        type: 'appointment',
-        isUnread: unreadNotifications > 1,
-      },
-      {
-        id: '3',
-        title: 'Nhắc uống thuốc: Paracetamol 500mg vào 20:00 tối nay.',
-        timeAgo: '3 giờ trước',
-        type: 'system',
-      },
-    ],
+    notifications: toDashboardNotifications(notificationData),
     prescriptions: PERSONAL_PRESCRIPTIONS,
     examinationSteps: buildExaminationSteps(todayAppointment),
     healthMetrics: buildHealthMetrics(user),
