@@ -19,6 +19,7 @@ export const useUpdateProfile = () => {
     onSuccess: (data) => {
       setUser({ ...data, id: data.id || (data as { _id?: string })._id || '' });
       queryClient.setQueryData(['profile'], data);
+      queryClient.invalidateQueries({ queryKey: ['patient'] });
     },
   });
 };

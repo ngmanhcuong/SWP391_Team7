@@ -1,12 +1,18 @@
 import React, { useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Camera, Save, RotateCcw, Loader } from 'lucide-react';
+import { ArrowLeft, Camera, Save, RotateCcw, Loader } from 'lucide-react';
 import MainLayout from '../../../components/layout/MainLayout';
 import { Card, Avatar, HealthScoreBadge } from '../../../components/ui';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { User } from '../../../types';
+import { useAuthStore } from '../../../store/authStore';
 import { useProfile, useUpdateProfile, useUploadAvatar } from '../hooks';
+
+interface ProfileLocationState {
+  from?: string;
+}
 
 interface FormData {
   fullName: string; phone: string; dateOfBirth: string; gender: string;
@@ -36,11 +42,19 @@ const profileToForm = (profile: User): FormData => ({
 });
 
 const ProfilePage: React.FC = () => {
+  const { user } = useAuthStore();
+  const location = useLocation();
   const { data: profile, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { register, handleSubmit, reset } = useForm<FormData>();
+
+  const returnPath =
+    (location.state as ProfileLocationState | null)?.from ??
+    (user?.role === 'patient' ? '/patient/benh-nhan' : null);
+
+  const returnLabel = returnPath === '/patient/benh-nhan' ? 'Quay về Bệnh nhân' : 'Quay lại';
 
   useEffect(() => {
     if (profile) reset(profileToForm(profile));
@@ -84,6 +98,16 @@ const ProfilePage: React.FC = () => {
     <MainLayout>
       <div className="bg-gray-50 min-h-screen py-8">
         <div className="container max-w-4xl">
+          {returnPath && (
+            <Link
+              to={returnPath}
+              className="inline-flex items-center gap-2 mb-6 text-sm font-medium text-[#003d9b] hover:underline"
+            >
+              <ArrowLeft size={16} />
+              {returnLabel}
+            </Link>
+          )}
+
           {/* Header card */}
           <Card className="mb-6 overflow-hidden" padding="none">
             <div className="relative h-28 sm:h-36 overflow-hidden">
@@ -210,8 +234,17 @@ const ProfilePage: React.FC = () => {
               </div>
             )}
             {updateProfile.isSuccess && (
-              <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-100 text-sm text-green-700 text-center">
-                ✓ Cập nhật thông tin thành công!
+              <div className="mt-3 p-4 rounded-xl bg-green-50 border border-green-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-green-700">✓ Cập nhật thông tin thành công!</p>
+                {returnPath && (
+                  <Link
+                    to={returnPath}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#003d9b] px-4 py-2 text-sm text-white hover:bg-[#002d75] transition-colors shrink-0"
+                  >
+                    <ArrowLeft size={14} />
+                    {returnLabel}
+                  </Link>
+                )}
               </div>
             )}
           </form>
