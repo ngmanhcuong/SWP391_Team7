@@ -1,5 +1,8 @@
-export {
-  PatientDashboardPage,
-  PatientAppointmentsPage,
-  PatientHealthRecordsPage,
-} from './PatientPages';
+export {
+  PatientDashboardPage,
+  PatientAppointmentsPage,
+  PatientHealthRecordsPage,
+  PatientNotificationsPage,
+  PatientPaymentsPage,
+  PatientReviewsPage,
+} from './PatientPages';

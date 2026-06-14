@@ -21,6 +21,9 @@ const SettingsPage = lazy(() => import('./features/profile/components/SettingsPa
 const PatientDashboardPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientDashboardPage })));
 const PatientAppointmentsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientAppointmentsPage })));
 const PatientHealthRecordsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientHealthRecordsPage })));
+const PatientNotificationsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientNotificationsPage })));
+const PatientPaymentsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientPaymentsPage })));
+const PatientReviewsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientReviewsPage })));
 
 const DoctorDashboardPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorDashboardPage })));
 const DoctorSchedulePage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorSchedulePage })));
@@ -79,6 +82,9 @@ const App: React.FC = () => (
             <Route index element={<PatientDashboardPage />} />
             <Route path="lich-hen" element={<PatientAppointmentsPage />} />
             <Route path="ho-so" element={<PatientHealthRecordsPage />} />
+            <Route path="thong-bao" element={<PatientNotificationsPage />} />
+            <Route path="thanh-toan" element={<PatientPaymentsPage />} />
+            <Route path="danh-gia" element={<PatientReviewsPage />} />
           </Route>
 
           <Route path="/doctor" element={<RoleProtectedRoute allowedRoles={['doctor']}><DashboardLayout role="doctor" /></RoleProtectedRoute>}>

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock } from 'lucide-react';
@@ -10,6 +10,8 @@ import { Divider } from '../../../components/ui';
 import { useLogin } from '../hooks';
 import { authApi } from '../api';
 import { loginSchema, LoginSchema } from '../validations';
+import { useAuthStore } from '../../../store/authStore';
+import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
 
 const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   google_failed: 'Đăng nhập Google thất bại. Vui lòng thử lại.',
@@ -20,6 +22,7 @@ const LoginPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const login = useLogin();
   const googleError = searchParams.get('error');
+  const { isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
     if (!googleError) return;
@@ -34,6 +37,10 @@ const LoginPage: React.FC = () => {
   });
 
   const onSubmit = (data: LoginSchema) => login.mutate(data);
+
+  if (isAuthenticated && user) {
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />;
+  }
 
   return (
     <AuthLayout>
