@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import {
   Bell,
   Calendar,
@@ -9,8 +9,10 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useUnreadNotificationCount } from '../../features/patient/hooks';
 import BrandLogo from '../../components/layout/BrandLogo';
 import DashboardUserMenu from '../../components/layout/DashboardUserMenu';
+import SidebarNavItem from '../../components/layout/SidebarNavItem';
 import Button from '../../components/ui/Button';
 import { AppRole, ROLE_LABELS, ROLE_NAV_ITEMS } from './roleConfig';
 
@@ -23,32 +25,25 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const navItems = ROLE_NAV_ITEMS[role];
   const isPatient = role === 'patient';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const unreadNotificationCount = useUnreadNotificationCount(isPatient ? user : null);
 
   const sidebarContent = (
     <>
-      <div className="p-5 border-b border-gray-100">
+      <div className="p-5 border-b border-[#c3c6d6]">
         <BrandLogo to={isPatient ? '/patient' : `/${role}`} variant="dark" />
-        <p className="mt-2 text-xs font-medium text-[#1a56db]">{ROLE_LABELS[role]}</p>
+        <p className="mt-2 text-xs font-medium text-[#003d9b]">{ROLE_LABELS[role]}</p>
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map(({ label, path, icon: Icon }) => (
-          <NavLink
+        {navItems.map(({ label, path, icon }) => (
+          <SidebarNavItem
             key={path}
             to={path}
+            icon={icon}
+            label={label}
             end={path === `/${role}`}
             onClick={() => setMobileNavOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-50 text-[#1a56db]'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`
-            }
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
+          />
         ))}
 
         {isPatient && (
@@ -60,20 +55,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         )}
       </nav>
 
-      <div className="p-3 border-t border-gray-100 space-y-1">
-        <Link
+      <div className="p-3 border-t border-[#c3c6d6] space-y-1">
+        <SidebarNavItem
           to="/cai-dat"
+          icon={Settings}
+          label="Cài đặt"
           onClick={() => setMobileNavOpen(false)}
-          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          <Settings size={18} />
-          Cài đặt
-        </Link>
+        />
         <button
           type="button"
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
         >
-          <HelpCircle size={18} />
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+            <HelpCircle size={18} />
+          </span>
           Trợ giúp
         </button>
       </div>
@@ -81,8 +76,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   );
 
   return (
-    <div className="min-h-screen flex bg-gray-50 text-[var(--text-primary)]">
-      <aside className="hidden lg:flex w-[260px] flex-col border-r border-gray-100 bg-white shrink-0">
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-[#f8f9fb] to-blue-50/40 text-[var(--text-primary)]">
+      <aside className="hidden lg:flex w-[260px] flex-col border-r border-[#c3c6d6]/40 bg-white/80 backdrop-blur-sm shrink-0">
         {sidebarContent}
       </aside>
 
@@ -130,14 +125,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               aria-label="Thông báo"
             >
               <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full" />
+              {isPatient && unreadNotificationCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-400 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                </span>
+              )}
             </Link>
 
             {user && <DashboardUserMenu user={user} variant="light" />}
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           <Outlet />
         </main>
       </div>
