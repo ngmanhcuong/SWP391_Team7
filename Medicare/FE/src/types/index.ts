@@ -16,7 +16,7 @@ export interface User {
   weight?: number;
   isEmailVerified?: boolean;
   healthScore?: number;
-  role: 'patient' | 'doctor' | 'admin';
+  role: 'patient' | 'doctor' | 'receptionist' | 'admin';
   createdAt: string;
 }
 
