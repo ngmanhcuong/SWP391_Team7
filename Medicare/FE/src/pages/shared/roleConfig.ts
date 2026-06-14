@@ -8,6 +8,9 @@ import {
   Settings,
   BarChart3,
   UserCog,
+  Bell,
+  CreditCard,
+  Star,
   LucideIcon,
 } from 'lucide-react';
 import { User } from '../../types';
@@ -38,7 +41,10 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   patient: [
     { label: 'Tổng quan', path: '/patient', icon: LayoutDashboard },
     { label: 'Lịch hẹn', path: '/patient/lich-hen', icon: Calendar },
-    { label: 'Hồ sơ sức khỏe', path: '/patient/ho-so', icon: FileText },
+    { label: 'Hồ sơ bệnh án', path: '/patient/ho-so', icon: FileText },
+    { label: 'Thông báo', path: '/patient/thong-bao', icon: Bell },
+    { label: 'Thanh toán', path: '/patient/thanh-toan', icon: CreditCard },
+    { label: 'Đánh giá dịch vụ', path: '/patient/danh-gia', icon: Star },
   ],
   doctor: [
     { label: 'Tổng quan', path: '/doctor', icon: LayoutDashboard },

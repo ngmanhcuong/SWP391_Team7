@@ -5,6 +5,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { User } from '../../../types';
 import { authApi } from '../api';
 import { normalizeUser } from '../utils/normalizeUser';
+import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
 
 const GoogleSuccessPage: React.FC = () => {
   const [params] = useSearchParams();
@@ -27,11 +28,12 @@ const GoogleSuccessPage: React.FC = () => {
     authApi
       .getMe()
       .then((user) => {
-        setAuth(normalizeUser(user as User & { _id?: string }), {
+        const normalized = normalizeUser(user as User & { _id?: string });
+        setAuth(normalized, {
           accessToken: token,
           refreshToken,
         });
-        navigate('/', { replace: true });
+        navigate(getRoleDashboardPath(normalized.role), { replace: true });
       })
       .catch(() => {
         navigate('/dang-nhap?error=google_failed', { replace: true });

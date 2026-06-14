@@ -1,18 +1,32 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../api';
 import { useAuthStore } from '../../../store/authStore';
 import { normalizeUser } from '../utils/normalizeUser';
+import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
+
+const getPostAuthPath = (
+  role: string | undefined,
+  fromPath?: string,
+): string => {
+  if (fromPath && fromPath !== '/' && fromPath !== '/dang-nhap' && fromPath !== '/dang-ky') {
+    return fromPath;
+  }
+  return getRoleDashboardPath(role);
+};
 
 export const useLogin = () => {
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (res) => {
       const { user, accessToken, refreshToken } = res.data;
-      setAuth(normalizeUser(user as Parameters<typeof normalizeUser>[0]), { accessToken, refreshToken });
-      navigate('/');
+      const normalized = normalizeUser(user as Parameters<typeof normalizeUser>[0]);
+      setAuth(normalized, { accessToken, refreshToken });
+      const from = (location.state as { from?: { pathname?: string } })?.from?.pathname;
+      navigate(getPostAuthPath(normalized.role, from), { replace: true });
     },
   });
 };
@@ -25,8 +39,9 @@ export const useRegister = () => {
     onSuccess: (res, variables) => {
       const data = res.data;
       if ('accessToken' in data && data.accessToken && data.user) {
-        setAuth(data.user, { accessToken: data.accessToken, refreshToken: data.refreshToken });
-        navigate('/');
+        const normalized = normalizeUser(data.user as Parameters<typeof normalizeUser>[0]);
+        setAuth(normalized, { accessToken: data.accessToken, refreshToken: data.refreshToken });
+        navigate(getRoleDashboardPath(normalized.role), { replace: true });
         return;
       }
       navigate(`/xac-thuc-email?email=${encodeURIComponent(variables.email)}`);
