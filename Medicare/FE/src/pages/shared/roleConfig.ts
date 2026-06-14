@@ -40,6 +40,7 @@ export interface NavItem {
 export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   patient: [
     { label: 'Tổng quan', path: '/patient', icon: LayoutDashboard },
+    { label: 'Bệnh nhân', path: '/patient/benh-nhan', icon: Users },
     { label: 'Lịch hẹn', path: '/patient/lich-hen', icon: Calendar },
     { label: 'Hồ sơ bệnh án', path: '/patient/ho-so', icon: FileText },
     { label: 'Thông báo', path: '/patient/thong-bao', icon: Bell },
