@@ -20,6 +20,7 @@ const SettingsPage = lazy(() => import('./features/profile/components/SettingsPa
 
 const PatientDashboardPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientDashboardPage })));
 const PatientAppointmentsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientAppointmentsPage })));
+const PatientProfilePage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientProfilePage })));
 const PatientHealthRecordsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientHealthRecordsPage })));
 const PatientNotificationsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientNotificationsPage })));
 const PatientPaymentsPage = lazy(() => import('./pages/patient').then(m => ({ default: m.PatientPaymentsPage })));
@@ -80,6 +81,7 @@ const App: React.FC = () => (
           {/* Role-based dashboards */}
           <Route path="/patient" element={<RoleProtectedRoute allowedRoles={['patient']}><DashboardLayout role="patient" /></RoleProtectedRoute>}>
             <Route index element={<PatientDashboardPage />} />
+            <Route path="benh-nhan" element={<PatientProfilePage />} />
             <Route path="lich-hen" element={<PatientAppointmentsPage />} />
             <Route path="ho-so" element={<PatientHealthRecordsPage />} />
             <Route path="thong-bao" element={<PatientNotificationsPage />} />
