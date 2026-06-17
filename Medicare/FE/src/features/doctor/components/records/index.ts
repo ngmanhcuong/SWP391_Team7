@@ -1,0 +1,10 @@
+export { default as MedicalRecordHeader } from './MedicalRecordHeader';
+export { default as MedicalRecordActionBar } from './MedicalRecordActionBar';
+export { default as PatientInfoCard } from './PatientInfoCard';
+export { default as ImportantWarningCard } from './ImportantWarningCard';
+export { default as ExaminationHistoryCard } from './ExaminationHistoryCard';
+export { default as CurrentExaminationCard } from './CurrentExaminationCard';
+export { default as ParaclinicalIndicationsCard } from './ParaclinicalIndicationsCard';
+export { default as LatestTestResultsCard } from './LatestTestResultsCard';
+export { default as PrescriptionCard } from './PrescriptionCard';
+export { default as WaitingPatientsWidget } from './WaitingPatientsWidget';
