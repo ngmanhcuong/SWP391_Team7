@@ -1,9 +1,9 @@
 import React from 'react';
-import { HelpCircle } from 'lucide-react';
-import { Avatar } from '../ui';
 import { User } from '../../types';
 import DoctorHeaderSearch from './DoctorHeaderSearch';
 import DoctorNotificationDropdown from './DoctorNotificationDropdown';
+import DashboardUserMenu from './DashboardUserMenu';
+import { getDoctorDisplayName } from '../../utils/userDisplay';
 
 interface DoctorDashboardHeaderProps {
   user: User;
@@ -16,9 +16,7 @@ const DoctorDashboardHeader: React.FC<DoctorDashboardHeaderProps> = ({
   department,
   compact = false,
 }) => {
-  const displayName = user.fullName.startsWith('Bác sĩ')
-    ? user.fullName
-    : `Bác sĩ ${user.fullName.split(' ').slice(-1)[0]}`;
+  const displayName = getDoctorDisplayName(user.fullName);
 
   if (compact) {
     return (
@@ -35,19 +33,14 @@ const DoctorDashboardHeader: React.FC<DoctorDashboardHeaderProps> = ({
 
       <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
         <DoctorNotificationDropdown />
-        <button
-          type="button"
-          className="p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors"
-          aria-label="Trợ giúp"
-        >
-          <HelpCircle size={18} />
-        </button>
-        <div className="hidden sm:flex items-center gap-2.5 pl-2 ml-1 border-l border-[#c3c6d6]/50">
-          <Avatar name={user.fullName} src={user.avatar} size="sm" />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#191c1e] truncate max-w-[140px]">{displayName}</p>
-            <p className="text-xs text-[#737685] truncate max-w-[140px]">{department}</p>
-          </div>
+        <div className="hidden sm:flex items-center pl-2 ml-1 border-l border-[#c3c6d6]/50">
+          <DashboardUserMenu
+            user={user}
+            variant="dark"
+            layout="doctor"
+            displayName={displayName}
+            department={department}
+          />
         </div>
       </div>
     </div>
