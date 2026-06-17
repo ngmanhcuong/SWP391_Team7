@@ -19,6 +19,7 @@ import DoctorDashboardHeader from '../../components/layout/DoctorDashboardHeader
 import SidebarNavItem from '../../components/layout/SidebarNavItem';
 import Button from '../../components/ui/Button';
 import { AppRole, ROLE_LABELS, ROLE_NAV_ITEMS } from './roleConfig';
+import { formatDoctorDepartment } from '../../constants/clinicSpecialties';
 
 interface DashboardLayoutProps {
   role: AppRole;
@@ -32,16 +33,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const isDoctor = role === 'doctor';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const unreadNotificationCount = useUnreadNotificationCount(isPatient ? user : null);
-  const doctorDepartment = user?.occupation || 'Khoa Nội tổng quát';
+  const doctorDepartment = formatDoctorDepartment(user?.occupation);
 
   const sidebarContent = (
     <>
-      <div className="p-5 border-b border-[#c3c6d6]">
+      <div className="p-5 border-b border-[#c3c6d6] shrink-0">
         <BrandLogo to={isPatient ? '/patient' : `/${role}`} variant="dark" />
         <p className="mt-2 text-xs font-medium text-[#003d9b]">{ROLE_LABELS[role]}</p>
       </div>
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
         {navItems.map(({ label, path, icon }) => (
           <SidebarNavItem
             key={path}
@@ -62,7 +63,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         )}
       </nav>
 
-      <div className="p-3 border-t border-[#c3c6d6] space-y-1">
+      <div className="p-3 border-t border-[#c3c6d6] space-y-1 shrink-0">
         {isDoctor ? (
           <>
             <button
@@ -108,8 +109,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   );
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 via-[#f8f9fb] to-blue-50/40 text-[var(--text-primary)]">
-      <aside className="hidden lg:flex w-[260px] flex-col border-r border-[#c3c6d6]/40 bg-white/80 backdrop-blur-sm shrink-0">
+    <div className="h-screen flex overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8f9fb] to-blue-50/40 text-[var(--text-primary)]">
+      <aside className="hidden lg:flex w-[260px] h-full flex-col border-r border-[#c3c6d6]/40 bg-white/80 backdrop-blur-sm shrink-0 overflow-hidden">
         {sidebarContent}
       </aside>
 
@@ -130,7 +131,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {isDoctor ? (
           <header className="sticky top-0 z-40 min-h-16 flex items-center gap-3 px-4 lg:px-6 py-3 bg-white border-b border-[#c3c6d6]/40 shadow-sm">
             <button
@@ -200,7 +201,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           </header>
         )}
 
-        <main id="dashboard-main-scroll" className={`flex-1 overflow-auto ${isDoctor ? 'p-4 sm:p-6 lg:p-8 bg-[#f8f9fb]' : 'p-4 sm:p-6 lg:p-8'}`}>
+        <main id="dashboard-main-scroll" className={`flex-1 min-h-0 overflow-y-auto ${isDoctor ? 'p-4 sm:p-6 lg:p-8 bg-[#f8f9fb]' : 'p-4 sm:p-6 lg:p-8'}`}>
           <Outlet />
         </main>
       </div>
