@@ -16,6 +16,9 @@ import { User } from '../../types';
 
 export type AppRole = User['role'];
 
+/** Shared personal profile page for all roles */
+export const PROFILE_PATH = '/ho-so';
+
 export const ROLE_PATHS: Record<AppRole, string> = {
   patient: '/patient',
   doctor: '/doctor',
@@ -79,3 +82,5 @@ export const getRoleSettingsPath = (role?: string | null): string => {
   if (role === 'admin') return '/admin/cai-dat';
   return '/cai-dat';
 };
+
+export const getRoleProfilePath = (): string => PROFILE_PATH;

@@ -8,6 +8,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { User } from '../../../types';
 import { useAuthStore } from '../../../store/authStore';
+import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
 import { useProfile, useUpdateProfile, useUploadAvatar } from '../hooks';
 
 interface ProfileLocationState {
@@ -52,9 +53,9 @@ const ProfilePage: React.FC = () => {
 
   const returnPath =
     (location.state as ProfileLocationState | null)?.from ??
-    (user?.role === 'patient' ? '/patient/benh-nhan' : null);
+    (user?.role ? getRoleDashboardPath(user.role) : null);
 
-  const returnLabel = returnPath === '/patient/benh-nhan' ? 'Quay về Bệnh nhân' : 'Quay lại';
+  const returnLabel = 'Quay lại bảng điều khiển';
 
   useEffect(() => {
     if (profile) reset(profileToForm(profile));

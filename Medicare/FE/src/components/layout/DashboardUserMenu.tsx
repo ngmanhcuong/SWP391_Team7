@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronDown, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import { Avatar } from '../ui';
 import { useLogout } from '../../features/auth/hooks';
-import { getRoleDashboardPath, getRoleSettingsPath } from '../../pages/shared/roleConfig';
+import { getRoleDashboardPath, getRoleProfilePath, getRoleSettingsPath } from '../../pages/shared/roleConfig';
 import { User as UserType } from '../../types';
 
 interface DashboardUserMenuProps {
@@ -26,6 +26,8 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
   const isLight = variant === 'light';
   const isDoctorLayout = layout === 'doctor';
   const nameLabel = displayName || user.fullName;
+  const dashboardPath = getRoleDashboardPath(user.role);
+  const profilePath = getRoleProfilePath();
 
   return (
     <div className="relative">
@@ -83,14 +85,15 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
               <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
             </div>
             <Link
-              to={getRoleDashboardPath(user.role)}
+              to={dashboardPath}
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
             >
               <LayoutDashboard size={15} className="text-gray-400" /> Bảng điều khiển
             </Link>
             <Link
-              to="/ho-so"
+              to={profilePath}
+              state={{ from: dashboardPath }}
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
             >
