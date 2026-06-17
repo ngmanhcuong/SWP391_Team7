@@ -12,6 +12,7 @@ import { authApi } from '../api';
 import { loginSchema, LoginSchema } from '../validations';
 import { useAuthStore } from '../../../store/authStore';
 import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
+import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
 
 const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   google_failed: 'Đăng nhập Google thất bại. Vui lòng thử lại.',
@@ -54,8 +55,7 @@ const LoginPage: React.FC = () => {
           <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
             {googleError
               ? GOOGLE_ERROR_MESSAGES[googleError] || 'Đăng nhập Google thất bại.'
-              : (login.error as { response?: { data?: { message?: string } } })?.response?.data?.message
-                || 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.'}
+              : getApiErrorMessage(login.error, 'Email hoặc mật khẩu không chính xác. Vui lòng thử lại.')}
           </div>
         )}
 

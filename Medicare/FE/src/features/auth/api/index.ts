@@ -1,5 +1,5 @@
 import api from '../../../services/api';
-import { ApiResponse, AuthTokens, User } from '../../../types';
+import { ApiResponse, User } from '../../../types';
 
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload { fullName: string; email: string; phone: string; password: string; }
