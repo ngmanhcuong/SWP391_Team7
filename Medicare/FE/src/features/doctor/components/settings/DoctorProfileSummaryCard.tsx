@@ -3,6 +3,7 @@ import { Camera } from 'lucide-react';
 import { User } from '../../../../types';
 import { DoctorProfileSettings } from '../../types';
 import { getAvatarUrl } from '../../../../utils/avatar';
+import { getDepartmentLabel } from '../../../../constants/clinicSpecialties';
 
 interface DoctorProfileSummaryCardProps {
   user: User;
@@ -54,7 +55,7 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
 
       <div className="text-center space-y-2">
         <h2 className="text-lg font-bold text-[#191c1e]">{displayName}</h2>
-        <p className="text-sm text-[#737685]">Chuyên khoa {profile.specialty}</p>
+        <p className="text-sm text-[#737685]">{getDepartmentLabel(profile.specialty)}</p>
         <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
           <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
             {profile.status === 'active' ? 'Active' : 'Inactive'}

@@ -1,21 +1,19 @@
 import { DoctorProfileSettings, DoctorSettingsData } from '../types';
 import { User } from '../../../types';
+import {
+  DEFAULT_CLINIC_SPECIALTY,
+  DOCTOR_SPECIALTY_OPTIONS,
+  normalizeSpecialtyName,
+} from '../../../constants/clinicSpecialties';
 
 const DEFAULT_BIOGRAPHY =
-  'Với hơn 15 năm kinh nghiệm trong lĩnh vực Nội khoa, BS. Nguyễn Văn An tốt nghiệp Đại học Y Dược TP.HCM và từng công tác tại các bệnh viện lớn ở Việt Nam và Singapore. Chuyên điều trị các bệnh lý nội khoa phức tạp và tư vấn chế độ dinh dưỡng, sinh hoạt cho bệnh nhân mãn tính.';
+  'Với hơn 15 năm kinh nghiệm trong lĩnh vực Tim mạch, BS. Nguyễn Văn An tốt nghiệp Đại học Y Dược TP.HCM và từng công tác tại các bệnh viện lớn ở Việt Nam và Singapore. Chuyên điều trị các bệnh lý tim mạch và tư vấn chế độ dinh dưỡng, sinh hoạt cho bệnh nhân mãn tính.';
 
-export const DOCTOR_SPECIALTIES = [
-  'Nội tổng quát',
-  'Ngoại tổng quát',
-  'Tim mạch',
-  'Nhi khoa',
-  'Da liễu',
-  'Thần kinh',
-] as const;
+export const DOCTOR_SPECIALTIES = DOCTOR_SPECIALTY_OPTIONS;
 
 export const buildDoctorProfileFromUser = (user: User): DoctorProfileSettings => ({
   fullName: user.fullName.replace(/^Bác sĩ\s+|^BS\.\s*/i, '').trim() || user.fullName,
-  specialty: user.occupation || 'Nội tổng quát',
+  specialty: normalizeSpecialtyName(user.occupation),
   phone: user.phone || '0901 234 567',
   email: user.email || 'an.nguyen@medcare.vn',
   biography: user.bio || DEFAULT_BIOGRAPHY,
@@ -28,7 +26,7 @@ const weekendSlots = { morning: true, afternoon: false, evening: false };
 
 export const DEFAULT_DOCTOR_PROFILE: DoctorProfileSettings = {
   fullName: 'Nguyễn Văn An',
-  specialty: 'Nội tổng quát',
+  specialty: DEFAULT_CLINIC_SPECIALTY,
   phone: '0901 234 567',
   email: 'an.nguyen@medcare.vn',
   biography: DEFAULT_BIOGRAPHY,

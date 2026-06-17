@@ -7,7 +7,7 @@ const DEV_USERS = [
     phone: '0901000001',
     password: 'Password123',
     role: 'doctor',
-    occupation: 'Khoa Nội tổng quát',
+    occupation: 'Tim mạch',
     isEmailVerified: true,
   },
   {
