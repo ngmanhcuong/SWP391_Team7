@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getAvatarUrl } from '../../utils/avatar';
+import { getUserInitials } from '../../utils/userDisplay';
 
 // Badge
 interface BadgeProps {
@@ -60,13 +61,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name = '', size = 'md', cla
     setImgError(false);
   }, [resolvedSrc]);
 
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .map((n) => n[0])
-    .slice(-2)
-    .join('')
-    .toUpperCase();
+  const initials = getUserInitials(name);
 
   if (resolvedSrc && !imgError) {
     return (
