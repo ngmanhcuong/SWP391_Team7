@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronDown, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import { Avatar } from '../ui';
 import { useLogout } from '../../features/auth/hooks';
-import { getRoleDashboardPath } from '../../pages/shared/roleConfig';
+import { getRoleDashboardPath, getRoleSettingsPath } from '../../pages/shared/roleConfig';
 import { User as UserType } from '../../types';
 
 interface DashboardUserMenuProps {
@@ -64,7 +64,7 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({ user, variant = '
               <User size={15} className="text-gray-400" /> Hồ sơ cá nhân
             </Link>
             <Link
-              to="/cai-dat"
+              to={getRoleSettingsPath(user.role)}
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
             >

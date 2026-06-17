@@ -4,15 +4,17 @@ import { Bell } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import BrandLogo from './BrandLogo';
 import DashboardUserMenu from './DashboardUserMenu';
+import { getRoleDashboardPath } from '../../pages/shared/roleConfig';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
+  const homePath = isAuthenticated && user ? getRoleDashboardPath(user.role) : '/';
 
   return (
     <header style={{ background: '#1a56db', boxShadow: '0 2px 16px rgba(26,86,219,0.15)' }} className="sticky top-0 z-50">
       <div className="container">
         <div className="flex items-center justify-between h-16">
-          <BrandLogo to="/" variant="light" />
+          <BrandLogo to={homePath} variant="light" />
 
           <div className="flex items-center gap-2">
             {isAuthenticated && user ? (

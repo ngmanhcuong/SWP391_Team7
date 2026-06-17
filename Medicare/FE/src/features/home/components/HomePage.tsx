@@ -1,11 +1,13 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Search, Calendar, ArrowRight, Star, CheckCircle, Heart, Eye, Brain, Baby, Bone, ChevronRight, Stethoscope, Users, Sparkles } from 'lucide-react';
 import MainLayout from '../../../components/layout/MainLayout';
 import HeroBackground from './HeroBackground';
 import HeroStatCard from './HeroStatCard';
 import { Card, Avatar } from '../../../components/ui';
 import Button from '../../../components/ui/Button';
+import { useAuthStore } from '../../../store/authStore';
+import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
 
 const SPECIALTIES = [
   { id: '1', icon: Heart, name: 'Tim mạch', desc: '12 bác sĩ', color: '#ef4444', bg: '#fef2f2' },
@@ -34,7 +36,14 @@ const STATS = [
   { val: '24/7', label: 'Hỗ trợ AI', icon: Sparkles },
 ];
 
-const HomePage: React.FC = () => (
+const HomePage: React.FC = () => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (isAuthenticated && user) {
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />;
+  }
+
+  return (
   <MainLayout>
     {/* Hero — chỉ giới thiệu + CTA, không nhét search vào đây */}
     <section className="relative min-h-[34rem] overflow-hidden sm:min-h-[38rem] lg:min-h-[42rem]">
@@ -270,6 +279,7 @@ const HomePage: React.FC = () => (
       </div>
     </section>
   </MainLayout>
-);
+  );
+};
 
 export default HomePage;
