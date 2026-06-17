@@ -3,7 +3,6 @@ import {
   Calendar,
   FileText,
   Users,
-  Stethoscope,
   ClipboardList,
   Settings,
   BarChart3,
@@ -26,7 +25,7 @@ export const ROLE_PATHS: Record<AppRole, string> = {
 
 export const ROLE_LABELS: Record<AppRole, string> = {
   patient: 'Bệnh nhân',
-  doctor: 'Bác sĩ',
+  doctor: 'Quản lý bệnh viện',
   receptionist: 'Lễ tân',
   admin: 'Quản trị viên',
 };
@@ -49,9 +48,10 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   ],
   doctor: [
     { label: 'Tổng quan', path: '/doctor', icon: LayoutDashboard },
-    { label: 'Lịch khám', path: '/doctor/lich-kham', icon: Calendar },
-    { label: 'Bệnh nhân', path: '/doctor/benh-nhan', icon: Users },
-    { label: 'Hồ sơ bệnh án', path: '/doctor/benh-an', icon: Stethoscope },
+    { label: 'Lịch hẹn hôm nay', path: '/doctor/lich-kham', icon: Calendar },
+    { label: 'Danh sách bệnh nhân', path: '/doctor/benh-nhan', icon: Users },
+    { label: 'Hồ sơ bệnh án', path: '/doctor/benh-an', icon: FileText },
+    { label: 'Cài đặt', path: '/doctor/cai-dat', icon: Settings },
   ],
   receptionist: [
     { label: 'Tổng quan', path: '/receptionist', icon: LayoutDashboard },
@@ -72,4 +72,10 @@ export const getRoleDashboardPath = (role?: string | null): string => {
     return ROLE_PATHS[role as AppRole];
   }
   return ROLE_PATHS.patient;
+};
+
+export const getRoleSettingsPath = (role?: string | null): string => {
+  if (role === 'doctor') return '/doctor/cai-dat';
+  if (role === 'admin') return '/admin/cai-dat';
+  return '/cai-dat';
 };

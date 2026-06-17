@@ -1,8 +1,9 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import { DashboardLayout, RoleProtectedRoute } from './pages';
+import RootRedirect from './pages/shared/RootRedirect';
 import ThemeSync from './components/ThemeSync';
 import { Spinner } from './components/ui';
 
@@ -30,6 +31,8 @@ const DoctorDashboardPage = lazy(() => import('./pages/doctor').then(m => ({ def
 const DoctorSchedulePage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorSchedulePage })));
 const DoctorPatientsPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorPatientsPage })));
 const DoctorRecordsPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorRecordsPage })));
+const DoctorRecordsIndexPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorRecordsIndexPage })));
+const DoctorSettingsPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorSettingsPage })));
 
 const ReceptionistDashboardPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistDashboardPage })));
 const ReceptionistCheckInPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistCheckInPage })));
@@ -93,7 +96,9 @@ const App: React.FC = () => (
             <Route index element={<DoctorDashboardPage />} />
             <Route path="lich-kham" element={<DoctorSchedulePage />} />
             <Route path="benh-nhan" element={<DoctorPatientsPage />} />
-            <Route path="benh-an" element={<DoctorRecordsPage />} />
+            <Route path="benh-an" element={<DoctorRecordsIndexPage />} />
+            <Route path="benh-an/:patientId" element={<DoctorRecordsPage />} />
+            <Route path="cai-dat" element={<DoctorSettingsPage />} />
           </Route>
 
           <Route path="/receptionist" element={<RoleProtectedRoute allowedRoles={['receptionist']}><DashboardLayout role="receptionist" /></RoleProtectedRoute>}>
@@ -110,7 +115,7 @@ const App: React.FC = () => (
             <Route path="cai-dat" element={<AdminSettingsPage />} />
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<RootRedirect />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

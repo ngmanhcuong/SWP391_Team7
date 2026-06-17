@@ -3,4 +3,6 @@ export {
   DoctorSchedulePage,
   DoctorPatientsPage,
   DoctorRecordsPage,
+  DoctorRecordsIndexPage,
+  DoctorSettingsPage,
 } from './DoctorPages';
