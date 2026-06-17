@@ -7,25 +7,56 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 
 const connectDB = require('./config/database');
+const seedDevUsers = require('./config/seedDevUsers');
 const passport = require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 
-const app = express();
+const parseAllowedOrigins = () => {
+  const origins = new Set([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+  ]);
 
-// Connect to MongoDB
-connectDB();
+  if (process.env.NODE_ENV !== 'production') {
+    for (let port = 3000; port <= 3010; port += 1) {
+      origins.add(`http://localhost:${port}`);
+      origins.add(`http://127.0.0.1:${port}`);
+    }
+  }
+
+  const fromEnv = [
+    process.env.CLIENT_URL,
+    process.env.CORS_ORIGINS,
+  ]
+    .filter(Boolean)
+    .flatMap((value) => String(value).split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  fromEnv.forEach((origin) => origins.add(origin));
+  return [...origins];
+};
+
+const allowedOrigins = parseAllowedOrigins();
+
+const app = express();
 
 // Security headers
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-// CORS
+// CORS — cho phép localhost + URL production trong CLIENT_URL / CORS_ORIGINS
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ],
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+    callback(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -79,10 +110,21 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📚 API docs: http://localhost:${PORT}/api/health`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+
+const startServer = async () => {
+  await connectDB();
+  await seedDevUsers();
+
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📚 API docs: http://localhost:${PORT}/api/health`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 module.exports = app;
