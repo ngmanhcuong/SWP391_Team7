@@ -24,14 +24,15 @@ const NotificationsPreferencesPanel: React.FC = () => (
         Hồ sơ bệnh án
       </Link>
       <Link
-        to="/patient/benh-nhan"
+        to="/ho-so"
+        state={{ from: '/patient/thong-bao' }}
         className="flex items-center gap-3 rounded-lg border border-[#c3c6d6] px-4 py-3 text-sm text-[#191c1e] hover:bg-[#f8f9fb] transition-colors"
       >
         <User size={16} className="text-[#003d9b]" />
         Hồ sơ cá nhân
       </Link>
       <Link
-        to="/ho-so"
+        to="/cai-dat"
         state={{ from: '/patient/thong-bao' }}
         className="flex items-center gap-3 rounded-lg border border-[#c3c6d6] px-4 py-3 text-sm text-[#191c1e] hover:bg-[#f8f9fb] transition-colors"
       >

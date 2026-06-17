@@ -144,7 +144,7 @@ export const buildPatientNotificationsData = (user: User): PatientNotificationsD
       ...hoursAgo(72),
       type: 'system',
       isUnread: false,
-      action: { label: 'Cập nhật hồ sơ', href: '/patient/benh-nhan' },
+      action: { label: 'Cập nhật hồ sơ', href: '/ho-so' },
     },
     {
       id: 'appointment-followup',
