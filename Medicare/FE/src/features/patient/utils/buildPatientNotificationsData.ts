@@ -149,7 +149,7 @@ export const buildPatientNotificationsData = (user: User): PatientNotificationsD
     {
       id: 'appointment-followup',
       title: 'Đến hạn tái khám',
-      description: 'Đã 3 tháng kể từ lần khám Nội tổng quát. Bạn nên đặt lịch tái khám để theo dõi sức khỏe định kỳ.',
+      description: 'Đã 3 tháng kể từ lần khám Tim mạch. Bạn nên đặt lịch tái khám để theo dõi sức khỏe định kỳ.',
       ...hoursAgo(120),
       type: 'appointment',
       isUnread: false,
