@@ -147,7 +147,7 @@ export interface DoctorSettingsData {
   notifications: DoctorNotificationSettings;
 }
 
-export type DoctorSettingsTab = 'profile' | 'schedule' | 'notifications' | 'security';
+export type DoctorSettingsTab = 'professional' | 'schedule' | 'notifications' | 'security';
 
 export type TodayAppointmentStatus = 'waiting' | 'confirmed' | 'completed' | 'cancelled';
 

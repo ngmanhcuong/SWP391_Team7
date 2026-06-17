@@ -26,14 +26,14 @@ import {
 } from '../../features/doctor/types';
 
 const SETTINGS_TABS: { id: DoctorSettingsTab; label: string }[] = [
-  { id: 'profile', label: 'Hồ sơ cá nhân' },
   { id: 'schedule', label: 'Lịch làm việc' },
+  { id: 'professional', label: 'Hồ sơ chuyên môn' },
   { id: 'notifications', label: 'Thông báo' },
   { id: 'security', label: 'Bảo mật' },
 ];
 
 const TAB_DESCRIPTIONS: Record<DoctorSettingsTab, string> = {
-  profile: 'Quản lý thông tin cá nhân và hồ sơ chuyên môn của bạn.',
+  professional: 'Quản lý chuyên khoa, tiểu sử nghề nghiệp và thông tin hiển thị công khai.',
   schedule: 'Quản lý các thông số vận hành và lịch trình cá nhân của bạn.',
   notifications: 'Quản lý cấu hình tài khoản và tùy chọn nhận thông báo của bạn.',
   security: 'Bảo vệ tài khoản và quản lý quyền truy cập của bạn.',
@@ -41,7 +41,7 @@ const TAB_DESCRIPTIONS: Record<DoctorSettingsTab, string> = {
 
 export const DoctorSettingsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<DoctorSettingsTab>('profile');
+  const [activeTab, setActiveTab] = useState<DoctorSettingsTab>('schedule');
   const [settings, setSettings] = useState<DoctorSettingsData>(DEFAULT_DOCTOR_SETTINGS);
   const [profileInitialized, setProfileInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -206,7 +206,7 @@ export const DoctorSettingsPage: React.FC = () => {
         </nav>
       </div>
 
-      {activeTab === 'profile' && user && (
+      {activeTab === 'professional' && user && (
         <DoctorProfileSettingsSection
           user={user}
           profile={settings.profile}
