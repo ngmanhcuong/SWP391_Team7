@@ -4,6 +4,7 @@ import {
   TodayAppointmentStatus,
   TodayAppointmentType,
 } from '../types';
+import { getDepartmentLabelByIndex } from '../../../constants/clinicSpecialties';
 import { getDoctorScheduleAppointments } from './buildDoctorScheduleData';
 import { resolveDoctorPatientId } from './doctorPatientRegistry';
 import {
@@ -26,52 +27,54 @@ type DayTemplate = {
   }[];
 };
 
+const dept = (index: number) => getDepartmentLabelByIndex(index);
+
 const OTHER_DAY_TEMPLATES: DayTemplate[] = [
   {
     offsetFromToday: -2,
     items: [
-      { time: '08:30', patientName: 'Võ Thị Mai', department: 'Nội tim mạch', type: 'followup', status: 'completed', timeSlot: 'morning' },
-      { time: '10:00', patientName: 'Bùi Thị Ngọc', department: 'Nội tiết', type: 'followup', status: 'completed', timeSlot: 'morning' },
-      { time: '14:30', patientName: 'Ngô Văn Thành', department: 'Ngoại tổng quát', type: 'new', status: 'completed', timeSlot: 'afternoon' },
+      { time: '08:30', patientName: 'Võ Thị Mai', department: dept(0), type: 'followup', status: 'completed', timeSlot: 'morning' },
+      { time: '10:00', patientName: 'Bùi Thị Ngọc', department: dept(0), type: 'followup', status: 'completed', timeSlot: 'morning' },
+      { time: '14:30', patientName: 'Ngô Văn Thành', department: dept(1), type: 'new', status: 'completed', timeSlot: 'afternoon' },
     ],
   },
   {
     offsetFromToday: -1,
     items: [
-      { time: '09:00', patientName: 'Phạm Thị Hoa', department: 'Nội tiết', type: 'followup', status: 'completed', timeSlot: 'morning' },
-      { time: '11:00', patientName: 'Lê Minh Tuấn', department: 'Nội tổng quát', type: 'new', status: 'completed', timeSlot: 'morning' },
-      { time: '15:00', patientName: 'Đinh Thị Thu', department: 'Nội tiết', type: 'followup', status: 'completed', timeSlot: 'afternoon' },
-      { time: '16:30', patientName: 'Trương Thị Hằng', department: 'Nội tổng quát', type: 'new', status: 'cancelled', timeSlot: 'afternoon', patientNote: 'Hủy do lịch trùng' },
+      { time: '09:00', patientName: 'Phạm Thị Hoa', department: dept(0), type: 'followup', status: 'completed', timeSlot: 'morning' },
+      { time: '11:00', patientName: 'Lê Minh Tuấn', department: dept(2), type: 'new', status: 'completed', timeSlot: 'morning' },
+      { time: '15:00', patientName: 'Đinh Thị Thu', department: dept(2), type: 'followup', status: 'completed', timeSlot: 'afternoon' },
+      { time: '16:30', patientName: 'Trương Thị Hằng', department: dept(3), type: 'new', status: 'cancelled', timeSlot: 'afternoon', patientNote: 'Hủy do lịch trùng' },
     ],
   },
   {
     offsetFromToday: 1,
     items: [
-      { time: '08:00', patientName: 'Nguyễn Thị Lan', department: 'Ngoại tổng quát', type: 'followup', status: 'confirmed', timeSlot: 'morning' },
-      { time: '09:30', patientName: 'Hoàng Văn Đức', department: 'Nội tổng quát', type: 'new', status: 'confirmed', timeSlot: 'morning' },
-      { time: '14:00', patientName: 'Võ Thị Mai', department: 'Nội tim mạch', type: 'followup', status: 'confirmed', timeSlot: 'afternoon' },
+      { time: '08:00', patientName: 'Nguyễn Thị Lan', department: dept(1), type: 'followup', status: 'confirmed', timeSlot: 'morning' },
+      { time: '09:30', patientName: 'Hoàng Văn Đức', department: dept(2), type: 'new', status: 'confirmed', timeSlot: 'morning' },
+      { time: '14:00', patientName: 'Võ Thị Mai', department: dept(0), type: 'followup', status: 'confirmed', timeSlot: 'afternoon' },
     ],
   },
   {
     offsetFromToday: 2,
     items: [
-      { time: '08:30', patientName: 'Phan Văn Khoa', department: 'Nội tiết', type: 'followup', status: 'confirmed', timeSlot: 'morning' },
-      { time: '10:30', patientName: 'Bùi Thị Ngọc', department: 'Nội tim mạch', type: 'followup', status: 'waiting', timeSlot: 'morning' },
-      { time: '11:30', patientName: 'Ngô Văn Thành', department: 'Ngoại tổng quát', type: 'new', status: 'waiting', timeSlot: 'morning' },
-      { time: '15:30', patientName: 'Đặng Văn Hùng', department: 'Nội tổng quát', type: 'followup', status: 'confirmed', timeSlot: 'afternoon' },
+      { time: '08:30', patientName: 'Phan Văn Khoa', department: dept(0), type: 'followup', status: 'confirmed', timeSlot: 'morning' },
+      { time: '10:30', patientName: 'Bùi Thị Ngọc', department: dept(0), type: 'followup', status: 'waiting', timeSlot: 'morning' },
+      { time: '11:30', patientName: 'Ngô Văn Thành', department: dept(1), type: 'new', status: 'waiting', timeSlot: 'morning' },
+      { time: '15:30', patientName: 'Đặng Văn Hùng', department: dept(3), type: 'followup', status: 'confirmed', timeSlot: 'afternoon' },
     ],
   },
   {
     offsetFromToday: 3,
     items: [
-      { time: '09:00', patientName: 'Trần Văn Phong', department: 'Nội tim mạch', type: 'new', status: 'confirmed', timeSlot: 'morning' },
-      { time: '13:30', patientName: 'Phạm Thị Hoa', department: 'Nội tiết', type: 'followup', status: 'confirmed', timeSlot: 'afternoon' },
+      { time: '09:00', patientName: 'Trần Văn Phong', department: dept(0), type: 'new', status: 'confirmed', timeSlot: 'morning' },
+      { time: '13:30', patientName: 'Phạm Thị Hoa', department: dept(2), type: 'followup', status: 'confirmed', timeSlot: 'afternoon' },
     ],
   },
   {
     offsetFromToday: 4,
     items: [
-      { time: '08:00', patientName: 'Lê Minh Tuấn', department: 'Nội tổng quát', type: 'new', status: 'confirmed', timeSlot: 'morning' },
+      { time: '08:00', patientName: 'Lê Minh Tuấn', department: dept(2), type: 'new', status: 'confirmed', timeSlot: 'morning' },
     ],
   },
 ];
@@ -178,7 +181,7 @@ const buildMonthAppointments = (year: number, month: number, today: Date): Sched
         date: dateKey,
         time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
         patientName,
-        department: index % 2 === 0 ? 'Nội tổng quát' : 'Nội tim mạch',
+        department: getDepartmentLabelByIndex((day + index) % 4),
         type: index % 3 === 0 ? 'new' : 'followup',
         status,
         timeSlot: hour < 12 ? 'morning' : 'afternoon',

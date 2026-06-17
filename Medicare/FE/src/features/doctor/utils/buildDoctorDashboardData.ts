@@ -15,6 +15,7 @@ import {
   getPatientsByHealthStatus,
 } from './doctorPatientRegistry';
 import { DOCTOR_PATHS } from './doctorPaths';
+import { formatDoctorDepartment } from '../../../constants/clinicSpecialties';
 import {
   formatShortDateLabel,
   getActiveAppointments,
@@ -68,7 +69,7 @@ const toUpcomingAppointment = (appointment: TodayAppointment, isNext = false) =>
 
 export const buildDoctorDashboardData = (user: User): DoctorDashboardData => {
   const schedule = buildDoctorScheduleData();
-  const department = user.occupation || 'Khoa Nội tổng quát';
+  const department = formatDoctorDepartment(user.occupation);
   const waitingPatients = getPatientsByHealthStatus('waiting');
   const progress = getScheduleProgress(schedule.appointments);
   const remainingCount = progress.pending;
