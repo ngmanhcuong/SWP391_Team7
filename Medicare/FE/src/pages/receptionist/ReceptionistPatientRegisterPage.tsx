@@ -54,3 +54,58 @@ const ReceptionistPatientRegisterPage: React.FC = () => {
               <Field label="Số CCCD/CMND" required>
                 <input type="text" placeholder="12 chữ số" className={inputClass} />
               </Field>
+
+              <Field label="Ngày sinh" required>
+                <input type="text" placeholder="mm/dd/yyyy" className={inputClass} />
+              </Field>
+              <Field label="Giới tính" required>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['male', 'female'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                        gender === g
+                          ? 'border-[#1a56db] bg-blue-50/60 text-[#1a56db] dark:bg-blue-950/20'
+                          : 'border-gray-200 dark:border-slate-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`h-3.5 w-3.5 rounded-full border ${
+                          gender === g ? 'border-[#1a56db] bg-[#1a56db]' : 'border-gray-300'
+                        }`}
+                      />
+                      {g === 'male' ? 'Nam' : 'Nữ'}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Số điện thoại" required>
+                <input type="tel" placeholder="090..." className={inputClass} />
+              </Field>
+              <Field label="Email">
+                <input type="email" placeholder="example@gmail.com" className={inputClass} />
+              </Field>
+
+              <Field label="Địa chỉ thường trú" required className="sm:col-span-2">
+                <input
+                  type="text"
+                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+          </Card>
+
+          {/* BHYT info */}
+          <Card>
+            <div className="mb-5 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-950/40">
+                <Monitor size={18} />
+              </span>
+              <h2 className="text-base font-semibold">Thông tin BHYT</h2>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
