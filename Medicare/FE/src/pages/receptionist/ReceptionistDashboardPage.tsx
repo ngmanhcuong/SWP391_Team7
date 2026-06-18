@@ -198,3 +198,69 @@ const ReceptionistDashboardPage: React.FC = () => {
                   <h3 className="font-semibold text-[#1a56db]">{room.name}</h3>
                   <span className={`h-2.5 w-2.5 rounded-full ${room.busy ? 'bg-red-500' : 'bg-emerald-500'}`} />
                 </div>
+                <p className="mt-2 text-sm font-medium">{room.specialty}</p>
+                <p className="mt-1 text-xs text-gray-400">{room.doctor}</p>
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
+                  <div
+                    className={`h-full rounded-full ${room.busy ? 'bg-[#1a56db]' : 'bg-emerald-500'}`}
+                    style={{ width: `${room.busy ? room.progress : 0}%` }}
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-6">
+          {/* Upcoming */}
+          <Card padding="none" className="overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+              <h2 className="text-base font-semibold">Lịch hẹn sắp tới</h2>
+              <button type="button" className="text-sm font-medium text-[#1a56db] hover:underline">
+                Xem hết
+              </button>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-slate-700">
+              {APPOINTMENTS.map((appt) => (
+                <button
+                  key={appt.name}
+                  type="button"
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors"
+                >
+                  <div className="flex w-14 shrink-0 flex-col items-center rounded-lg bg-blue-50 dark:bg-blue-950/40 py-1.5 text-[#1a56db]">
+                    <span className="text-sm font-bold leading-tight">{appt.time.split(' ')[0]}</span>
+                    <span className="text-[10px]">{appt.time.split(' ')[1]}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{appt.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{appt.detail}</p>
+                  </div>
+                  <ChevronRight size={16} className="shrink-0 text-gray-300" />
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Notices */}
+          <div className="rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-5 text-white shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Megaphone size={18} />
+              <h2 className="text-base font-semibold">Thông báo mới</h2>
+            </div>
+            <div className="space-y-3">
+              {NOTICES.map((notice) => (
+                <div key={notice.title} className="rounded-xl bg-white/10 p-3">
+                  <p className="text-sm font-semibold">{notice.title}</p>
+                  <p className="mt-0.5 text-xs text-blue-100">{notice.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReceptionistDashboardPage;
