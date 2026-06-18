@@ -158,3 +158,82 @@ const ReceptionistBillingPayment: React.FC = () => {
               <div className="w-full max-w-xs space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500 dark:text-slate-400">
                   <span>Tạm tính:</span>
+                  <span className="font-medium text-gray-700 dark:text-slate-200">1,500,000đ</span>
+                </div>
+                <div className="flex justify-between text-gray-500 dark:text-slate-400">
+                  <span>BHYT giảm trừ:</span>
+                  <span className="font-medium text-emerald-600">- 250,000đ</span>
+                </div>
+                <div className="flex justify-between text-gray-500 dark:text-slate-400">
+                  <span>Tiền đặt cọc (Khấu trừ):</span>
+                  <span className="font-medium text-emerald-600">- 100,000đ</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-100 dark:border-slate-700 pt-2 text-base">
+                  <span className="font-semibold">Tổng tiền:</span>
+                  <span className="font-bold text-[#1a56db]">1,150,000đ</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Payment method */}
+          <Card>
+            <h2 className="text-base font-semibold mb-4">Phương thức thanh toán</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {METHODS.map(({ id, label, icon: Icon }) => {
+                const active = method === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setMethod(id)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 px-3 py-4 transition-colors ${
+                      active
+                        ? 'border-[#1a56db] bg-blue-50/60 dark:bg-blue-950/20'
+                        : 'border-gray-200 dark:border-slate-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`absolute right-2 top-2 h-3.5 w-3.5 rounded-full border ${
+                        active ? 'border-[#1a56db] bg-[#1a56db]' : 'border-gray-300'
+                      }`}
+                    />
+                    <Icon size={24} className={active ? 'text-[#1a56db]' : 'text-gray-500'} />
+                    <span className={`text-sm font-medium ${active ? 'text-[#1a56db]' : ''}`}>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {method === 'qr' && (
+              <div className="mt-4 flex gap-4 rounded-xl border border-dashed border-gray-300 dark:border-slate-600 p-4">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-gray-200 dark:border-slate-600">
+                  <QrCode size={56} className="text-gray-400" />
+                </div>
+                <div>
+                  <p className="font-semibold">Quét mã VietQR</p>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+                    Mã QR này chứa thông tin số tiền và nội dung chuyển khoản tự động.
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-xs">
+                    <span className="rounded-md bg-emerald-100 px-2 py-1 font-semibold text-emerald-700 dark:bg-emerald-950/40">VietinBank</span>
+                    <span className="text-gray-500 dark:text-slate-400">STK: 1028374921</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1e293b] px-5 py-3.5 font-semibold text-white transition-colors hover:bg-[#0f172a]"
+            >
+              <CheckCircle2 size={18} /> Xác nhận thanh toán (1,150,000đ)
+            </button>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReceptionistBillingPayment;
