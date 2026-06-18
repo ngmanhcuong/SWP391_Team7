@@ -121,3 +121,64 @@ const ReceptionistCheckInPage: React.FC = () => {
           </div>
           <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <FileText size={14} /> Trạng thái
+            </p>
+            <p className="mt-2 flex items-center gap-1.5 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-red-500" /> Chờ Check-in
+            </p>
+            <p className="text-xs text-gray-400">Đã thanh toán trước</p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <Button
+            variant="ghost"
+            leftIcon={<Printer size={16} />}
+            className="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600"
+          >
+            In phiếu khám
+          </Button>
+          <Button leftIcon={<CheckCircle2 size={16} />}>Xác nhận Check-in</Button>
+        </div>
+      </Card>
+
+      {/* Recent check-ins */}
+      <Card padding="none" className="overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+          <h2 className="text-base font-semibold">Check-in gần đây</h2>
+          <button type="button" className="text-sm font-medium text-[#1a56db] hover:underline">
+            Xem tất cả
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                <th className="px-5 py-3">Thời gian</th>
+                <th className="px-3 py-3">Bệnh nhân</th>
+                <th className="px-3 py-3">Mã BN</th>
+                <th className="px-3 py-3">Phòng</th>
+                <th className="px-3 py-3 text-right pr-5">Kết quả</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+              {RECENT_CHECK_INS.map((item) => (
+                <tr key={item.code} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                  <td className="px-5 py-4 text-gray-500 dark:text-slate-400">{item.time}</td>
+                  <td className="px-3 py-4 font-medium">{item.name}</td>
+                  <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{item.code}</td>
+                  <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{item.room}</td>
+                  <td className="px-3 py-4 text-right pr-5">
+                    <Badge variant="success">Hoàn tất</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default ReceptionistCheckInPage;
