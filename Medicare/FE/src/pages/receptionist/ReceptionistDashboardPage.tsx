@@ -131,3 +131,70 @@ const ReceptionistDashboardPage: React.FC = () => {
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <th className="px-5 py-3">STT</th>
+                    <th className="px-3 py-3">Bệnh nhân</th>
+                    <th className="px-3 py-3">Dịch vụ/Phòng</th>
+                    <th className="px-3 py-3">Thời gian chờ</th>
+                    <th className="px-3 py-3">Trạng thái</th>
+                    <th className="px-3 py-3 text-right pr-5">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                  {QUEUE.map((row) => (
+                    <tr key={row.ticket} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                      <td className="px-5 py-4 font-semibold text-[#1a56db]">{row.ticket}</td>
+                      <td className="px-3 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={row.name} size="sm" />
+                          <div>
+                            <p className="font-medium">{row.name}</p>
+                            <p className="text-xs text-gray-400">{row.code}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4">
+                        <p>{row.service}</p>
+                        <p className="text-xs text-gray-400">({row.room})</p>
+                      </td>
+                      <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{row.wait}</td>
+                      <td className="px-3 py-4">
+                        {row.status === 'priority' ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase text-emerald-700 dark:bg-emerald-950/40">
+                            Ưu tiên
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase text-gray-500 dark:bg-slate-700 dark:text-slate-300">
+                            Chờ ghi
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 text-right pr-5">
+                        <button type="button" className="text-sm font-medium text-[#1a56db] hover:underline">
+                          Mời khám
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t border-gray-100 dark:border-slate-700 py-3 text-center">
+              <button type="button" className="text-sm font-medium text-[#1a56db] hover:underline">
+                Xem tất cả hàng đợi (42)
+              </button>
+            </div>
+          </Card>
+
+          {/* Rooms */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            {ROOMS.map((room) => (
+              <Card key={room.name} className={room.busy ? '' : 'border-emerald-200 dark:border-emerald-900'}>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-[#1a56db]">{room.name}</h3>
+                  <span className={`h-2.5 w-2.5 rounded-full ${room.busy ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                </div>
