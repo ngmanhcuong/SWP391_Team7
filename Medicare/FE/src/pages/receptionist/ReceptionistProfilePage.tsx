@@ -45,3 +45,50 @@ const ReceptionistProfilePage: React.FC = () => {
         {/* Basic info */}
         <Card>
           <div className="mb-5 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-950/40">
+              <UserRound size={18} />
+            </span>
+            <h2 className="text-base font-semibold">Thông tin cơ bản</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Họ và tên <span className="text-red-500">*</span>
+                </span>
+                <input type="text" defaultValue="Nguyễn Thị Tâm An" className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Chức danh</span>
+                <input
+                  type="text"
+                  defaultValue="Lễ tân chính"
+                  disabled
+                  className={`${inputClass} cursor-not-allowed bg-gray-50 text-gray-400 dark:bg-slate-700/40`}
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+                Địa chỉ Email <span className="text-red-500">*</span>
+              </span>
+              <input type="email" defaultValue="taman.nguyen@medcare.vn" className={inputClass} />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+                Số điện thoại <span className="text-red-500">*</span>
+              </span>
+              <input type="tel" defaultValue="+84 0987 654 321" className={inputClass} />
+            </label>
+          </div>
+        </Card>
+
+        {/* Change password + actions */}
+        <div className="space-y-6">
+          <Card>
+            <div className="mb-5 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-950/40">
+                <Lock size={18} />
+              </span>
+              <h2 className="text-base font-semibold">Đổi mật khẩu</h2>
