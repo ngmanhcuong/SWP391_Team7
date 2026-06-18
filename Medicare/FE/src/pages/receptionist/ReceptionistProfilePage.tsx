@@ -92,3 +92,49 @@ const ReceptionistProfilePage: React.FC = () => {
                 <Lock size={18} />
               </span>
               <h2 className="text-base font-semibold">Đổi mật khẩu</h2>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Mật khẩu cũ</span>
+                <div className="relative">
+                  <input
+                    type={showOldPassword ? 'text' : 'password'}
+                    defaultValue="password"
+                    className={`${inputClass} pr-10`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="Hiện/ẩn mật khẩu"
+                  >
+                    {showOldPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Mật khẩu mới</span>
+                <input type="password" placeholder="Tối thiểu 8 ký tự" className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Xác nhận mật khẩu</span>
+                <input type="password" placeholder="Nhập lại mật khẩu mới" className={inputClass} />
+              </label>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="space-y-3">
+              <Button fullWidth leftIcon={<Save size={16} />}>Cập nhật thông tin</Button>
+              <Button fullWidth variant="outline">Hủy</Button>
+            </div>
+            <p className="mt-3 text-center text-xs text-gray-400">Lần cập nhật cuối cùng: 2 ngày trước</p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReceptionistProfilePage;
