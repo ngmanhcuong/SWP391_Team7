@@ -5,13 +5,16 @@ import {
   Users,
   Settings,
   BarChart3,
-  UserCog,
   Bell,
   CreditCard,
   Star,
   UserCircle,
   Receipt,
   ListOrdered,
+  Stethoscope,
+  Building2,
+  DoorOpen,
+  History,
   LucideIcon,
 } from 'lucide-react';
 import { User } from '../../types';
@@ -69,10 +72,16 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { label: 'Hồ sơ cá nhân', path: '/receptionist/ho-so', icon: UserCircle },
   ],
   admin: [
-    { label: 'Tổng quan', path: '/admin', icon: LayoutDashboard },
-    { label: 'Người dùng', path: '/admin/nguoi-dung', icon: UserCog },
-    { label: 'Báo cáo', path: '/admin/bao-cao', icon: BarChart3 },
-    { label: 'Cài đặt', path: '/admin/cai-dat', icon: Settings },
+    { label: 'Trang chủ', path: '/admin', icon: LayoutDashboard },
+    { label: 'Quản lý người dùng', path: '/admin/nguoi-dung', icon: Users },
+    { label: 'Quản lý bác sĩ', path: '/admin/bac-si', icon: Stethoscope },
+    { label: 'Quản lý khoa', path: '/admin/khoa', icon: Building2 },
+    { label: 'Quản lý phòng', path: '/admin/phong', icon: DoorOpen },
+    { label: 'Quản lý lịch hẹn', path: '/admin/lich-hen', icon: Calendar },
+    { label: 'Quản lý đánh giá', path: '/admin/danh-gia', icon: Star },
+    { label: 'Báo cáo thống kê', path: '/admin/bao-cao', icon: BarChart3 },
+    { label: 'Nhật ký hệ thống', path: '/admin/nhat-ky', icon: History },
+    { label: 'Hồ sơ cá nhân', path: '/admin/ho-so', icon: UserCircle },
   ],
 };
 

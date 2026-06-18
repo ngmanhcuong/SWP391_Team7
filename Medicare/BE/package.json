@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "start:prod": "NODE_ENV=production node src/app.js"
+    "start:prod": "NODE_ENV=production node src/app.js",
+    "seed:admin": "node src/seed/createAdmin.js"
   },
   "keywords": [],
   "author": "",

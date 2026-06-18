@@ -48,6 +48,13 @@ const AdminDashboardPage = lazy(() => import('./pages/admin').then(m => ({ defau
 const AdminUsersPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminUsersPage })));
 const AdminReportsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminReportsPage })));
 const AdminSettingsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminSettingsPage })));
+const AdminDoctorsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminDoctorsPage })));
+const AdminDepartmentsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminDepartmentsPage })));
+const AdminRoomsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminRoomsPage })));
+const AdminAppointmentsPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminAppointmentsPage })));
+const AdminFeedbackPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminFeedbackPage })));
+const AdminAuditLogPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminAuditLogPage })));
+const AdminProfilePage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminProfilePage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -121,7 +128,14 @@ const App: React.FC = () => (
           <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['admin']}><DashboardLayout role="admin" /></RoleProtectedRoute>}>
             <Route index element={<AdminDashboardPage />} />
             <Route path="nguoi-dung" element={<AdminUsersPage />} />
+            <Route path="bac-si" element={<AdminDoctorsPage />} />
+            <Route path="khoa" element={<AdminDepartmentsPage />} />
+            <Route path="phong" element={<AdminRoomsPage />} />
+            <Route path="lich-hen" element={<AdminAppointmentsPage />} />
+            <Route path="danh-gia" element={<AdminFeedbackPage />} />
             <Route path="bao-cao" element={<AdminReportsPage />} />
+            <Route path="nhat-ky" element={<AdminAuditLogPage />} />
+            <Route path="ho-so" element={<AdminProfilePage />} />
             <Route path="cai-dat" element={<AdminSettingsPage />} />
           </Route>
 
