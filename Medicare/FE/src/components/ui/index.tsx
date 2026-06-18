@@ -1,6 +1,74 @@
 import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { getAvatarUrl } from '../../utils/avatar';
 import { getUserInitials } from '../../utils/userDisplay';
+
+// Modal
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+}
+export const Modal: React.FC<ModalProps> = ({ open, onClose, title, description, children, footer, size = 'md' }) => {
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = '';
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`relative w-full ${sizes[size]} bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-h-[90vh] flex flex-col animate-[fadeIn_0.15s_ease-out]`}
+      >
+        {(title || description) && (
+          <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-100 dark:border-slate-700">
+            <div>
+              {title && (
+                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100" style={{ fontFamily: 'Lexend' }}>
+                  {title}
+                </h3>
+              )}
+              {description && <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{description}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 transition-colors"
+              aria-label="Đóng"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+        <div className="px-6 py-5 overflow-y-auto">{children}</div>
+        {footer && (
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-slate-700">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // Badge
 interface BadgeProps {
@@ -29,11 +97,15 @@ interface CardProps {
   className?: string;
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  style?: React.CSSProperties;
 }
-export const Card: React.FC<CardProps> = ({ children, className = '', hover = false, padding = 'md' }) => {
+export const Card: React.FC<CardProps> = ({ children, className = '', hover = false, padding = 'md', style }) => {
   const paddings = { none: '', sm: 'p-4', md: 'p-6', lg: 'p-8' };
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm ${hover ? 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200' : ''} ${paddings[padding]} ${className}`}>
+    <div
+      style={style}
+      className={`bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm ${hover ? 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200' : ''} ${paddings[padding]} ${className}`}
+    >
       {children}
     </div>
   );
