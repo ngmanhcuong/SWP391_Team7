@@ -18,7 +18,7 @@ const DoctorSelectionHeader: React.FC<DoctorSelectionHeaderProps> = ({
       <div className="flex items-center gap-2">
         <Stethoscope size={20} className="text-[#003d9b]" />
         <span className="text-base tracking-wider uppercase text-[#003d9b]">
-          Khoa {specialty?.name ?? 'Chuyên khoa'}
+          {specialty?.departmentLabel ?? 'Chuyên khoa'}
         </span>
       </div>
       <h2 className="text-base font-medium text-[#191c1e]">Đội ngũ Bác sĩ chuyên khoa</h2>

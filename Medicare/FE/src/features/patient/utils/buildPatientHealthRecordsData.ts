@@ -35,7 +35,7 @@ export const buildPatientHealthRecordsData = (user: User): PatientHealthRecordsD
       id: 'v2',
       date: '15/04/2026',
       doctorName: 'BS. Lê Thị Mai',
-      specialty: 'Nội tổng quát',
+      specialty: 'Sản & Nhi',
       diagnosis: 'Viêm họng cấp — đã khỏi',
       symptoms: 'Đau họng, sốt nhẹ 37.8°C',
       treatment: 'Nghỉ ngơi, uống đủ nước, hoàn tất liệu trình kháng sinh',

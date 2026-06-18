@@ -97,10 +97,10 @@ const buildMockCompletedInvoices = (): PaymentInvoice[] => {
       invoiceCode: 'HD-240420',
       visitDate: '20/04/2026',
       doctorName: 'BS. Nguyễn Thị Lan',
-      specialtyName: 'Nội tổng quát',
+      specialtyName: 'Sản & Nhi',
       status: 'paid',
       lineItems: [
-        { id: 'consultation', label: 'Phí khám Nội tổng quát', amount: 300_000, type: 'charge' },
+        { id: 'consultation', label: 'Phí khám Sản & Nhi', amount: 300_000, type: 'charge' },
         { id: 'deposit-credit', label: 'Tiền cọc đã thanh toán khi đặt lịch', amount: 100_000, type: 'credit' },
         { id: 'meds', label: 'Thuốc theo đơn', amount: 80_000, type: 'charge' },
       ],

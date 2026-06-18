@@ -1,23 +1,35 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Search, Calendar, ArrowRight, Star, CheckCircle, Heart, Eye, Brain, Baby, Bone, ChevronRight, Stethoscope, Users, Sparkles } from 'lucide-react';
 import MainLayout from '../../../components/layout/MainLayout';
 import HeroBackground from './HeroBackground';
 import HeroStatCard from './HeroStatCard';
 import { Card, Avatar } from '../../../components/ui';
 import Button from '../../../components/ui/Button';
+import { useAuthStore } from '../../../store/authStore';
+import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
+import { CLINIC_SPECIALTIES } from '../../../constants/clinicSpecialties';
 
-const SPECIALTIES = [
-  { id: '1', icon: Heart, name: 'Tim mạch', desc: '12 bác sĩ', color: '#ef4444', bg: '#fef2f2' },
-  { id: '2', icon: Bone, name: 'Cơ xương khớp', desc: '8 bác sĩ', color: '#8b5cf6', bg: '#f5f3ff' },
-  { id: '3', icon: Baby, name: 'Sản & Nhi', desc: '15 bác sĩ', color: '#ec4899', bg: '#fdf2f8' },
-  { id: '4', icon: Eye, name: 'Mắt', desc: '6 bác sĩ', color: '#0ea5e9', bg: '#f0f9ff' },
-];
+const SPECIALTIES = CLINIC_SPECIALTIES.map((item, index) => {
+  const icons = [Heart, Bone, Baby, Eye];
+  const colors = ['#ef4444', '#8b5cf6', '#ec4899', '#0ea5e9'];
+  const backgrounds = ['#fef2f2', '#f5f3ff', '#fdf2f8', '#f0f9ff'];
+  const counts = [12, 8, 15, 6];
+
+  return {
+    id: String(index + 1),
+    icon: icons[index],
+    name: item.name,
+    desc: `${counts[index]} bác sĩ`,
+    color: colors[index],
+    bg: backgrounds[index],
+  };
+});
 
 const DOCTORS = [
-  { id: '1', name: 'PGS. Nguyễn Văn A', specialty: 'Khoa Tim Mạch', reviews: 234, experience: '15 năm kinh nghiệm', color: '#1a56db' },
-  { id: '2', name: 'TS.BS. Trần Thị B', specialty: 'Khoa Nội', reviews: 189, experience: '12 năm kinh nghiệm', color: '#7c3aed' },
-  { id: '3', name: 'GS.TS. Lê Hoàng C', specialty: 'Khoa Ngoại', reviews: 312, experience: '20 năm kinh nghiệm', color: '#059669' },
+  { id: '1', name: 'PGS. Nguyễn Văn A', specialty: CLINIC_SPECIALTIES[0].departmentLabel, reviews: 234, experience: '15 năm kinh nghiệm', color: '#1a56db' },
+  { id: '2', name: 'TS.BS. Trần Thị B', specialty: CLINIC_SPECIALTIES[1].departmentLabel, reviews: 189, experience: '12 năm kinh nghiệm', color: '#7c3aed' },
+  { id: '3', name: 'GS.TS. Lê Hoàng C', specialty: CLINIC_SPECIALTIES[2].departmentLabel, reviews: 312, experience: '20 năm kinh nghiệm', color: '#059669' },
 ];
 
 const PROCESS_STEPS = [
@@ -34,7 +46,14 @@ const STATS = [
   { val: '24/7', label: 'Hỗ trợ AI', icon: Sparkles },
 ];
 
-const HomePage: React.FC = () => (
+const HomePage: React.FC = () => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (isAuthenticated && user) {
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />;
+  }
+
+  return (
   <MainLayout>
     {/* Hero — chỉ giới thiệu + CTA, không nhét search vào đây */}
     <section className="relative min-h-[34rem] overflow-hidden sm:min-h-[38rem] lg:min-h-[42rem]">
@@ -270,6 +289,7 @@ const HomePage: React.FC = () => (
       </div>
     </section>
   </MainLayout>
-);
+  );
+};
 
 export default HomePage;

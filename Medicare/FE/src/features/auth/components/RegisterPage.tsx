@@ -8,6 +8,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { useRegister } from '../hooks';
 import { registerSchema, RegisterSchema } from '../validations';
+import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
 
 const RegisterPage: React.FC = () => {
   const register2 = useRegister();
@@ -42,8 +43,7 @@ const RegisterPage: React.FC = () => {
 
         {register2.isError && (
           <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
-            {(register2.error as { response?: { data?: { message?: string } } })?.response?.data?.message
-              || 'Đăng ký thất bại. Vui lòng kiểm tra thông tin và thử lại.'}
+            {getApiErrorMessage(register2.error, 'Đăng ký thất bại. Vui lòng kiểm tra thông tin và thử lại.')}
           </div>
         )}
 

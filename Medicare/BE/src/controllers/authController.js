@@ -174,6 +174,14 @@ const login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Tài khoản đã bị vô hiệu hóa' });
     }
 
+    if (!skipEmailVerification() && !user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư hoặc dùng "Gửi lại email xác thực".',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+    }
+
     if (skipEmailVerification() && !user.isEmailVerified) {
       user.isEmailVerified = true;
       user.emailVerifyToken = undefined;
