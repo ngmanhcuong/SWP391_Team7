@@ -8,7 +8,13 @@ interface SidebarNavItemProps {
   label: string;
   end?: boolean;
   onClick?: () => void;
+  accent?: 'blue' | 'green';
 }
+
+const ACTIVE_STYLES: Record<'blue' | 'green', string> = {
+  blue: 'border-l-4 border-[#003d9b] bg-[rgba(0,82,204,0.1)] pl-[10px] text-[#003d9b]',
+  green: 'border-l-4 border-transparent bg-[#d6f5e6] text-[#0e9f6e] font-semibold',
+};
 
 const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
   to,
@@ -16,6 +22,7 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
   label,
   end = false,
   onClick,
+  accent = 'blue',
 }) => (
   <NavLink
     to={to}
@@ -25,7 +32,7 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
       [
         'group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all',
         isActive
-          ? 'border-l-4 border-[#003d9b] bg-[rgba(0,82,204,0.1)] pl-[10px] text-[#003d9b]'
+          ? ACTIVE_STYLES[accent]
           : 'border-l-4 border-transparent text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e]',
       ].join(' ')
     }
