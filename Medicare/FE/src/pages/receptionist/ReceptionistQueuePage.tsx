@@ -127,3 +127,132 @@ const ReceptionistQueuePage: React.FC = () => {
           <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Lexend' }}>
             Quản lý hàng chờ
           </h1>
+          <p className="text-gray-500 dark:text-slate-400">
+            Điều phối bệnh nhân tại Khoa Nội Tổng Quát - Tầng 2
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-slate-800">
+            {ROOM_FILTERS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setRoomFilter(key)}
+                className={`px-3.5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  roomFilter === key
+                    ? 'bg-white dark:bg-slate-700 text-[#1a56db] shadow-sm'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button leftIcon={<UserPlus size={16} />}>Thêm thủ công</Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+        {/* Left column */}
+        <div className="space-y-4">
+          {/* Now serving */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-6 text-white shadow-lg">
+            <Megaphone className="absolute top-5 right-5 opacity-20" size={56} />
+            <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold tracking-wide">
+              ĐANG GHI
+            </span>
+            <p className="mt-4 text-6xl font-bold leading-none" style={{ fontFamily: 'Lexend' }}>
+              {NOW_SERVING.ticket}
+            </p>
+            <p className="mt-3 text-lg font-medium text-blue-50">{NOW_SERVING.name}</p>
+
+            <div className="mt-6 space-y-1.5 border-t border-white/20 pt-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-blue-100">Phòng khám:</span>
+                <span className="font-semibold">{NOW_SERVING.room}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-blue-100">Bác sĩ:</span>
+                <span className="font-semibold">{NOW_SERVING.doctor}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mini stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card padding="sm">
+              <p className="text-sm text-gray-500 dark:text-slate-400">Đang chờ</p>
+              <p className="mt-1 text-3xl font-bold">12</p>
+              <p className="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <TrendingUp size={13} /> +2 BN mới
+              </p>
+            </Card>
+            <Card padding="sm">
+              <p className="text-sm text-gray-500 dark:text-slate-400">Đã hoàn thành</p>
+              <p className="mt-1 text-3xl font-bold">48</p>
+              <p className="mt-2 flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-slate-400">
+                <Clock size={13} /> TB 15p/ca
+              </p>
+            </Card>
+          </div>
+        </div>
+
+        {/* Right column — patient list */}
+        <Card padding="none" className="overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+            <h2 className="text-base font-semibold">Danh sách bệnh nhân</h2>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-400">Sắp xếp:</span>
+              <select className="rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-2.5 py-1.5 text-sm font-medium text-[#1a56db] focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                <option>Theo số thứ tự</option>
+                <option>Theo thời gian chờ</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  <th className="px-5 py-3">STT</th>
+                  <th className="px-3 py-3">Bệnh nhân</th>
+                  <th className="px-3 py-3">Bác sĩ / Phòng</th>
+                  <th className="px-3 py-3">Thời gian</th>
+                  <th className="px-3 py-3">Trạng thái</th>
+                  <th className="px-3 py-3 text-right pr-5">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {filteredQueue.map((patient) => {
+                  const isSelected = patient.ticket === selectedTicket;
+                  const isSkipped = patient.status === 'skipped';
+                  const isInProgress = patient.status === 'in-progress';
+                  return (
+                    <tr
+                      key={patient.ticket}
+                      onClick={() => setSelectedTicket(patient.ticket)}
+                      className={`cursor-pointer transition-colors ${
+                        isInProgress
+                          ? 'bg-emerald-50/80 dark:bg-emerald-950/20'
+                          : isSelected
+                          ? 'bg-blue-50/60 dark:bg-blue-950/20'
+                          : 'hover:bg-gray-50 dark:hover:bg-slate-700/40'
+                      }`}
+                    >
+                      <td className="px-5 py-4 align-top">
+                        <div className="flex items-center gap-2">
+                          {patient.status === 'waiting' && (
+                            <span className="h-2 w-2 rounded-full bg-red-500" />
+                          )}
+                          <span
+                            className={`font-semibold ${
+                              isSkipped ? 'text-gray-400' : 'text-[#1a56db]'
+                            }`}
+                          >
+                            {patient.ticket}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 align-top">
+                        <p
