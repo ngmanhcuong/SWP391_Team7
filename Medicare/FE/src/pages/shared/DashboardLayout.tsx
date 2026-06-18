@@ -7,6 +7,7 @@ import {
   HelpCircle,
   LogOut,
   Menu,
+  Search,
   Settings,
   X,
 } from 'lucide-react';
@@ -18,7 +19,8 @@ import DashboardUserMenu from '../../components/layout/DashboardUserMenu';
 import DoctorDashboardHeader from '../../components/layout/DoctorDashboardHeader';
 import SidebarNavItem from '../../components/layout/SidebarNavItem';
 import Button from '../../components/ui/Button';
-import { AppRole, ROLE_LABELS, ROLE_NAV_ITEMS } from './roleConfig';
+import { Avatar } from '../../components/ui';
+import { AppRole, ROLE_LABELS, ROLE_NAV_ITEMS, getRoleSettingsPath } from './roleConfig';
 import { formatDoctorDepartment } from '../../constants/clinicSpecialties';
 
 interface DashboardLayoutProps {
@@ -31,6 +33,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const navItems = ROLE_NAV_ITEMS[role];
   const isPatient = role === 'patient';
   const isDoctor = role === 'doctor';
+  const isReceptionist = role === 'receptionist';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const unreadNotificationCount = useUnreadNotificationCount(isPatient ? user : null);
   const doctorDepartment = formatDoctorDepartment(user?.occupation);
@@ -39,7 +42,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
     <>
       <div className="p-5 border-b border-[#c3c6d6] shrink-0">
         <BrandLogo to={isPatient ? '/patient' : `/${role}`} variant="dark" />
-        <p className="mt-2 text-xs font-medium text-[#003d9b]">{ROLE_LABELS[role]}</p>
+        <p className="mt-2 text-xs font-medium text-[#003d9b]">
+          {isReceptionist ? 'Hệ thống quản lý' : ROLE_LABELS[role]}
+        </p>
       </div>
 
       <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
@@ -50,6 +55,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             icon={icon}
             label={label}
             end={path === `/${role}`}
+            accent={isReceptionist ? 'green' : 'blue'}
             onClick={() => setMobileNavOpen(false)}
           />
         ))}
@@ -85,10 +91,47 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               Đăng xuất
             </button>
           </>
+        ) : isReceptionist ? (
+          <>
+            {user && (
+              <div className="flex items-center gap-2.5 rounded-lg px-2 py-2 mb-1">
+                <Avatar name={user.fullName} src={user.avatar} size="sm" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#191c1e] truncate">{user.fullName}</p>
+                  <p className="text-xs text-[#737685]">{ROLE_LABELS[role]}</p>
+                </div>
+              </div>
+            )}
+            <SidebarNavItem
+              to={getRoleSettingsPath(role)}
+              icon={Settings}
+              label="Cài đặt"
+              onClick={() => setMobileNavOpen(false)}
+            />
+            <button
+              type="button"
+              className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <HelpCircle size={18} />
+              </span>
+              Hỗ trợ
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMobileNavOpen(false); logout(); }}
+              className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <LogOut size={18} />
+              </span>
+              Đăng xuất
+            </button>
+          </>
         ) : (
           <>
             <SidebarNavItem
-              to="/cai-dat"
+              to={getRoleSettingsPath(role)}
               icon={Settings}
               label="Cài đặt"
               onClick={() => setMobileNavOpen(false)}
@@ -162,6 +205,56 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               {user && <DashboardUserMenu user={user} variant="dark" />}
             </div>
           </header>
+        ) : isReceptionist ? (
+          <header className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-6 bg-white border-b border-[#c3c6d6]/40 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              className="lg:hidden p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors shrink-0"
+              aria-label="Mở menu"
+            >
+              <Menu size={20} />
+            </button>
+
+            <div className="lg:hidden flex-1 min-w-0">
+              <BrandLogo to="/receptionist" variant="dark" compact />
+            </div>
+
+            <div className="hidden lg:flex flex-1 max-w-xl items-center gap-2.5 px-4 py-2.5 bg-[#f8f9fb] rounded-xl border border-[#c3c6d6]/50 focus-within:border-[#1a56db]/60 transition-colors">
+              <Search size={16} className="text-[#737685] shrink-0" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm bệnh nhân, mã số..."
+                className="flex-1 bg-transparent text-sm text-[#191c1e] placeholder:text-[#737685] outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-auto">
+              <button
+                type="button"
+                className="relative p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors"
+                aria-label="Thông báo"
+              >
+                <Bell size={18} />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
+              </button>
+              <button
+                type="button"
+                className="p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors"
+                aria-label="Cài đặt"
+              >
+                <Settings size={18} />
+              </button>
+              <div className="h-8 w-px bg-[#c3c6d6]/60 mx-1" />
+              {user && (
+                <DashboardUserMenu
+                  user={user}
+                  layout="doctor"
+                  department={ROLE_LABELS[role]}
+                />
+              )}
+            </div>
+          </header>
         ) : (
           <header
             className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-6 shadow-[0_2px_16px_rgba(26,86,219,0.15)]"
@@ -201,7 +294,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           </header>
         )}
 
-        <main id="dashboard-main-scroll" className={`flex-1 min-h-0 overflow-y-auto ${isDoctor ? 'p-4 sm:p-6 lg:p-8 bg-[#f8f9fb]' : 'p-4 sm:p-6 lg:p-8'}`}>
+        <main id="dashboard-main-scroll" className={`flex-1 min-h-0 overflow-y-auto ${isDoctor || isReceptionist ? 'p-4 sm:p-6 lg:p-8 bg-[#f8f9fb]' : 'p-4 sm:p-6 lg:p-8'}`}>
           <Outlet />
         </main>
       </div>

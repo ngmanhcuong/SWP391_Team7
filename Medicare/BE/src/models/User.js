@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   refreshToken: { type: String, select: false },
   isActive: { type: Boolean, default: true },
   lastLogin: { type: Date },
-  role: { type: String, enum: ['patient', 'doctor', 'admin'], default: 'patient' },
+  role: { type: String, enum: ['patient', 'doctor', 'receptionist', 'admin'], default: 'patient' },
   healthScore: { type: Number, default: 85 },
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 

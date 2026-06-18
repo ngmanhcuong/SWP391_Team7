@@ -18,6 +18,14 @@ const DEV_USERS = [
     role: 'patient',
     isEmailVerified: true,
   },
+  {
+    fullName: 'Nguyễn Thị Tâm An',
+    email: 'receptionist@test.com',
+    phone: '0901000003',
+    password: 'Password123',
+    role: 'receptionist',
+    isEmailVerified: true,
+  },
 ];
 
 const seedDevUsers = async () => {

@@ -35,9 +35,14 @@ const DoctorRecordsIndexPage = lazy(() => import('./pages/doctor').then(m => ({ 
 const DoctorSettingsPage = lazy(() => import('./pages/doctor').then(m => ({ default: m.DoctorSettingsPage })));
 
 const ReceptionistDashboardPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistDashboardPage })));
-const ReceptionistCheckInPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistCheckInPage })));
 const ReceptionistAppointmentsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistAppointmentsPage })));
-const ReceptionistPatientsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistPatientsPage })));
+const ReceptionistQueuePage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistQueuePage })));
+const ReceptionistReceptionPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistReceptionPage })));
+const ReceptionistPatientRegisterPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistPatientRegisterPage })));
+const ReceptionistBillingPayment = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistBillingPayment })));
+const ReceptionistPaymentsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistPaymentsPage })));
+const ReceptionistNotificationsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistNotificationsPage })));
+const ReceptionistProfilePage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistProfilePage })));
 
 const AdminDashboardPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminUsersPage })));
@@ -103,9 +108,14 @@ const App: React.FC = () => (
 
           <Route path="/receptionist" element={<RoleProtectedRoute allowedRoles={['receptionist']}><DashboardLayout role="receptionist" /></RoleProtectedRoute>}>
             <Route index element={<ReceptionistDashboardPage />} />
-            <Route path="tiep-nhan" element={<ReceptionistCheckInPage />} />
+            <Route path="tiep-nhan" element={<ReceptionistReceptionPage />} />
+            <Route path="hang-cho" element={<ReceptionistQueuePage />} />
             <Route path="lich-hen" element={<ReceptionistAppointmentsPage />} />
-            <Route path="benh-nhan" element={<ReceptionistPatientsPage />} />
+            <Route path="benh-nhan" element={<ReceptionistPatientRegisterPage />} />
+            <Route path="thanh-toan" element={<ReceptionistBillingPayment />} />
+            <Route path="hoa-don" element={<ReceptionistPaymentsPage />} />
+            <Route path="thong-bao" element={<ReceptionistNotificationsPage />} />
+            <Route path="ho-so" element={<ReceptionistProfilePage />} />
           </Route>
 
           <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['admin']}><DashboardLayout role="admin" /></RoleProtectedRoute>}>
