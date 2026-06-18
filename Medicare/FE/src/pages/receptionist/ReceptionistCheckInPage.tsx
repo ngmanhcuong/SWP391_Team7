@@ -60,3 +60,64 @@ const ReceptionistCheckInPage: React.FC = () => {
             </span>
           </div>
         </Card>
+
+        <Card className="flex flex-col items-center text-center">
+          <h2 className="self-start text-base font-semibold mb-4">Quét mã QR cá nhân</h2>
+          <div className="flex aspect-square w-full max-w-[200px] items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900">
+            <QrCode size={72} className="text-white/80" />
+          </div>
+          <p className="mt-4 text-xs text-gray-500 dark:text-slate-400">
+            Đặt mã QR của bệnh nhân trước camera để nhận diện nhanh
+          </p>
+        </Card>
+      </div>
+
+      {/* Patient detail */}
+      <Card>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Avatar name="Trần Văn Nam" size="lg" />
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-800">
+                <CheckCircle2 size={12} className="text-white" />
+              </span>
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold uppercase">Trần Văn Nam</h3>
+                <Badge variant="primary">BN20234582</Badge>
+              </div>
+              <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+                Nam • 42 Tuổi • SĐT: 0912 345 678
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-4 py-2.5 text-emerald-700 dark:text-emerald-300">
+            <Clock size={20} />
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide">Lịch hẹn lúc</p>
+              <p className="text-base font-bold">09:30 - Hôm nay</p>
+            </div>
+          </div>
+        </div>
+
+        <hr className="my-5 border-gray-100 dark:border-slate-700" />
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <Stethoscope size={14} /> Bác sĩ chỉ định
+            </p>
+            <p className="mt-2 font-semibold">ThS.BS. Lê Hoàng Minh</p>
+            <p className="text-xs text-gray-400">Khoa Tim Mạch</p>
+          </div>
+          <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <DoorOpen size={14} /> Phòng khám
+            </p>
+            <p className="mt-2 font-semibold">Phòng 402 - Tầng 4</p>
+            <p className="text-xs text-gray-400">Khu khám yêu cầu</p>
+          </div>
+          <div className="rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
