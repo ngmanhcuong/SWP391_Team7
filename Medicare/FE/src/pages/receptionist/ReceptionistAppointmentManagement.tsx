@@ -123,3 +123,66 @@ const ReceptionistAppointmentManagement: React.FC = () => (
             <option>Sản phụ khoa</option>
             <option>Khoa Nhi</option>
           </select>
+        </label>
+        <Button leftIcon={<Plus size={16} />}>Tạo lịch hẹn mới</Button>
+      </div>
+    </Card>
+
+    {/* Table */}
+    <Card padding="none" className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-slate-700">
+              <th className="px-5 py-3">Mã LH</th>
+              <th className="px-3 py-3">Bệnh nhân</th>
+              <th className="px-3 py-3">Bác sĩ</th>
+              <th className="px-3 py-3">Khoa khám</th>
+              <th className="px-3 py-3">Ngày khám</th>
+              <th className="px-3 py-3">Giờ khám</th>
+              <th className="px-3 py-3">Trạng thái</th>
+              <th className="px-3 py-3 text-right pr-5">Hành động</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+            {APPOINTMENTS.map((appt) => (
+              <tr key={appt.code} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                <td className="px-5 py-4 font-semibold text-[#1a56db]">{appt.code}</td>
+                <td className="px-3 py-4">
+                  <p className="font-medium">{appt.name}</p>
+                  <p className="text-xs text-gray-400">{appt.phone}</p>
+                </td>
+                <td className="px-3 py-4 text-gray-600 dark:text-slate-300">{appt.doctor}</td>
+                <td className="px-3 py-4 text-gray-600 dark:text-slate-300">{appt.department}</td>
+                <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{appt.date}</td>
+                <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{appt.time}</td>
+                <td className="px-3 py-4">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[appt.status].className}`}>
+                    {STATUS_STYLES[appt.status].label}
+                  </span>
+                </td>
+                <td className="px-3 py-4 text-right pr-5">
+                  <button type="button" className="text-sm font-medium text-[#1a56db] hover:underline">
+                    Chi tiết
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
+        <p className="text-xs text-gray-400">Hiển thị 5 trên 42 kết quả</p>
+        <div className="flex items-center gap-1">
+          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50" aria-label="Trang trước">‹</button>
+          <button type="button" className="h-8 w-8 rounded-lg bg-[#1a56db] text-sm font-medium text-white">1</button>
+          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50">2</button>
+          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50">3</button>
+          <span className="px-1 text-gray-400">...</span>
+          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50">9</button>
+          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50" aria-label="Trang sau">›</button>
+        </div>
+      </div>
+    </Card>
+
+    {/* Bottom: timeline + note */}
