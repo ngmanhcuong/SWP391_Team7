@@ -19,3 +19,23 @@ const ReceptionistAppointmentsPage: React.FC = () => {
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              tab === id
+                ? 'bg-white dark:bg-slate-700 text-[#1a56db] shadow-sm'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-700'
+            }`}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'appointments' ? <ReceptionistAppointmentManagement /> : <ReceptionistCheckInPage />}
+    </div>
+  );
+};
+
+export default ReceptionistAppointmentsPage;
