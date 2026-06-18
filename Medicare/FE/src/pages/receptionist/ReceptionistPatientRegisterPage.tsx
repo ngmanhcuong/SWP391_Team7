@@ -109,3 +109,58 @@ const ReceptionistPatientRegisterPage: React.FC = () => {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Mã số BHYT">
+                <input type="text" placeholder="VD: DN479..." className={inputClass} />
+              </Field>
+              <Field label="Hạn dùng đến ngày">
+                <input type="text" placeholder="mm/dd/yyyy" className={inputClass} />
+              </Field>
+              <Field label="Nơi đăng ký KCB ban đầu" className="sm:col-span-2">
+                <input type="text" placeholder="Tên bệnh viện/phòng khám" className={inputClass} />
+              </Field>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right: sidebar */}
+        <div className="space-y-6">
+          <div className="rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-5 text-white shadow-lg">
+            <div className="mb-3 flex items-center gap-2">
+              <Info size={18} />
+              <h2 className="text-base font-semibold">Hướng dẫn</h2>
+            </div>
+            <ul className="space-y-2 text-sm text-blue-50">
+              <li className="flex gap-2"><span>•</span> Cần CCCD/CMND bản gốc để đối chiếu.</li>
+              <li className="flex gap-2"><span>•</span> Số điện thoại dùng để nhận mã OTP và thông báo lịch hẹn.</li>
+              <li className="flex gap-2"><span>•</span> Các trường có dấu (*) là bắt buộc.</li>
+            </ul>
+          </div>
+
+          <Card>
+            <h2 className="mb-3 text-base font-semibold">Ảnh bệnh nhân</h2>
+            <button
+              type="button"
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-slate-600 py-10 text-gray-400 transition-colors hover:border-[#1a56db] hover:text-[#1a56db]"
+            >
+              <Camera size={32} />
+              <span className="text-sm font-medium">Tải ảnh lên hoặc Chụp ảnh</span>
+            </button>
+          </Card>
+
+          <Card>
+            <h2 className="mb-3 text-base font-semibold">Hành động</h2>
+            <div className="space-y-3">
+              <Button fullWidth leftIcon={<Save size={16} />}>Lưu thông tin</Button>
+              <Button fullWidth variant="outline" leftIcon={<X size={16} />}>Hủy bỏ</Button>
+            </div>
+            <p className="mt-3 text-center text-xs text-gray-400">
+              Dữ liệu sẽ được mã hóa an toàn theo tiêu chuẩn y tế.
+            </p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReceptionistPatientRegisterPage;
