@@ -78,3 +78,83 @@ const ReceptionistBillingPayment: React.FC = () => {
                     active
                       ? 'bg-blue-50/70 dark:bg-blue-950/20 border-l-4 border-[#1a56db]'
                       : 'border-l-4 border-transparent hover:bg-gray-50 dark:hover:bg-slate-700/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs text-gray-400">{inv.id}</span>
+                    {inv.urgent && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-950/40">
+                        Khẩn
+                      </span>
+                    )}
+                  </div>
+                  <p className={`mt-0.5 font-semibold ${active ? 'text-[#1a56db]' : ''}`}>{inv.name}</p>
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                    <span className="text-xs text-gray-500 dark:text-slate-400">{inv.department}</span>
+                    <span className="text-sm font-bold">{inv.amount}</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] italic text-gray-400">{inv.updatedAt}</p>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Right: detail */}
+        <div className="space-y-6">
+          {/* Patient info */}
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold">Thông tin bệnh nhân</h2>
+              <span className="text-sm font-semibold text-[#1a56db]">{selectedId}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Họ và tên</p>
+                <p className="mt-1 font-medium">Trần Văn Hoàng</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Mã BN</p>
+                <p className="mt-1 font-medium">BN-99283</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Ngày sinh</p>
+                <p className="mt-1 font-medium">15/08/1985</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Bảo hiểm</p>
+                <p className="mt-1 font-medium text-emerald-600">Có (80%)</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Bill details */}
+          <Card>
+            <h2 className="text-base font-semibold mb-4">Chi tiết viện phí</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                    <th className="py-2">Dịch vụ</th>
+                    <th className="py-2 text-center">Số lượng</th>
+                    <th className="py-2 text-right">Đơn giá</th>
+                    <th className="py-2 text-right">Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                  {SERVICES.map((line) => (
+                    <tr key={line.service}>
+                      <td className="py-3">{line.service}</td>
+                      <td className="py-3 text-center text-gray-500 dark:text-slate-400">{line.qty}</td>
+                      <td className="py-3 text-right text-gray-500 dark:text-slate-400">{line.unit}</td>
+                      <td className="py-3 text-right font-medium">{line.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <div className="w-full max-w-xs space-y-2 text-sm">
+                <div className="flex justify-between text-gray-500 dark:text-slate-400">
+                  <span>Tạm tính:</span>
