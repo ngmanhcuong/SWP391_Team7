@@ -186,3 +186,65 @@ const ReceptionistAppointmentManagement: React.FC = () => (
     </Card>
 
     {/* Bottom: timeline + note */}
+    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <Card>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold">Tiến độ khám bệnh hôm nay</h2>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Trực tiếp
+          </span>
+        </div>
+        <div className="space-y-3">
+          {TIMELINE.map((item, idx) => {
+            const dotColor = item.state === 'done' ? 'bg-emerald-500' : item.state === 'active' ? 'bg-[#1a56db]' : 'bg-gray-300';
+            return (
+              <div key={item.code} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span className={`h-3.5 w-3.5 rounded-full ${dotColor} ${item.state === 'active' ? 'ring-4 ring-blue-100 dark:ring-blue-950/40' : ''}`} />
+                  {idx < TIMELINE.length - 1 && <span className="w-px flex-1 bg-gray-200 dark:bg-slate-700" />}
+                </div>
+                <div
+                  className={`mb-2 flex-1 rounded-xl border p-3 ${
+                    item.state === 'active'
+                      ? 'border-[#1a56db]/30 bg-blue-50/60 dark:bg-blue-950/20'
+                      : 'border-gray-100 dark:border-slate-700'
+                  } ${item.state === 'upcoming' ? 'opacity-70' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{item.code}: {item.name}</p>
+                      <p className="text-xs text-gray-400">{item.detail}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-xs font-semibold ${
+                        item.state === 'done' ? 'text-emerald-600' : item.state === 'active' ? 'text-[#1a56db]' : 'text-gray-400'
+                      }`}
+                    >
+                      {item.note}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <div className="rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-5 text-white shadow-lg">
+        <h2 className="text-base font-semibold mb-3">Ghi chú quan trọng</h2>
+        <p className="text-sm text-blue-50">
+          Hôm nay có lịch họp giao ban định kỳ lúc 10:30 AM tại phòng hội nghị tầng 3. Các bác sĩ khoa Nội cần chuẩn bị báo cáo tháng.
+        </p>
+        <div className="mt-4 flex gap-3 rounded-xl bg-white/10 p-3">
+          <Info size={18} className="shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">Cập nhật hệ thống</p>
+            <p className="mt-0.5 text-xs text-blue-100">Phiên bản 2.4.0 sẽ được triển khai vào 22:00 đêm nay.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+export default ReceptionistAppointmentManagement;
