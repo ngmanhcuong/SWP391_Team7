@@ -65,3 +65,69 @@ interface Appointment {
 }
 
 const APPOINTMENTS: Appointment[] = [
+  { time: '09:00 AM', name: 'Vương Quốc Anh', detail: 'Khám tổng quát • BS. Tuấn' },
+  { time: '09:30 AM', name: 'Nguyễn Hải Yến', detail: 'Siêu âm thai • BS. Phương' },
+  { time: '10:15 AM', name: 'Đặng Hoàng Nam', detail: 'Khám Nha khoa • BS. Sơn' },
+];
+
+const NOTICES = [
+  { title: 'Họp giao ban định kỳ', body: '14:00 chiều nay tại phòng hội trường tầng 5.' },
+  { title: 'Cập nhật phần mềm', body: 'Hệ thống sẽ bảo trì từ 23:00 tối mai trong 30 phút.' },
+];
+
+const ReceptionistDashboardPage: React.FC = () => {
+  const [queueFilter, setQueueFilter] = useState<'all' | 'waiting'>('all');
+
+  return (
+    <div className="max-w-[1200px] mx-auto">
+      {/* Header */}
+      <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Lexend' }}>
+            Tổng quan Lễ tân
+          </h1>
+          <p className="text-gray-500 dark:text-slate-400">
+            Chào mừng trở lại! Hôm nay có 124 bệnh nhân dự kiến.
+          </p>
+        </div>
+        <Button leftIcon={<UserPlus size={16} />}>Tiếp nhận mới</Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+        {STATS.map(({ label, value, icon: Icon, tone }) => (
+          <Card key={label}>
+            <div className="flex items-center gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tone}`}>
+                <Icon size={22} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
+                <p className="text-2xl font-bold">{value}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        {/* Left column */}
+        <div className="space-y-6">
+          {/* Queue */}
+          <Card padding="none" className="overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+              <h2 className="text-base font-semibold">Danh sách bệnh nhân đang chờ (Queue)</h2>
+              <div className="inline-flex p-1 rounded-lg bg-gray-100 dark:bg-slate-700">
+                {([['all', 'Tất cả'], ['waiting', 'Đang chờ']] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setQueueFilter(key)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                      queueFilter === key ? 'bg-white dark:bg-slate-600 text-[#1a56db] shadow-sm' : 'text-gray-500 dark:text-slate-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
