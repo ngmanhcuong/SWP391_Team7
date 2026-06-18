@@ -162,3 +162,84 @@ const ReceptionistNotificationsPage: React.FC = () => {
         </div>
         <Button leftIcon={<CheckCheck size={16} />} onClick={() => setAllRead(true)}>
           Đánh dấu tất cả đã đọc
+        </Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+        {/* Left filters */}
+        <div className="space-y-4">
+          <Card padding="sm">
+            <h2 className="text-sm font-semibold mb-3">Phân loại</h2>
+            <div className="space-y-1">
+              {CATEGORIES.map(({ key, label, count, icon: Icon }) => {
+                const active = category === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCategory(key)}
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-blue-50 text-[#1a56db] dark:bg-blue-950/40'
+                        : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/40'
+                    }`}
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    <span className="flex-1 text-left">{label}</span>
+                    <span
+                      className={`min-w-[20px] rounded-full px-1.5 py-0.5 text-center text-xs font-semibold ${
+                        active ? 'bg-[#1a56db] text-white' : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+
+          <Card padding="sm">
+            <h2 className="text-sm font-semibold mb-3">Ưu tiên</h2>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 dark:bg-red-950/40">
+                Khẩn cấp
+              </span>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500 dark:bg-slate-700 dark:text-slate-300">
+                Bình thường
+              </span>
+            </div>
+          </Card>
+        </div>
+
+        {/* Feed */}
+        <div className="space-y-5">
+          {days.map((day) => {
+            const items = filtered.filter((n) => n.day === day);
+            if (items.length === 0) return null;
+            return (
+              <div key={day} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    {DAY_LABELS[day]}
+                  </span>
+                  <span className="h-px flex-1 bg-gradient-to-r from-[#1a56db]/40 to-transparent" />
+                </div>
+                {items.map((item) => (
+                  <NotificationRow key={item.id} item={item} read={allRead} />
+                ))}
+              </div>
+            );
+          })}
+
+          <div className="flex flex-col items-center gap-2 py-4 text-gray-400">
+            <Spinner size="sm" />
+            <span className="text-sm">Đang tải thêm thông báo...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ReceptionistNotificationsPage;
