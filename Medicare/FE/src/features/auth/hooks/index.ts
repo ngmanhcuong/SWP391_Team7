@@ -1,8 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi, LoginPayload, LoginResponse } from '../api';
+import { ApiResponse } from '../../../types';
 import { useAuthStore } from '../../../store/authStore';
 import { normalizeUser } from '../utils/normalizeUser';
+import { matchDemoAccount } from '../constants/demoAccounts';
 import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
 
 const getPostAuthPath = (
@@ -20,7 +22,21 @@ export const useLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   return useMutation({
-    mutationFn: authApi.login,
+    mutationFn: async (payload: LoginPayload): Promise<ApiResponse<LoginResponse>> => {
+      const demoUser = matchDemoAccount(payload.email, payload.password);
+      if (demoUser) {
+        return {
+          success: true,
+          message: 'Đăng nhập demo',
+          data: {
+            user: demoUser,
+            accessToken: `demo-${demoUser.role}-access-token`,
+            refreshToken: `demo-${demoUser.role}-refresh-token`,
+          },
+        };
+      }
+      return authApi.login(payload);
+    },
     onSuccess: (res) => {
       const { user, accessToken, refreshToken } = res.data;
       const normalized = normalizeUser(user as Parameters<typeof normalizeUser>[0]);
