@@ -3,13 +3,15 @@ import {
   Calendar,
   FileText,
   Users,
-  ClipboardList,
   Settings,
   BarChart3,
   UserCog,
   Bell,
   CreditCard,
   Star,
+  UserCircle,
+  Receipt,
+  ListOrdered,
   LucideIcon,
 } from 'lucide-react';
 import { User } from '../../types';
@@ -58,9 +60,13 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   ],
   receptionist: [
     { label: 'Tổng quan', path: '/receptionist', icon: LayoutDashboard },
-    { label: 'Tiếp nhận', path: '/receptionist/tiep-nhan', icon: ClipboardList },
     { label: 'Lịch hẹn', path: '/receptionist/lich-hen', icon: Calendar },
     { label: 'Bệnh nhân', path: '/receptionist/benh-nhan', icon: Users },
+    { label: 'Hàng chờ', path: '/receptionist/hang-cho', icon: ListOrdered },
+    { label: 'Thanh toán', path: '/receptionist/thanh-toan', icon: CreditCard },
+    { label: 'Hóa đơn', path: '/receptionist/hoa-don', icon: Receipt },
+    { label: 'Thông báo', path: '/receptionist/thong-bao', icon: Bell },
+    { label: 'Hồ sơ cá nhân', path: '/receptionist/ho-so', icon: UserCircle },
   ],
   admin: [
     { label: 'Tổng quan', path: '/admin', icon: LayoutDashboard },
@@ -80,6 +86,7 @@ export const getRoleDashboardPath = (role?: string | null): string => {
 export const getRoleSettingsPath = (role?: string | null): string => {
   if (role === 'doctor') return '/doctor/cai-dat';
   if (role === 'admin') return '/admin/cai-dat';
+  if (role === 'receptionist') return '/receptionist/ho-so';
   return '/cai-dat';
 };
 
