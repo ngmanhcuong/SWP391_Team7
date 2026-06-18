@@ -228,3 +228,79 @@ const ReceptionistPaymentsPage: React.FC = () => (
                         <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Đã hủy
                       </span>
                     ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" /> Đã thanh toán
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-4 pr-5">
+                    <div className={`flex items-center justify-end gap-3 ${cancelled ? 'text-gray-300' : 'text-gray-400'}`}>
+                      <button type="button" className="hover:text-[#1a56db]" aria-label="Xem">
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={cancelled ? 'cursor-not-allowed' : 'hover:text-[#1a56db]'}
+                        aria-label="In"
+                        disabled={cancelled}
+                      >
+                        <Printer size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={cancelled ? 'cursor-not-allowed' : 'hover:text-[#1a56db]'}
+                        aria-label="Sao chép"
+                        disabled={cancelled}
+                      >
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
+        <p className="text-xs text-gray-400">Hiển thị 1-10 của 3.421 giao dịch</p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 disabled:opacity-50"
+            aria-label="Trang trước"
+          >
+            ‹
+          </button>
+          <button type="button" className="h-8 w-8 rounded-lg bg-[#1a56db] text-sm font-medium text-white">
+            1
+          </button>
+          <button
+            type="button"
+            className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
+            2
+          </button>
+          <button
+            type="button"
+            className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
+            3
+          </button>
+          <span className="px-1 text-gray-400">...</span>
+          <button
+            type="button"
+            className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50"
+            aria-label="Trang sau"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    </Card>
+  </div>
+);
+
+export default ReceptionistPaymentsPage;
