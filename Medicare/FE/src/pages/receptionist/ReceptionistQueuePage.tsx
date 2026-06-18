@@ -256,3 +256,131 @@ const ReceptionistQueuePage: React.FC = () => {
                       </td>
                       <td className="px-3 py-4 align-top">
                         <p
+                          className={`font-medium ${
+                            isSkipped ? 'text-gray-400 line-through' : ''
+                          }`}
+                        >
+                          {patient.name}
+                        </p>
+                        {patient.code && (
+                          <p className="text-xs text-gray-400">{patient.code}</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 align-top">
+                        <p className={isSkipped ? 'text-gray-400' : ''}>{patient.doctor}</p>
+                        {patient.room && (
+                          <p className="text-xs text-gray-400">
+                            {patient.room} {patient.department && `(${patient.department})`}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 align-top">
+                        <span className="flex items-center gap-1 text-gray-500 dark:text-slate-400">
+                          <Clock size={14} /> {patient.waitTime}
+                        </span>
+                      </td>
+                      <td className="px-3 py-4 align-top">
+                        {isInProgress ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white">
+                            Đang khám
+                          </span>
+                        ) : (
+                          <Badge variant={STATUS_LABEL[patient.status].variant}>
+                            {STATUS_LABEL[patient.status].label}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 align-top text-right pr-5">
+                        {isSkipped ? (
+                          <button
+                            type="button"
+                            className="text-sm font-medium text-[#1a56db] hover:underline"
+                          >
+                            Gọi lại
+                          </button>
+                        ) : patient.status === 'in-progress' ? (
+                          <button
+                            type="button"
+                            className="text-sm font-medium text-emerald-600 hover:underline"
+                          >
+                            Hoàn thành
+                          </button>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-xs text-gray-400">
+              Hiển thị {filteredQueue.length} của 12 bệnh nhân đang chờ
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 disabled:opacity-50"
+                aria-label="Trang trước"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="h-8 w-8 rounded-lg bg-[#1a56db] text-sm font-medium text-white"
+              >
+                1
+              </button>
+              <button
+                type="button"
+                className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                2
+              </button>
+              <button
+                type="button"
+                className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50"
+                aria-label="Trang sau"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Bottom action bar */}
+      <Card className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            {ACTIVE_DOCTORS.slice(0, 2).map((doctor) => (
+              <Avatar key={doctor} name={doctor} size="sm" className="ring-2 ring-white dark:ring-slate-800" />
+            ))}
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1a56db] text-xs font-semibold text-white ring-2 ring-white dark:ring-slate-800">
+              +4
+            </span>
+          </div>
+          <div>
+            <p className="text-sm font-medium">6 Bác sĩ đang hoạt động</p>
+            <p className="flex items-center gap-1.5 text-xs text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Ổn định
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="outline" leftIcon={<Pause size={16} />}>
+            Tạm dừng gọi
+          </Button>
+          <Button leftIcon={<Volume2 size={16} />}>GHI SỐ TIẾP THEO (1025)</Button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default ReceptionistQueuePage;
