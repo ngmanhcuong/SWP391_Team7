@@ -151,3 +151,80 @@ const ReceptionistPaymentsPage: React.FC = () => (
 
     {/* Filters */}
     <Card className="mb-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+        <label className="flex-1">
+          <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Thời gian</span>
+          <input
+            type="date"
+            className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]"
+          />
+        </label>
+        <label className="flex-1">
+          <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Phương thức</span>
+          <select className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]">
+            <option>Tất cả</option>
+            <option>Tiền mặt</option>
+            <option>Chuyển khoản</option>
+          </select>
+        </label>
+        <label className="flex-1">
+          <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Trạng thái</span>
+          <select className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]">
+            <option>Tất cả</option>
+            <option>Đã thanh toán</option>
+            <option>Đã hủy</option>
+            <option>Chờ thanh toán</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 hover:text-[#1a56db] transition-colors"
+        >
+          <FilterX size={16} /> Xóa bộ lọc
+        </button>
+      </div>
+    </Card>
+
+    {/* Table */}
+    <Card padding="none" className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-slate-700">
+              <th className="px-5 py-3">Mã hóa đơn</th>
+              <th className="px-3 py-3">Bệnh nhân</th>
+              <th className="px-3 py-3">Ngày thanh toán</th>
+              <th className="px-3 py-3">Phương thức</th>
+              <th className="px-3 py-3">Tổng tiền</th>
+              <th className="px-3 py-3">Trạng thái</th>
+              <th className="px-3 py-3 text-right pr-5">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+            {INVOICES.map((inv) => {
+              const cancelled = inv.status === 'cancelled';
+              return (
+                <tr key={inv.code} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                  <td className="px-5 py-4 font-semibold text-[#1a56db]">{inv.code}</td>
+                  <td className="px-3 py-4">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={inv.name} size="sm" />
+                      <div>
+                        <p className="font-medium">{inv.name}</p>
+                        <p className="text-xs text-gray-400">{inv.patientCode}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-4 text-gray-500 dark:text-slate-400">
+                    {inv.date}
+                    <br />
+                    <span className="text-xs">{inv.time}</span>
+                  </td>
+                  <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{inv.method}</td>
+                  <td className="px-3 py-4 font-semibold">{inv.amount}</td>
+                  <td className="px-3 py-4">
+                    {cancelled ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-600 dark:bg-red-950/40">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Đã hủy
+                      </span>
+                    ) : (
