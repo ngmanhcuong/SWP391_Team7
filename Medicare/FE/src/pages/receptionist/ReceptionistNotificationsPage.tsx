@@ -80,3 +80,85 @@ const NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 4,
+    category: 'system',
+    day: 'yesterday',
+    icon: Settings,
+    tone: 'gray',
+    title: 'Bảo trì hệ thống định kỳ',
+    time: '23:00 PM',
+    body: 'Hệ thống sẽ tạm ngưng để cập nhật dữ liệu từ 02:00 đến 04:00 sáng mai. Vui lòng lưu các thay đổi trước khi kết thúc ca làm việc.',
+  },
+  {
+    id: 5,
+    category: 'appointment',
+    day: 'yesterday',
+    icon: CalendarX,
+    tone: 'red',
+    title: 'Lịch hẹn bị hủy: Nguyễn An',
+    time: '16:40 PM',
+    body: 'Bệnh nhân đã hủy lịch khám lúc 17:00 do bận việc đột xuất. Hệ thống đã tự động cập nhật trạng thái giường trống.',
+  },
+];
+
+const DAY_LABELS: Record<Day, string> = { today: 'Hôm nay', yesterday: 'Hôm qua' };
+
+const NotificationRow: React.FC<{ item: NotificationItem; read: boolean }> = ({ item, read }) => {
+  const Icon = item.icon;
+  const isUnread = item.unread && !read;
+  return (
+    <div
+      className={`flex gap-3 rounded-xl border p-4 transition-colors ${
+        isUnread
+          ? 'border-l-4 border-l-[#1a56db] border-y-gray-100 border-r-gray-100 dark:border-y-slate-700 dark:border-r-slate-700 bg-white dark:bg-slate-800'
+          : 'border-gray-100 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-800/40'
+      }`}
+    >
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${TONE_STYLES[item.tone]}`}>
+        <Icon size={18} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <p className={`font-semibold ${isUnread ? 'text-[#1a56db]' : 'text-gray-700 dark:text-slate-200'}`}>
+            {item.title}
+          </p>
+          <span className="shrink-0 text-xs text-gray-400">{item.time}</span>
+        </div>
+        <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{item.body}</p>
+        {item.actions && !read && (
+          <div className="mt-3 flex gap-2">
+            <Button size="sm">Xác nhận ngay</Button>
+            <Button size="sm" variant="ghost" className="bg-gray-100 dark:bg-slate-700">
+              Chi tiết
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ReceptionistNotificationsPage: React.FC = () => {
+  const [category, setCategory] = useState<Category>('all');
+  const [allRead, setAllRead] = useState(false);
+
+  const filtered = useMemo(
+    () => (category === 'all' ? NOTIFICATIONS : NOTIFICATIONS.filter((n) => n.category === category)),
+    [category],
+  );
+
+  const days: Day[] = ['today', 'yesterday'];
+
+  return (
+    <div className="max-w-[1200px] mx-auto">
+      {/* Header */}
+      <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Lexend' }}>
+            Thông báo hệ thống
+          </h1>
+          <p className="text-gray-500 dark:text-slate-400">
+            Quản lý và cập nhật các thông tin vận hành bệnh viện thời gian thực.
+          </p>
+        </div>
+        <Button leftIcon={<CheckCheck size={16} />} onClick={() => setAllRead(true)}>
+          Đánh dấu tất cả đã đọc
