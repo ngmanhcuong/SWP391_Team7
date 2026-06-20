@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowDownRight,
   ArrowRight,
@@ -16,41 +16,6 @@ import { useAdminReports } from '../../features/admin/hooks';
 import { SUPPLY_STATUS_LABELS } from '../../features/admin/constants';
 
 const PERIODS = ['Ngày', 'Tuần', 'Tháng', 'Năm'] as const;
-type ReportPeriod = (typeof PERIODS)[number];
-
-const formatDate = (date: Date) =>
-  date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-const getPeriodRange = (period: ReportPeriod) => {
-  const end = new Date();
-  const start = new Date(end);
-
-  if (period === 'Ngày') {
-    return formatDate(end);
-  }
-
-  if (period === 'Tuần') {
-    start.setDate(end.getDate() - 6);
-  } else if (period === 'Tháng') {
-    start.setMonth(end.getMonth() - 1);
-  } else {
-    start.setFullYear(end.getFullYear() - 1);
-  }
-
-  return `${formatDate(start)} - ${formatDate(end)}`;
-};
-
-const getReportFileName = (period: ReportPeriod, extension: string) => {
-  const safeDate = new Date().toISOString().slice(0, 10);
-  return `bao-cao-admin-${period.toLowerCase()}-${safeDate}.${extension}`;
-};
-
-const escapeHtml = (value: string | number) =>
-  String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 
 const PatientTrendChart: React.FC<{ data: { month: string; value: number }[] }> = ({ data }) => {
   const width = 560;
@@ -113,94 +78,7 @@ const TrendArrow: React.FC<{ trend: 'up' | 'down' | 'flat' }> = ({ trend }) => {
 export const AdminReportsPage: React.FC = () => {
   const { stats, patientTrend, specialtyShare, specialtyTotal, supplies, suppliesTotal } =
     useAdminReports();
-  const [period, setPeriod] = useState<ReportPeriod>('Ngày');
-  const reportRange = useMemo(() => getPeriodRange(period), [period]);
-
-  const reportHtml = useMemo(() => {
-    const statRows = stats
-      .map(
-        (stat) =>
-          `<tr><td>${escapeHtml(stat.label)}</td><td>${escapeHtml(stat.value)}</td><td>${escapeHtml(
-            stat.delta ?? '-',
-          )}</td></tr>`,
-      )
-      .join('');
-    const trendRows = patientTrend
-      .map((item) => `<tr><td>${escapeHtml(item.month)}</td><td>${escapeHtml(item.value)}</td></tr>`)
-      .join('');
-    const specialtyRows = specialtyShare
-      .map((item) => `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.percent)}%</td></tr>`)
-      .join('');
-    const supplyRows = supplies
-      .map((item) => {
-        const status = SUPPLY_STATUS_LABELS[item.status];
-        return `<tr><td>${escapeHtml(item.code)}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(
-          item.unit,
-        )}</td><td>${escapeHtml(item.stock)}</td><td>${escapeHtml(item.used)}</td><td>${escapeHtml(
-          status.label,
-        )}</td></tr>`;
-      })
-      .join('');
-
-    return `
-      <h1>Báo cáo & Thống kê chuyên sâu</h1>
-      <p>Kỳ báo cáo: ${escapeHtml(period)} | ${escapeHtml(reportRange)}</p>
-      <h2>Chỉ số tổng quan</h2>
-      <table><thead><tr><th>Chỉ số</th><th>Giá trị</th><th>Biến động</th></tr></thead><tbody>${statRows}</tbody></table>
-      <h2>Lượng bệnh nhân theo tháng</h2>
-      <table><thead><tr><th>Tháng</th><th>Số bệnh nhân</th></tr></thead><tbody>${trendRows}</tbody></table>
-      <h2>Tỷ lệ theo chuyên khoa (${escapeHtml(specialtyTotal)} tổng cộng)</h2>
-      <table><thead><tr><th>Chuyên khoa</th><th>Tỷ lệ</th></tr></thead><tbody>${specialtyRows}</tbody></table>
-      <h2>Tình hình thuốc & vật tư (${escapeHtml(supplies.length)} / ${escapeHtml(suppliesTotal)})</h2>
-      <table><thead><tr><th>Mã vật tư</th><th>Tên thuốc / vật tư</th><th>Đơn vị</th><th>Tồn kho</th><th>Đã sử dụng</th><th>Trạng thái</th></tr></thead><tbody>${supplyRows}</tbody></table>
-    `;
-  }, [patientTrend, period, reportRange, specialtyShare, specialtyTotal, stats, supplies, suppliesTotal]);
-
-  const handleExportExcel = () => {
-    const excelHtml = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
-        <head><meta charset="UTF-8" /></head>
-        <body>${reportHtml}</body>
-      </html>
-    `;
-    const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = getReportFileName(period, 'xls');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportPdf = () => {
-    const printWindow = window.open('', '_blank', 'width=960,height=720');
-    if (!printWindow) return;
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="UTF-8" />
-          <title>${escapeHtml(getReportFileName(period, 'pdf'))}</title>
-          <style>
-            body { font-family: Arial, sans-serif; color: #111827; padding: 24px; }
-            h1 { color: #1a56db; margin-bottom: 4px; }
-            h2 { margin-top: 24px; font-size: 18px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-            th { background: #eef2ff; text-align: left; }
-            th, td { border: 1px solid #d1d5db; padding: 8px; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>${reportHtml}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-  };
+  const [period, setPeriod] = useState<(typeof PERIODS)[number]>('Ngày');
 
   // Tạo conic-gradient cho biểu đồ hình thoi theo tỷ lệ chuyên khoa
   let acc = 0;
@@ -241,12 +119,12 @@ export const AdminReportsPage: React.FC = () => {
             ))}
           </div>
           <span className="hidden text-sm text-gray-500 dark:text-slate-400 sm:inline">
-            {reportRange}
+            12/10/2023 - 12/11/2023
           </span>
-          <Button variant="primary" leftIcon={<FileSpreadsheet size={16} />} onClick={handleExportExcel}>
+          <Button variant="primary" leftIcon={<FileSpreadsheet size={16} />}>
             Xuất Excel
           </Button>
-          <Button variant="danger" leftIcon={<FileText size={16} />} onClick={handleExportPdf}>
+          <Button variant="danger" leftIcon={<FileText size={16} />}>
             Xuất PDF
           </Button>
         </div>

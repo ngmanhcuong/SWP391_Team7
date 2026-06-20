@@ -65,12 +65,6 @@ const matches = (query: string, ...values: string[]): boolean => {
   return values.some((value) => value.toLowerCase().includes(normalized));
 };
 
-const isoDateToVietnameseDate = (value: string): string => {
-  if (!value) return '';
-  const [year, month, day] = value.split('-');
-  return `${day}/${month}/${year}`;
-};
-
 export const useAdminDashboard = () => ({
   stats: ADMIN_DASHBOARD_STATS,
   appointmentTrend: ADMIN_APPOINTMENT_TREND,
@@ -346,10 +340,9 @@ export const useAdminReviews = () => {
       reviews.filter((review) => {
         const matchesDept = department === 'all' || review.department === department;
         const matchesRating = rating === 'all' || review.rating === rating;
-        const matchesDate = !date || review.date === isoDateToVietnameseDate(date);
-        return matchesDept && matchesRating && matchesDate;
+        return matchesDept && matchesRating;
       }),
-    [reviews, department, rating, date],
+    [reviews, department, rating],
   );
 
   const setReviewStatus = (id: string, status: ReviewStatus) =>
@@ -438,7 +431,7 @@ export type AuditActionFilter = AuditActionType | 'all';
 export const useAdminAuditLog = () => {
   const [actor, setActor] = useState<string>('all');
   const [actionType, setActionType] = useState<AuditActionFilter>('all');
-  const [timeframe, setTimeframe] = useState<string>('Ngày');
+  const [timeframe, setTimeframe] = useState<string>('today');
 
   const actors = useMemo(
     () => Array.from(new Set(ADMIN_AUDIT_LOGS.map((log) => log.actorName))),

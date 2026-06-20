@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   CalendarRange,
   Check,
+  Download,
   Eye,
-  FileSpreadsheet,
-  FileText,
   Plus,
   SlidersHorizontal,
   X,
@@ -19,15 +18,6 @@ import {
 } from '../../features/admin/hooks';
 import { APPOINTMENT_STATUS_LABELS } from '../../features/admin/constants';
 import { AdminAppointment, AppointmentStatus } from '../../features/admin/types';
-import {
-  ADMIN_REPORT_PERIODS,
-  AdminReportPeriod,
-  exportReportToExcel,
-  exportReportToPdf,
-  getLatestReportDate,
-  getPeriodRangeLabel,
-  isWithinReportPeriod,
-} from '../../features/admin/utils/reportExport';
 import { SectionStatCard } from './AdminDoctorsPage';
 import { CompactPagination } from './AdminFeedbackPage';
 
@@ -76,45 +66,8 @@ export const AdminAppointmentsPage: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<AdminAppointmentInput>(EMPTY_APPOINTMENT);
   const [error, setError] = useState('');
-  const [period, setPeriod] = useState<AdminReportPeriod>('Ngày');
 
-  const latestDate = useMemo(() => getLatestReportDate(appointments.map((appointment) => appointment.date)), [appointments]);
-  const periodAppointments = useMemo(
-    () => appointments.filter((appointment) => isWithinReportPeriod(appointment.date, period, latestDate)),
-    [appointments, latestDate, period],
-  );
-  const totalPages = Math.max(1, Math.ceil(periodAppointments.length / PAGE_SIZE));
-  const rangeLabel = useMemo(() => getPeriodRangeLabel(period), [period]);
-  const reportOptions = useMemo(
-    () => ({
-      title: 'Báo cáo quản lý lịch hẹn',
-      period,
-      rangeLabel,
-      filePrefix: 'bao-cao-lich-hen-admin',
-      tables: [
-        {
-          title: 'Thống kê nhanh',
-          headers: ['Chỉ số', 'Giá trị', 'Ghi chú'],
-          rows: stats.map((stat) => [stat.label, stat.value, stat.note ?? '-']),
-        },
-        {
-          title: 'Danh sách lịch hẹn',
-          headers: ['Mã lịch', 'Bệnh nhân', 'Số điện thoại', 'Bác sĩ', 'Khoa', 'Ngày', 'Giờ', 'Trạng thái'],
-          rows: periodAppointments.map((appointment) => [
-            appointment.id,
-            appointment.patientName,
-            appointment.patientPhone,
-            appointment.doctorName,
-            appointment.doctorDept,
-            appointment.date,
-            appointment.timeRange,
-            APPOINTMENT_STATUS_LABELS[appointment.status],
-          ]),
-        },
-      ],
-    }),
-    [period, periodAppointments, rangeLabel, stats],
-  );
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const openCreate = () => {
     setForm(EMPTY_APPOINTMENT);
@@ -156,11 +109,8 @@ export const AdminAppointmentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" leftIcon={<FileSpreadsheet size={16} />} onClick={() => exportReportToExcel(reportOptions)}>
-            Excel
-          </Button>
-          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => exportReportToPdf(reportOptions)}>
-            PDF
+          <Button variant="outline" leftIcon={<Download size={16} />}>
+            Xuất báo cáo
           </Button>
           <Button leftIcon={<Plus size={16} />} onClick={openCreate}>
             Tạo lịch hẹn mới
@@ -176,23 +126,6 @@ export const AdminAppointmentsPage: React.FC = () => {
 
       <Card padding="sm">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-lg bg-gray-100 dark:bg-slate-700 p-1">
-            {ADMIN_REPORT_PERIODS.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => {
-                  setPeriod(item);
-                  setPage(1);
-                }}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                  period === item ? 'bg-[#1a56db] text-white' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
           <span className="text-sm font-medium text-gray-600 shrink-0">Lọc theo:</span>
           <div className="flex flex-wrap items-center gap-2">
             {FILTER_TABS.map((tab) => (
@@ -216,7 +149,7 @@ export const AdminAppointmentsPage: React.FC = () => {
           <div className="ml-auto flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600">
               <CalendarRange size={15} />
-              {rangeLabel}
+              01/01/2024 - 31/01/2024
             </span>
             <button
               type="button"
@@ -243,7 +176,7 @@ export const AdminAppointmentsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {periodAppointments.map((appointment) => {
+              {appointments.map((appointment) => {
                 const style = STATUS_STYLE[appointment.status];
                 return (
                   <tr key={appointment.id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
@@ -315,14 +248,14 @@ export const AdminAppointmentsPage: React.FC = () => {
             </tbody>
           </table>
 
-          {periodAppointments.length === 0 && (
+          {appointments.length === 0 && (
             <div className="py-12 text-center text-sm text-gray-500">Không có lịch hẹn phù hợp.</div>
           )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-gray-100 dark:border-slate-700">
           <p className="text-sm text-gray-500">
-            Hiển thị 1 - {periodAppointments.length} trong tổng số {total.toLocaleString('vi-VN')} lịch hẹn
+            Hiển thị 1 - {appointments.length} trong tổng số {total.toLocaleString('vi-VN')} lịch hẹn
           </p>
           <CompactPagination currentPage={page} totalPages={totalPages} onChange={setPage} />
         </div>
