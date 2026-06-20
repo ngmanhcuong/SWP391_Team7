@@ -72,7 +72,7 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { label: 'Hồ sơ cá nhân', path: '/receptionist/ho-so', icon: UserCircle },
   ],
   admin: [
-    { label: 'Trang chủ', path: '/admin', icon: LayoutDashboard },
+    { label: 'Tổng quan', path: '/admin', icon: LayoutDashboard },
     { label: 'Quản lý người dùng', path: '/admin/nguoi-dung', icon: Users },
     { label: 'Quản lý bác sĩ', path: '/admin/bac-si', icon: Stethoscope },
     { label: 'Quản lý khoa', path: '/admin/khoa', icon: Building2 },
@@ -81,7 +81,6 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { label: 'Quản lý đánh giá', path: '/admin/danh-gia', icon: Star },
     { label: 'Báo cáo thống kê', path: '/admin/bao-cao', icon: BarChart3 },
     { label: 'Nhật ký hệ thống', path: '/admin/nhat-ky', icon: History },
-    { label: 'Hồ sơ cá nhân', path: '/admin/ho-so', icon: UserCircle },
   ],
 };
 

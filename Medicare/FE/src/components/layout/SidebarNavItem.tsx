@@ -12,8 +12,8 @@ interface SidebarNavItemProps {
 }
 
 const ACTIVE_STYLES: Record<'blue' | 'green', string> = {
-  blue: 'border-l-4 border-[#003d9b] bg-[rgba(0,82,204,0.1)] pl-[10px] text-[#003d9b]',
-  green: 'border-l-4 border-transparent bg-[#d6f5e6] text-[#0e9f6e] font-semibold',
+  blue: 'bg-gradient-to-r from-[#1a56db] to-[#3b82f6] text-white shadow-[0_10px_24px_rgba(26,86,219,0.28)] ring-1 ring-blue-200/80',
+  green: 'bg-gradient-to-r from-[#0e9f6e] to-[#10b981] text-white shadow-[0_10px_24px_rgba(14,159,110,0.24)] ring-1 ring-emerald-200/80',
 };
 
 const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
@@ -30,17 +30,26 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
     onClick={onClick}
     className={({ isActive }) =>
       [
-        'group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all',
+        'group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all',
         isActive
           ? ACTIVE_STYLES[accent]
-          : 'border-l-4 border-transparent text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e]',
+          : 'text-[#4b5563] hover:bg-white hover:text-[#1a56db] hover:shadow-sm hover:ring-1 hover:ring-blue-100',
       ].join(' ')
     }
   >
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-      <Icon size={18} />
-    </span>
-    {label}
+    {({ isActive }) => (
+      <>
+        <span
+          className={[
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
+            isActive ? 'bg-white/20 text-white' : 'bg-slate-100/70 text-current group-hover:bg-blue-50',
+          ].join(' ')}
+        >
+          <Icon size={18} />
+        </span>
+        <span className="truncate">{label}</span>
+      </>
+    )}
   </NavLink>
 );
 
