@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { Avatar } from '../ui';
 import { useLogout } from '../../features/auth/hooks';
 import { getRoleDashboardPath, getRoleProfilePath, getRoleSettingsPath } from '../../pages/shared/roleConfig';
+import { AdminProfileForm } from '../../features/admin/types';
 import { User as UserType } from '../../types';
 
 interface DashboardUserMenuProps {
@@ -22,12 +23,41 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
   department,
 }) => {
   const [open, setOpen] = useState(false);
+  const [adminProfile, setAdminProfile] = useState<AdminProfileForm | null>(null);
   const logout = useLogout();
   const isLight = variant === 'light';
   const isDoctorLayout = layout === 'doctor';
-  const nameLabel = displayName || user.fullName;
+  const displayUser = user.role === 'admin' && adminProfile
+    ? { ...user, fullName: adminProfile.fullName, email: adminProfile.email, avatar: adminProfile.avatar }
+    : user;
+  const nameLabel = displayName || displayUser.fullName;
   const dashboardPath = getRoleDashboardPath(user.role);
-  const profilePath = getRoleProfilePath();
+  const profilePath = user.role === 'admin' ? '/admin/ho-so' : getRoleProfilePath();
+
+  useEffect(() => {
+    if (user.role !== 'admin') return;
+
+    const readAdminProfile = () => {
+      try {
+        const raw = window.localStorage.getItem('medicare_admin_profile');
+        setAdminProfile(raw ? (JSON.parse(raw) as AdminProfileForm) : null);
+      } catch {
+        setAdminProfile(null);
+      }
+    };
+
+    const handleProfileUpdated = (event: Event) => {
+      setAdminProfile((event as CustomEvent<AdminProfileForm>).detail);
+    };
+
+    readAdminProfile();
+    window.addEventListener('medicare-admin-profile-updated', handleProfileUpdated);
+    window.addEventListener('storage', readAdminProfile);
+    return () => {
+      window.removeEventListener('medicare-admin-profile-updated', handleProfileUpdated);
+      window.removeEventListener('storage', readAdminProfile);
+    };
+  }, [user.role]);
 
   return (
     <div className="relative">
@@ -46,7 +76,7 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
         aria-label="Menu tài khoản"
         aria-expanded={open}
       >
-        <Avatar name={user.fullName} src={user.avatar} size="sm" />
+        <Avatar name={displayUser.fullName} src={displayUser.avatar} size="sm" />
         {isDoctorLayout ? (
           <>
             <div className="min-w-0 text-left">
@@ -64,9 +94,9 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
           <>
             <span
               className={`hidden md:block text-sm font-medium max-w-[160px] truncate ${isLight ? 'text-white' : 'text-gray-800'}`}
-              title={user.fullName}
+              title={displayUser.fullName}
             >
-              {user.fullName}
+              {displayUser.fullName}
             </span>
             <ChevronDown
               size={14}
@@ -81,16 +111,9 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
           <button type="button" className="fixed inset-0 z-40" aria-label="Đóng menu" onClick={() => setOpen(false)} />
           <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-50">
             <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{user.fullName}</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{displayUser.fullName}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">{displayUser.email}</p>
             </div>
-            <Link
-              to={dashboardPath}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <LayoutDashboard size={15} className="text-gray-400" /> Bảng điều khiển
-            </Link>
             <Link
               to={profilePath}
               state={{ from: dashboardPath }}
