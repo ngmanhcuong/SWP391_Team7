@@ -104,7 +104,7 @@ export const Card: React.FC<CardProps> = ({ children, className = '', hover = fa
   return (
     <div
       style={style}
-      className={`bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm ${hover ? 'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200' : ''} ${paddings[padding]} ${className}`}
+      className={`bg-white/95 dark:bg-slate-800 rounded-3xl border border-gray-100/80 dark:border-slate-700 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur ${hover ? 'hover:shadow-[0_18px_45px_rgba(26,86,219,0.12)] hover:-translate-y-0.5 transition-all duration-200' : ''} ${paddings[padding]} ${className}`}
     >
       {children}
     </div>
