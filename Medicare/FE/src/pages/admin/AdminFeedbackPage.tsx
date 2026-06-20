@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Download, Eye, EyeOff, RefreshCw, SlidersHorizontal, Star } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Eye, EyeOff, FileText, RefreshCw, SlidersHorizontal, Star } from 'lucide-react';
 import { Avatar, Card } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import { ReviewRatingFilter, useAdminReviews } from '../../features/admin/hooks';
+import { exportReportToPdf } from '../../features/admin/utils/reportExport';
 import { SectionStatCard } from './AdminDoctorsPage';
 
 const selectClass =
@@ -41,6 +42,34 @@ export const AdminFeedbackPage: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const reportOptions = useMemo(
+    () => ({
+      title: 'Báo cáo quản lý đánh giá',
+      filePrefix: 'bao-cao-danh-gia-admin',
+      tables: [
+        {
+          title: 'Thống kê đánh giá',
+          headers: ['Chỉ số', 'Giá trị', 'Ghi chú'],
+          rows: stats.map((stat) => [stat.label, stat.value, stat.note ?? '-']),
+        },
+        {
+          title: 'Danh sách đánh giá',
+          headers: ['Bệnh nhân', 'Mã BN', 'Bác sĩ', 'Khoa', 'Số sao', 'Ngày', 'Trạng thái', 'Nội dung'],
+          rows: reviews.map((review) => [
+            review.patientName,
+            review.patientCode,
+            review.doctorName,
+            review.department,
+            review.rating,
+            review.date,
+            review.status === 'hidden' ? 'Đã ẩn' : 'Đang hiển thị',
+            review.content,
+          ]),
+        },
+      ],
+    }),
+    [reviews, stats],
+  );
 
   return (
     <div className="space-y-6">
@@ -54,8 +83,8 @@ export const AdminFeedbackPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" leftIcon={<Download size={16} />}>
-            Xuất báo cáo
+          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => exportReportToPdf(reportOptions)}>
+            PDF
           </Button>
           <Button leftIcon={<RefreshCw size={16} />}>Làm mới</Button>
         </div>
@@ -220,10 +249,23 @@ interface CompactPaginationProps {
 
 export const CompactPagination: React.FC<CompactPaginationProps> = ({ currentPage, totalPages, onChange }) => {
   const pages: (number | 'ellipsis')[] = [];
-  const head = [1, 2, 3].filter((value) => value <= totalPages);
-  pages.push(...head);
-  if (totalPages > 4) pages.push('ellipsis');
-  if (totalPages > 3) pages.push(totalPages);
+  const windowSize = 3;
+  const startPage = Math.min(Math.max(currentPage - 1, 1), Math.max(totalPages - windowSize + 1, 1));
+  const endPage = Math.min(startPage + windowSize - 1, totalPages);
+
+  if (startPage > 1) {
+    pages.push(1);
+    if (startPage > 2) pages.push('ellipsis');
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    pages.push(page);
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pages.push('ellipsis');
+    pages.push(totalPages);
+  }
 
   const cellClass = (active: boolean) =>
     `min-w-[34px] h-[34px] rounded-lg text-sm font-medium transition-colors ${
