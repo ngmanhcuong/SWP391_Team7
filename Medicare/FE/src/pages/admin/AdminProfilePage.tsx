@@ -10,9 +10,23 @@ type ProfileTab = 'info' | 'password';
 export const AdminProfilePage: React.FC = () => {
   const { profile, updateField, resetProfile, saveProfile, isSaving, savedAt } = useAdminProfile();
   const [tab, setTab] = useState<ProfileTab>('info');
+  const [infoError, setInfoError] = useState('');
 
   const handleInfoSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!profile.fullName.trim()) {
+      setInfoError('Vui lòng nhập họ và tên.');
+      return;
+    }
+    if (!profile.email.includes('@')) {
+      setInfoError('Email liên hệ không hợp lệ.');
+      return;
+    }
+    if (!profile.phone.trim()) {
+      setInfoError('Vui lòng nhập số điện thoại.');
+      return;
+    }
+    setInfoError('');
     void saveProfile();
   };
 
@@ -40,6 +54,7 @@ export const AdminProfilePage: React.FC = () => {
         <div className="p-6">
           {tab === 'info' ? (
             <form onSubmit={handleInfoSubmit} className="space-y-6">
+              {infoError && <div className="p-3 rounded-xl bg-red-50 text-sm text-red-600">{infoError}</div>}
               <div className="flex items-center gap-5">
                 <div className="relative">
                   <Avatar name={profile.fullName} src={profile.avatar} size="xl" />
@@ -82,6 +97,15 @@ export const AdminProfilePage: React.FC = () => {
                 />
                 <div className="sm:col-span-2">
                   <Input label="Vai trò" value={profile.role} disabled />
+                </div>
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Ảnh đại diện (URL)"
+                    placeholder="https://..."
+                    value={profile.avatar ?? ''}
+                    onChange={(event) => updateField('avatar', event.target.value)}
+                    hint="Dán đường dẫn ảnh để xem avatar mới ngay trên hồ sơ."
+                  />
                 </div>
               </div>
 
@@ -131,8 +155,16 @@ const ChangePasswordForm: React.FC = () => {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setDone(false);
+    if (!current.trim()) {
+      setError('Vui lòng nhập mật khẩu hiện tại.');
+      return;
+    }
     if (next.length < 8) {
       setError('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      return;
+    }
+    if (next === current) {
+      setError('Mật khẩu mới không được trùng mật khẩu hiện tại.');
       return;
     }
     if (next !== confirm) {

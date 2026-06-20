@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
-import { Download, Eye, EyeOff, RefreshCw, SlidersHorizontal, Star } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { CalendarRange, Eye, EyeOff, FileSpreadsheet, FileText, RefreshCw, SlidersHorizontal, Star } from 'lucide-react';
 import { Avatar, Card } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import { ReviewRatingFilter, useAdminReviews } from '../../features/admin/hooks';
+import {
+  ADMIN_REPORT_PERIODS,
+  AdminReportPeriod,
+  exportReportToExcel,
+  exportReportToPdf,
+  getLatestReportDate,
+  getPeriodRangeLabel,
+  isWithinReportPeriod,
+} from '../../features/admin/utils/reportExport';
 import { SectionStatCard } from './AdminDoctorsPage';
 
 const selectClass =
@@ -39,8 +48,45 @@ export const AdminFeedbackPage: React.FC = () => {
     resetFilters,
   } = useAdminReviews();
   const [page, setPage] = useState(1);
+  const [period, setPeriod] = useState<AdminReportPeriod>('Ngày');
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const latestDate = useMemo(() => getLatestReportDate(reviews.map((review) => review.date)), [reviews]);
+  const periodReviews = useMemo(
+    () => reviews.filter((review) => isWithinReportPeriod(review.date, period, latestDate)),
+    [latestDate, period, reviews],
+  );
+  const totalPages = Math.max(1, Math.ceil(periodReviews.length / PAGE_SIZE));
+  const rangeLabel = useMemo(() => getPeriodRangeLabel(period), [period]);
+  const reportOptions = useMemo(
+    () => ({
+      title: 'Báo cáo quản lý đánh giá',
+      period,
+      rangeLabel,
+      filePrefix: 'bao-cao-danh-gia-admin',
+      tables: [
+        {
+          title: 'Thống kê đánh giá',
+          headers: ['Chỉ số', 'Giá trị', 'Ghi chú'],
+          rows: stats.map((stat) => [stat.label, stat.value, stat.note ?? '-']),
+        },
+        {
+          title: 'Danh sách đánh giá',
+          headers: ['Bệnh nhân', 'Mã BN', 'Bác sĩ', 'Khoa', 'Số sao', 'Ngày', 'Trạng thái', 'Nội dung'],
+          rows: periodReviews.map((review) => [
+            review.patientName,
+            review.patientCode,
+            review.doctorName,
+            review.department,
+            review.rating,
+            review.date,
+            review.status === 'hidden' ? 'Đã ẩn' : 'Đang hiển thị',
+            review.content,
+          ]),
+        },
+      ],
+    }),
+    [period, periodReviews, rangeLabel, stats],
+  );
 
   return (
     <div className="space-y-6">
@@ -54,10 +100,22 @@ export const AdminFeedbackPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" leftIcon={<Download size={16} />}>
-            Xuất báo cáo
+          <Button variant="outline" leftIcon={<FileSpreadsheet size={16} />} onClick={() => exportReportToExcel(reportOptions)}>
+            Excel
           </Button>
-          <Button leftIcon={<RefreshCw size={16} />}>Làm mới</Button>
+          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => exportReportToPdf(reportOptions)}>
+            PDF
+          </Button>
+          <Button
+            leftIcon={<RefreshCw size={16} />}
+            onClick={() => {
+              setPeriod('Ngày');
+              resetFilters();
+              setPage(1);
+            }}
+          >
+            Làm mới
+          </Button>
         </div>
       </div>
 
@@ -72,6 +130,27 @@ export const AdminFeedbackPage: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600">
             <SlidersHorizontal size={16} />
             Bộ lọc:
+          </span>
+          <div className="flex rounded-lg bg-gray-100 dark:bg-slate-700 p-1">
+            {ADMIN_REPORT_PERIODS.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => {
+                  setPeriod(item);
+                  setPage(1);
+                }}
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  period === item ? 'bg-[#1a56db] text-white' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600">
+            <CalendarRange size={15} />
+            {rangeLabel}
           </span>
           <select
             value={department}
@@ -107,7 +186,10 @@ export const AdminFeedbackPage: React.FC = () => {
           />
           <button
             type="button"
-            onClick={resetFilters}
+            onClick={() => {
+              setPeriod('Ngày');
+              resetFilters();
+            }}
             className="ml-auto text-sm font-medium text-[#1a56db] hover:underline"
           >
             Xóa tất cả bộ lọc
@@ -129,7 +211,7 @@ export const AdminFeedbackPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {reviews.map((review) => (
+              {periodReviews.map((review) => (
                 <tr key={review.id} className="align-top hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -196,14 +278,14 @@ export const AdminFeedbackPage: React.FC = () => {
             </tbody>
           </table>
 
-          {reviews.length === 0 && (
+          {periodReviews.length === 0 && (
             <div className="py-12 text-center text-sm text-gray-500">Không có đánh giá phù hợp.</div>
           )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-gray-100 dark:border-slate-700">
           <p className="text-sm text-gray-500">
-            Hiển thị 1 - {reviews.length} của {total.toLocaleString('vi-VN')} đánh giá
+            Hiển thị 1 - {periodReviews.length} của {total.toLocaleString('vi-VN')} đánh giá
           </p>
           <CompactPagination currentPage={page} totalPages={totalPages} onChange={setPage} />
         </div>

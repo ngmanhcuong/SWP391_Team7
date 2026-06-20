@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Banknote,
   CalendarPlus,
   ChevronRight,
   Database,
-  Download,
+  FileSpreadsheet,
+  FileText,
   Filter,
   Pencil,
   RefreshCw,
@@ -15,6 +16,15 @@ import Button from '../../components/ui/Button';
 import { AuditActionFilter, useAdminAuditLog } from '../../features/admin/hooks';
 import { AUDIT_ACTION_LABELS } from '../../features/admin/constants';
 import { AuditActionType, AuditSummary } from '../../features/admin/types';
+import {
+  ADMIN_REPORT_PERIODS,
+  AdminReportPeriod,
+  exportReportToExcel,
+  exportReportToPdf,
+  getLatestReportDate,
+  getPeriodRangeLabel,
+  isWithinReportPeriod,
+} from '../../features/admin/utils/reportExport';
 import { CompactPagination } from './AdminFeedbackPage';
 
 const selectClass =
@@ -46,6 +56,43 @@ export const AdminAuditLogPage: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const period = (ADMIN_REPORT_PERIODS.includes(timeframe as AdminReportPeriod)
+    ? timeframe
+    : 'Ngày') as AdminReportPeriod;
+  const latestDate = useMemo(() => getLatestReportDate(logs.map((log) => log.time)), [logs]);
+  const periodLogs = useMemo(
+    () => logs.filter((log) => isWithinReportPeriod(log.time, period, latestDate)),
+    [latestDate, logs, period],
+  );
+  const rangeLabel = useMemo(() => getPeriodRangeLabel(period), [period]);
+  const reportOptions = useMemo(
+    () => ({
+      title: 'Báo cáo nhật ký hệ thống',
+      period,
+      rangeLabel,
+      filePrefix: 'bao-cao-nhat-ky-he-thong-admin',
+      tables: [
+        {
+          title: 'Tổng quan hoạt động',
+          headers: ['Chỉ số', 'Giá trị', 'Ghi chú'],
+          rows: summary.map((item) => [item.label, item.value, item.note]),
+        },
+        {
+          title: 'Danh sách nhật ký',
+          headers: ['Thời gian', 'Người thực hiện', 'Vai trò', 'Hành động', 'Đối tượng', 'IP'],
+          rows: periodLogs.map((log) => [
+            `${log.time} (${log.timeAgo})`,
+            log.actorName,
+            log.actorRole,
+            log.action,
+            log.target,
+            log.ip,
+          ]),
+        },
+      ],
+    }),
+    [period, periodLogs, rangeLabel, summary],
+  );
 
   return (
     <div className="space-y-6">
@@ -59,10 +106,23 @@ export const AdminAuditLogPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" leftIcon={<Download size={16} />}>
-            Xuất báo cáo
+          <Button variant="outline" leftIcon={<FileSpreadsheet size={16} />} onClick={() => exportReportToExcel(reportOptions)}>
+            Excel
           </Button>
-          <Button leftIcon={<RefreshCw size={16} />}>Làm mới</Button>
+          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => exportReportToPdf(reportOptions)}>
+            PDF
+          </Button>
+          <Button
+            leftIcon={<RefreshCw size={16} />}
+            onClick={() => {
+              setActor('all');
+              setActionType('all');
+              setTimeframe('Ngày');
+              setPage(1);
+            }}
+          >
+            Làm mới
+          </Button>
         </div>
       </div>
 
@@ -71,9 +131,11 @@ export const AdminAuditLogPage: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Khoảng thời gian</label>
             <select value={timeframe} onChange={(event) => setTimeframe(event.target.value)} className={selectClass}>
-              <option value="today">Hôm nay</option>
-              <option value="week">Tuần này</option>
-              <option value="month">Tháng này</option>
+              {ADMIN_REPORT_PERIODS.map((item) => (
+                <option key={item} value={item}>
+                  {item} - {getPeriodRangeLabel(item)}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -121,7 +183,7 @@ export const AdminAuditLogPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {logs.map((log) => {
+              {periodLogs.map((log) => {
                 const style = ACTION_STYLE[log.actionType];
                 const ActionIcon = style.icon;
                 return (
@@ -157,14 +219,14 @@ export const AdminAuditLogPage: React.FC = () => {
             </tbody>
           </table>
 
-          {logs.length === 0 && (
+          {periodLogs.length === 0 && (
             <div className="py-12 text-center text-sm text-gray-500">Không có hoạt động phù hợp.</div>
           )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-gray-100 dark:border-slate-700">
           <p className="text-sm text-gray-500">
-            Hiển thị 1-{logs.length} trên tổng số {total.toLocaleString('vi-VN')} hoạt động
+            Hiển thị 1-{periodLogs.length} trên tổng số {total.toLocaleString('vi-VN')} hoạt động
           </p>
           <CompactPagination currentPage={page} totalPages={totalPages} onChange={setPage} />
         </div>
