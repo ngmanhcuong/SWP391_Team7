@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   CalendarRange,
   Check,
-  Download,
   Eye,
+  FileText,
   Plus,
   SlidersHorizontal,
   X,
@@ -18,6 +18,7 @@ import {
 } from '../../features/admin/hooks';
 import { APPOINTMENT_STATUS_LABELS } from '../../features/admin/constants';
 import { AdminAppointment, AppointmentStatus } from '../../features/admin/types';
+import { exportReportToPdf } from '../../features/admin/utils/reportExport';
 import { SectionStatCard } from './AdminDoctorsPage';
 import { CompactPagination } from './AdminFeedbackPage';
 
@@ -68,6 +69,34 @@ export const AdminAppointmentsPage: React.FC = () => {
   const [error, setError] = useState('');
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const reportOptions = useMemo(
+    () => ({
+      title: 'Báo cáo quản lý lịch hẹn',
+      filePrefix: 'bao-cao-lich-hen-admin',
+      tables: [
+        {
+          title: 'Thống kê nhanh',
+          headers: ['Chỉ số', 'Giá trị', 'Ghi chú'],
+          rows: stats.map((stat) => [stat.label, stat.value, stat.note ?? '-']),
+        },
+        {
+          title: 'Danh sách lịch hẹn',
+          headers: ['Mã lịch', 'Bệnh nhân', 'Số điện thoại', 'Bác sĩ', 'Khoa', 'Ngày', 'Giờ', 'Trạng thái'],
+          rows: appointments.map((appointment) => [
+            appointment.id,
+            appointment.patientName,
+            appointment.patientPhone,
+            appointment.doctorName,
+            appointment.doctorDept,
+            appointment.date,
+            appointment.timeRange,
+            APPOINTMENT_STATUS_LABELS[appointment.status],
+          ]),
+        },
+      ],
+    }),
+    [appointments, stats],
+  );
 
   const openCreate = () => {
     setForm(EMPTY_APPOINTMENT);
@@ -109,8 +138,8 @@ export const AdminAppointmentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" leftIcon={<Download size={16} />}>
-            Xuất báo cáo
+          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => exportReportToPdf(reportOptions)}>
+            PDF
           </Button>
           <Button leftIcon={<Plus size={16} />} onClick={openCreate}>
             Tạo lịch hẹn mới
@@ -260,15 +289,6 @@ export const AdminAppointmentsPage: React.FC = () => {
           <CompactPagination currentPage={page} totalPages={totalPages} onChange={setPage} />
         </div>
       </Card>
-
-      <button
-        type="button"
-        aria-label="Tạo lịch hẹn"
-        onClick={openCreate}
-        className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-[#1a56db] text-white shadow-lg shadow-blue-500/30 flex items-center justify-center hover:bg-[#1342a8] transition-colors"
-      >
-        <Plus size={24} />
-      </button>
 
       <Modal
         open={viewing !== null}
