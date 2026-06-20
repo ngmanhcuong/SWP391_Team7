@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -6,9 +6,8 @@ import {
   Info,
   Minus,
   MoreHorizontal,
-  Plus,
 } from 'lucide-react';
-import { Avatar, Badge, Card } from '../../components/ui';
+import { Avatar, Badge, Card, Modal } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import { useAdminDashboard } from '../../features/admin/hooks';
 import { NewAppointmentStatus, TrendDirection } from '../../features/admin/types';
@@ -57,23 +56,36 @@ export const AdminDashboardPage: React.FC = () => {
     quarterlyGoal,
     newUsersToday,
   } = useAdminDashboard();
+  const [goalDetailOpen, setGoalDetailOpen] = useState(false);
 
   const maxTrend = Math.max(
     ...appointmentTrend.flatMap((point) => [point.patients, point.appointments]),
   );
+  const goalRemaining = Math.max(0, 100 - quarterlyGoal.percent);
 
   return (
     <div className="relative space-y-6 pb-16">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#1a56db] via-[#2563eb] to-[#0ea5e9] p-6 text-white shadow-[0_20px_55px_rgba(26,86,219,0.25)]">
+        <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-white/15 blur-2xl" />
+        <div className="absolute right-28 bottom-0 h-24 w-24 rounded-full bg-cyan-200/20 blur-xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Lexend' }}>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-100">Medicare Admin</p>
+          <h1 className="text-3xl font-bold mb-1" style={{ fontFamily: 'Lexend' }}>
             Dashboard Tổng quan
           </h1>
-          <p className="text-gray-500 dark:text-slate-400">
+          <p className="text-blue-50">
             Chào mừng trở lại, hôm nay là {formatToday()}
           </p>
         </div>
-        <Button leftIcon={<Download size={16} />}>Xuất báo cáo</Button>
+        <Button
+          variant="outline"
+          leftIcon={<Download size={16} />}
+          className="border-white/80 bg-white text-[#1a56db] hover:bg-blue-50"
+        >
+          Xuất báo cáo
+        </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -246,6 +258,7 @@ export const AdminDashboardPage: React.FC = () => {
           <p className="mt-3 text-sm text-white/85">{quarterlyGoal.description}</p>
           <button
             type="button"
+            onClick={() => setGoalDetailOpen(true)}
             className="mt-4 px-4 py-2 rounded-lg bg-white text-[#1a56db] text-sm font-semibold hover:bg-blue-50 transition-colors"
           >
             Chi tiết mục tiêu
@@ -272,13 +285,65 @@ export const AdminDashboardPage: React.FC = () => {
         </Card>
       </div>
 
-      <button
-        type="button"
-        aria-label="Tạo mới"
-        className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-[#1a56db] text-white shadow-lg shadow-blue-500/30 flex items-center justify-center hover:bg-[#1342a8] transition-colors"
+      <Modal
+        open={goalDetailOpen}
+        onClose={() => setGoalDetailOpen(false)}
+        title="Chi tiết mục tiêu quý"
+        size="lg"
       >
-        <Plus size={24} />
-      </button>
+        <div className="space-y-5">
+          <div className="rounded-2xl bg-gradient-to-r from-[#1a56db] to-[#3b82f6] p-5 text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+              {quarterlyGoal.title}
+            </p>
+            <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-3xl font-bold">{quarterlyGoal.percent}%</p>
+                <p className="text-sm text-white/80">Đã hoàn thành mục tiêu hiện tại</p>
+              </div>
+              <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">
+                Còn {goalRemaining.toFixed(1)}%
+              </span>
+            </div>
+            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/25">
+              <div className="h-full rounded-full bg-white" style={{ width: `${quarterlyGoal.percent}%` }} />
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl bg-blue-50 p-4 text-blue-700">
+              <p className="text-xs font-semibold uppercase tracking-wide">Mục tiêu</p>
+              <p className="mt-2 text-xl font-bold">3.5B VND</p>
+              <p className="mt-1 text-xs text-blue-600/80">Dự kiến cuối tháng 6</p>
+            </div>
+            <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-700">
+              <p className="text-xs font-semibold uppercase tracking-wide">Đã đạt</p>
+              <p className="mt-2 text-xl font-bold">2.75B VND</p>
+              <p className="mt-1 text-xs text-emerald-600/80">Theo tiến độ hiện tại</p>
+            </div>
+            <div className="rounded-2xl bg-amber-50 p-4 text-amber-700">
+              <p className="text-xs font-semibold uppercase tracking-wide">Cần thêm</p>
+              <p className="mt-2 text-xl font-bold">0.75B VND</p>
+              <p className="mt-1 text-xs text-amber-600/80">Để hoàn thành 100%</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 p-4 dark:border-slate-700">
+            <h3 className="font-semibold text-gray-800 dark:text-slate-100">Gợi ý hành động</h3>
+            <div className="mt-3 space-y-2 text-sm text-gray-600 dark:text-slate-300">
+              <p className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-slate-800">
+                Tăng lịch khám ở các khoa có doanh thu cao để cải thiện tốc độ hoàn thành.
+              </p>
+              <p className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-slate-800">
+                Kiểm tra lịch hẹn chờ xác nhận để giảm thất thoát lượt khám.
+              </p>
+              <p className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-slate-800">
+                Theo dõi báo cáo tuần để cập nhật lại mục tiêu nếu tốc độ tăng trưởng thay đổi.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
