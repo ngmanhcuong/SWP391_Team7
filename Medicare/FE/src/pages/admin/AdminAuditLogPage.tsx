@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Banknote,
   CalendarPlus,
-  ChevronRight,
   Database,
-  Download,
+  FileText,
   Filter,
   Pencil,
   RefreshCw,
@@ -15,6 +14,7 @@ import Button from '../../components/ui/Button';
 import { AuditActionFilter, useAdminAuditLog } from '../../features/admin/hooks';
 import { AUDIT_ACTION_LABELS } from '../../features/admin/constants';
 import { AuditActionType, AuditSummary } from '../../features/admin/types';
+import { exportReportToPdf } from '../../features/admin/utils/reportExport';
 import { CompactPagination } from './AdminFeedbackPage';
 
 const selectClass =
@@ -42,10 +42,33 @@ export const AdminAuditLogPage: React.FC = () => {
     setActionType,
     timeframe,
     setTimeframe,
+    refreshAuditLogs,
   } = useAdminAuditLog();
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const paginatedLogs = logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const fromRow = logs.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const toRow = Math.min(page * PAGE_SIZE, logs.length);
+  const reportOptions = useMemo(
+    () => ({
+      title: 'Báo cáo nhật ký hệ thống',
+      filePrefix: 'bao-cao-nhat-ky-he-thong-admin',
+      tables: [
+        {
+          title: 'Tổng quan hoạt động',
+          headers: ['Chỉ số', 'Giá trị', 'Ghi chú'],
+          rows: summary.map((item) => [item.label, item.value, item.note]),
+        },
+        {
+          title: 'Danh sách nhật ký',
+          headers: ['Thời gian', 'Người thực hiện', 'Vai trò', 'Hành động', 'Đối tượng', 'IP'],
+          rows: logs.map((log) => [log.time, log.actorName, log.actorRole, log.action, log.target, log.ip]),
+        },
+      ],
+    }),
+    [logs, summary],
+  );
 
   return (
     <div className="space-y-6">
@@ -59,10 +82,10 @@ export const AdminAuditLogPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" leftIcon={<Download size={16} />}>
-            Xuất báo cáo
+          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => exportReportToPdf(reportOptions)}>
+            PDF
           </Button>
-          <Button leftIcon={<RefreshCw size={16} />}>Làm mới</Button>
+          <Button leftIcon={<RefreshCw size={16} />} onClick={refreshAuditLogs}>Làm mới</Button>
         </div>
       </div>
 
@@ -70,7 +93,14 @@ export const AdminAuditLogPage: React.FC = () => {
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Khoảng thời gian</label>
-            <select value={timeframe} onChange={(event) => setTimeframe(event.target.value)} className={selectClass}>
+            <select
+              value={timeframe}
+              onChange={(event) => {
+                setTimeframe(event.target.value);
+                setPage(1);
+              }}
+              className={selectClass}
+            >
               <option value="today">Hôm nay</option>
               <option value="week">Tuần này</option>
               <option value="month">Tháng này</option>
@@ -78,7 +108,14 @@ export const AdminAuditLogPage: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Người thực hiện</label>
-            <select value={actor} onChange={(event) => setActor(event.target.value)} className={selectClass}>
+            <select
+              value={actor}
+              onChange={(event) => {
+                setActor(event.target.value);
+                setPage(1);
+              }}
+              className={selectClass}
+            >
               <option value="all">Tất cả quản trị viên</option>
               {actors.map((item) => (
                 <option key={item} value={item}>
@@ -91,7 +128,10 @@ export const AdminAuditLogPage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Loại hành động</label>
             <select
               value={actionType}
-              onChange={(event) => setActionType(event.target.value as AuditActionFilter)}
+              onChange={(event) => {
+                setActionType(event.target.value as AuditActionFilter);
+                setPage(1);
+              }}
               className={selectClass}
             >
               <option value="all">Tất cả hành động</option>
@@ -121,7 +161,7 @@ export const AdminAuditLogPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {logs.map((log) => {
+              {paginatedLogs.map((log) => {
                 const style = ACTION_STYLE[log.actionType];
                 const ActionIcon = style.icon;
                 return (
@@ -157,30 +197,23 @@ export const AdminAuditLogPage: React.FC = () => {
             </tbody>
           </table>
 
-          {logs.length === 0 && (
+          {paginatedLogs.length === 0 && (
             <div className="py-12 text-center text-sm text-gray-500">Không có hoạt động phù hợp.</div>
           )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-gray-100 dark:border-slate-700">
           <p className="text-sm text-gray-500">
-            Hiển thị 1-{logs.length} trên tổng số {total.toLocaleString('vi-VN')} hoạt động
+            Hiển thị {fromRow}-{toRow} trên tổng số {logs.length.toLocaleString('vi-VN')} hoạt động
           </p>
           <CompactPagination currentPage={page} totalPages={totalPages} onChange={setPage} />
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         {summary.map((item) => (
           <SummaryCard key={item.id} item={item} />
         ))}
-        <button
-          type="button"
-          className="rounded-2xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors p-5 flex items-center justify-center gap-2 text-gray-700 dark:text-slate-200 font-semibold"
-        >
-          Xem báo cáo chi tiết
-          <ChevronRight size={18} />
-        </button>
       </div>
     </div>
   );
@@ -189,7 +222,7 @@ export const AdminAuditLogPage: React.FC = () => {
 const SummaryCard: React.FC<{ item: AuditSummary }> = ({ item }) => {
   const { label, value, note, noteTone, icon: Icon, bg, iconColor } = item;
   return (
-    <div className={`rounded-2xl p-5 ${bg}`}>
+    <div className={`h-full rounded-2xl p-5 shadow-sm ring-1 ring-white/60 ${bg}`}>
       <div className="flex items-start justify-between">
         <div className={`p-2 rounded-lg bg-white/70 ${iconColor}`}>
           <Icon size={18} />
