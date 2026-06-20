@@ -87,7 +87,17 @@ export const AdminUsersPage: React.FC = () => {
       setError('Email không hợp lệ.');
       return;
     }
+    if (!form.phone.trim()) {
+      setError('Vui lòng nhập số điện thoại.');
+      return;
+    }
+    if (!/^\d{10}$/.test(form.phone.trim())) {
+      setError('Số điện thoại phải gồm đúng 10 chữ số.');
+      return;
+    }
     addUser(form);
+    setForm(EMPTY_USER);
+    setError('');
     setModalOpen(false);
   };
 
@@ -281,9 +291,14 @@ export const AdminUsersPage: React.FC = () => {
             />
             <Input
               label="Số điện thoại"
+              required
               placeholder="09xxxxxxxx"
+              maxLength={10}
+              inputMode="numeric"
               value={form.phone}
-              onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, '') }))
+              }
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
