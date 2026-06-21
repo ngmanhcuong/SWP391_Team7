@@ -1,22 +1,21 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useAuthStore } from '../../../store/authStore';
-import { getDoctorsBySpecialty, getDoctorById, getSuggestedDoctor } from '../constants/bookingDoctors';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MIN_SYMPTOM_LENGTH } from '../constants/appointmentBookingSteps';
-import { getConsultationFee, getDepositAmount } from '../constants/consultationFees';
+import { getDepositAmount } from '../constants/consultationFees';
 import { getSpecialtyById, getSpecialtyByName } from '../constants/medicalSpecialties';
 import {
   AiSymptomAnalysis,
   AppointmentBookingResult,
   AppointmentBookingStep,
+  BookingDoctor,
   DepositPaymentMethod,
 } from '../types';
-import { savePendingAppointment } from '../utils/appointmentBookingStore';
 import { buildDoctorSchedule } from '../utils/buildDoctorSchedule';
-import { generateBookingReference } from '../utils/generateBookingReference';
-import { mockAiSymptomAnalysis } from '../utils/mockAiSymptomAnalysis';
+import { aiApi, AiAnalysisError } from '../api/aiApi';
+import { patientApi } from '../api/patientApi';
 
 export const useAppointmentBooking = () => {
-  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<AppointmentBookingStep>(1);
   const [symptoms, setSymptoms] = useState('');
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string | null>(null);
@@ -32,8 +31,16 @@ export const useAppointmentBooking = () => {
   const [isPayingDeposit, setIsPayingDeposit] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AiSymptomAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [bookingResult, setBookingResult] = useState<AppointmentBookingResult | null>(null);
+
+  const { data: doctors = [] } = useQuery({
+    queryKey: ['patient', 'doctors'],
+    queryFn: () => patientApi.getDoctors(),
+    staleTime: 5 * 60_000,
+  });
 
   const selectedSpecialty = useMemo(
     () => (selectedSpecialtyId ? getSpecialtyById(selectedSpecialtyId) ?? null : null),
@@ -41,13 +48,19 @@ export const useAppointmentBooking = () => {
   );
 
   const selectedDoctor = useMemo(
-    () => (selectedDoctorId ? getDoctorById(selectedDoctorId) ?? null : null),
-    [selectedDoctorId],
+    () =>
+      selectedDoctorId
+        ? doctors.find((doc: BookingDoctor) => doc.id === selectedDoctorId) ?? null
+        : null,
+    [selectedDoctorId, doctors],
   );
 
   const availableDoctors = useMemo(
-    () => (selectedSpecialtyId ? getDoctorsBySpecialty(selectedSpecialtyId) : []),
-    [selectedSpecialtyId],
+    () =>
+      selectedSpecialtyId
+        ? doctors.filter((doc: BookingDoctor) => doc.specialtyId === selectedSpecialtyId)
+        : [],
+    [selectedSpecialtyId, doctors],
   );
 
   const depositAmount = useMemo(
@@ -111,16 +124,26 @@ export const useAppointmentBooking = () => {
     if (!canAnalyze) return;
 
     setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    const analysis = mockAiSymptomAnalysis(symptoms.trim());
-    setAiAnalysis(analysis);
+    setAnalysisError(null);
 
-    const suggested = getSpecialtyByName(analysis.suggestedSpecialty);
-    if (suggested) {
-      setSelectedSpecialtyId(suggested.id);
+    try {
+      const analysis = await aiApi.analyzeSymptoms(symptoms.trim());
+      setAiAnalysis(analysis);
+
+      const suggested = getSpecialtyByName(analysis.suggestedSpecialty);
+      if (suggested) {
+        setSelectedSpecialtyId(suggested.id);
+      }
+    } catch (error) {
+      setAiAnalysis(null);
+      setAnalysisError(
+        error instanceof AiAnalysisError
+          ? error.message
+          : 'Không thể kết nối tới trợ lý AI lúc này. Vui lòng thử lại sau hoặc tự chọn chuyên khoa.',
+      );
+    } finally {
+      setIsAnalyzing(false);
     }
-
-    setIsAnalyzing(false);
   }, [canAnalyze, symptoms]);
 
   const goToNextStep = useCallback(() => {
@@ -141,6 +164,7 @@ export const useAppointmentBooking = () => {
   const handleSymptomsChange = useCallback((value: string) => {
     setSymptoms(value);
     setAiAnalysis(null);
+    setAnalysisError(null);
   }, []);
 
   const clearScheduleSelection = useCallback(() => {
@@ -173,11 +197,13 @@ export const useAppointmentBooking = () => {
 
   const suggestDoctor = useCallback(() => {
     if (!selectedSpecialtyId) return;
-    const suggested = getSuggestedDoctor(selectedSpecialtyId);
+    const suggested = [...availableDoctors]
+      .filter((doc: BookingDoctor) => doc.isAvailable)
+      .sort((a, b) => b.rating - a.rating)[0];
     if (suggested) {
       selectDoctor(suggested.id);
     }
-  }, [selectedSpecialtyId, selectDoctor]);
+  }, [selectedSpecialtyId, availableDoctors, selectDoctor]);
 
   const payDeposit = useCallback(async () => {
     if (!depositPaymentMethod || depositPaid || isPayingDeposit) return;
@@ -204,50 +230,27 @@ export const useAppointmentBooking = () => {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setSubmitError(null);
 
-    const referenceCode = generateBookingReference();
-    const submittedAt = new Date().toISOString();
-    const depositPaidAt = submittedAt;
-    const consultationFee = getConsultationFee(selectedSpecialtyId);
+    try {
+      const result = await patientApi.createAppointment({
+        specialtyId: selectedSpecialtyId,
+        doctorId: selectedDoctorId,
+        doctorName: selectedDoctor.name,
+        date: selectedDate,
+        time: selectedTime,
+        symptoms: symptoms.trim(),
+        additionalNotes: additionalNotes.trim() || undefined,
+        depositPaymentMethod,
+      });
 
-    const result: AppointmentBookingResult = {
-      referenceCode,
-      submittedAt,
-      depositAmount,
-      depositPaymentMethod,
-      depositPaidAt,
-      consultationFee,
-      status: 'pending_reception_deposit',
-    };
-
-    savePendingAppointment({
-      id: `${referenceCode}-${Date.now()}`,
-      referenceCode,
-      patientId: user?.id ?? user?._id ?? 'guest',
-      patientName: user?.fullName ?? 'Khách',
-      patientEmail: user?.email ?? '',
-      patientPhone: user?.phone,
-      symptoms: symptoms.trim(),
-      specialtyId: selectedSpecialtyId,
-      specialtyName: selectedSpecialty.name,
-      doctorId: selectedDoctorId,
-      doctorName: selectedDoctor.name,
-      appointmentDate: selectedDate,
-      appointmentTime: selectedTime,
-      additionalNotes: additionalNotes.trim() || undefined,
-      consultationFee,
-      depositAmount,
-      depositPaymentMethod,
-      depositPaidAt,
-      submittedAt,
-      receptionDepositConfirmed: false,
-      doctorConfirmed: false,
-      status: 'pending_reception_deposit',
-    });
-
-    setBookingResult(result);
-    setIsSubmitting(false);
+      setBookingResult(result);
+      queryClient.invalidateQueries({ queryKey: ['patient'] });
+    } catch {
+      setSubmitError('Không thể hoàn tất đặt lịch lúc này. Vui lòng thử lại sau ít phút.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [
     currentStep,
     canContinue,
@@ -258,10 +261,9 @@ export const useAppointmentBooking = () => {
     selectedTime,
     selectedSpecialty,
     selectedDoctor,
-    depositAmount,
-    user,
     symptoms,
     additionalNotes,
+    queryClient,
   ]);
 
   const resetBooking = useCallback(() => {
@@ -280,7 +282,9 @@ export const useAppointmentBooking = () => {
     setIsPayingDeposit(false);
     setAiAnalysis(null);
     setIsAnalyzing(false);
+    setAnalysisError(null);
     setIsSubmitting(false);
+    setSubmitError(null);
     setBookingResult(null);
   }, []);
 
@@ -313,7 +317,9 @@ export const useAppointmentBooking = () => {
     isPayingDeposit,
     aiAnalysis,
     isAnalyzing,
+    analysisError,
     isSubmitting,
+    submitError,
     bookingResult,
     isBookingDataComplete,
     canContinue,

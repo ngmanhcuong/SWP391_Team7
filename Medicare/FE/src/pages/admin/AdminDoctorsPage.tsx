@@ -23,9 +23,19 @@ const selectClass =
 const formSelectClass =
   'w-full px-4 py-2.5 text-sm border rounded-xl outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 border-gray-200 dark:border-slate-600 focus:border-[#1a56db] focus:ring-2 focus:ring-[#1a56db]/10';
 
+const formatDoctorCode = (id: string): string => {
+  const clean = (id || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const suffix = clean.slice(-6) || '000001';
+  return `BS-${suffix}`;
+};
+
 const EMPTY_DOCTOR: AdminDoctorInput = {
   fullName: '',
+  email: '',
+  phone: '',
+  hasAccount: true,
   specialty: '',
+  userId: undefined,
   experienceYears: 0,
   status: 'working',
 };
@@ -102,7 +112,11 @@ export const AdminDoctorsPage: React.FC = () => {
     setEditing(doctor);
     setDoctorForm({
       fullName: doctor.fullName,
+      email: doctor.email,
+      phone: doctor.phone,
+      hasAccount: doctor.hasAccount,
       specialty: doctor.specialty,
+      userId: doctor.userId,
       experienceYears: doctor.experienceYears,
       status: doctor.status,
     });
@@ -118,6 +132,10 @@ export const AdminDoctorsPage: React.FC = () => {
     }
     if (!doctorForm.specialty.trim()) {
       setDoctorError('Vui lòng chọn chuyên khoa.');
+      return;
+    }
+    if (!editing && !doctorForm.email.trim()) {
+      setDoctorError('Vui lòng nhập email để tạo tài khoản bác sĩ.');
       return;
     }
     if (editing) {
@@ -212,7 +230,6 @@ export const AdminDoctorsPage: React.FC = () => {
               <tr className="text-left text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700">
                 <th className="px-5 py-3 font-medium">Bác sĩ</th>
                 <th className="px-5 py-3 font-medium">Chuyên khoa</th>
-                <th className="px-5 py-3 font-medium">Kinh nghiệm</th>
                 <th className="px-5 py-3 font-medium">Trạng thái</th>
                 <th className="px-5 py-3 font-medium text-right">Thao tác</th>
               </tr>
@@ -227,7 +244,10 @@ export const AdminDoctorsPage: React.FC = () => {
                         <p className="font-semibold text-gray-800 dark:text-slate-100 truncate">
                           {doctor.fullName}
                         </p>
-                        <p className="text-xs text-gray-400">ID: {doctor.id}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {doctor.email || 'Chưa liên kết tài khoản'}
+                        </p>
+                        <p className="text-xs text-gray-400">Mã bác sĩ: {formatDoctorCode(doctor.id)}</p>
                       </div>
                     </div>
                   </td>
@@ -235,9 +255,6 @@ export const AdminDoctorsPage: React.FC = () => {
                     <Badge variant="gray" size="md">
                       {doctor.specialty}
                     </Badge>
-                  </td>
-                  <td className="px-5 py-3 text-gray-600 dark:text-slate-300">
-                    {doctor.experienceYears} năm
                   </td>
                   <td className="px-5 py-3">
                     <span className="inline-flex items-center gap-2 text-sm">
@@ -299,7 +316,7 @@ export const AdminDoctorsPage: React.FC = () => {
         open={doctorModalOpen}
         onClose={() => setDoctorModalOpen(false)}
         title={editing ? 'Chỉnh sửa bác sĩ' : 'Thêm bác sĩ mới'}
-        description={editing ? `ID: ${editing.id}` : 'Tạo hồ sơ bác sĩ trong hệ thống'}
+        description={editing ? `Mã bác sĩ: ${formatDoctorCode(editing.id)}` : 'Tạo hồ sơ bác sĩ trong hệ thống'}
         footer={
           <>
             <Button type="button" variant="ghost" onClick={() => setDoctorModalOpen(false)}>
@@ -325,37 +342,50 @@ export const AdminDoctorsPage: React.FC = () => {
             }
           />
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-gray-700 dark:text-slate-200">
-                Chuyên khoa <span className="text-red-500">*</span>
-              </label>
-              <input
-                list="specialty-options"
-                value={doctorForm.specialty}
-                placeholder="Chọn hoặc nhập chuyên khoa"
-                onChange={(event) =>
-                  setDoctorForm((prev) => ({ ...prev, specialty: event.target.value }))
-                }
-                className={formSelectClass}
-              />
-              <datalist id="specialty-options">
-                {specialties.map((item) => (
-                  <option key={item} value={item} />
-                ))}
-              </datalist>
-            </div>
             <Input
-              label="Số năm kinh nghiệm"
-              type="number"
-              min={0}
-              value={doctorForm.experienceYears}
+              label="Email tài khoản"
+              type="email"
+              required={!editing}
+              placeholder="doctor@medicare.vn"
+              value={doctorForm.email}
               onChange={(event) =>
-                setDoctorForm((prev) => ({
-                  ...prev,
-                  experienceYears: Number(event.target.value) || 0,
-                }))
+                setDoctorForm((prev) => ({ ...prev, email: event.target.value }))
               }
             />
+            <Input
+              label="Số điện thoại"
+              placeholder="09xxxxxxxx"
+              value={doctorForm.phone}
+              onChange={(event) =>
+                setDoctorForm((prev) => ({ ...prev, phone: event.target.value }))
+              }
+            />
+          </div>
+          {!editing && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+              Tạo mới sẽ sinh tài khoản đăng nhập bác sĩ với mật khẩu mặc định `Medicare@123`.
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200">
+              Chuyên khoa <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={doctorForm.specialty}
+              onChange={(event) =>
+                setDoctorForm((prev) => ({ ...prev, specialty: event.target.value }))
+              }
+              className={formSelectClass}
+            >
+              <option value="" disabled>
+                Chọn chuyên khoa
+              </option>
+              {specialties.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Trạng thái</label>

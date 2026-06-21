@@ -22,24 +22,19 @@ import {
 } from 'lucide-react';
 import {
   ActivityLog,
-  AdminAppointment,
   AdminDashboardStat,
-  AdminDepartment,
   AdminDoctor,
   AdminProfileForm,
   AdminReview,
   AdminRoom,
   AdminSectionStat,
   AdminSettingsForm,
-  AdminUser,
   AdminUserRole,
   AdminUserStatus,
   AppointmentStatus,
-  AppointmentTrendPoint,
   AuditLogEntry,
   AuditSummary,
   MonthlyPoint,
-  NewAppointment,
   PatientTrendPoint,
   QuarterlyGoal,
   ReportMetric,
@@ -49,7 +44,6 @@ import {
   SpecialtyShare,
   SupplyItem,
   SystemNotice,
-  TopDepartment,
 } from '../types';
 
 export const ROLE_LABELS: Record<AdminUserRole, string> = {
@@ -124,32 +118,6 @@ export const ADMIN_DASHBOARD_STATS: AdminDashboardStat[] = [
   },
 ];
 
-export const ADMIN_APPOINTMENT_TREND: AppointmentTrendPoint[] = [
-  { month: 'Th1', patients: 2000, appointments: 1500 },
-  { month: 'Th2', patients: 2800, appointments: 2200 },
-  { month: 'Th3', patients: 3050, appointments: 2750 },
-  { month: 'Th4', patients: 3500, appointments: 3000 },
-  { month: 'Th5', patients: 2450, appointments: 1800 },
-  { month: 'Th6', patients: 1550, appointments: 1100 },
-];
-
-export const ADMIN_NEW_APPOINTMENTS: NewAppointment[] = [
-  {
-    id: 'na-1',
-    patientName: 'Nguyễn Thùy Linh',
-    service: 'Nội soi dạ dày',
-    time: '09:30 AM',
-    status: 'confirmed',
-  },
-  {
-    id: 'na-2',
-    patientName: 'Trần Minh Quân',
-    service: 'Khám răng',
-    time: '10:15 AM',
-    status: 'pending',
-  },
-];
-
 export const ADMIN_SYSTEM_NOTICES: SystemNotice[] = [
   {
     id: 'sn-1',
@@ -167,19 +135,12 @@ export const ADMIN_SYSTEM_NOTICES: SystemNotice[] = [
   },
 ];
 
-export const ADMIN_TOP_DEPARTMENTS: TopDepartment[] = [
-  { id: 'td-1', rank: 1, name: 'Khoa Nội Tổng Quát', revenueLabel: '820M', revenue: 820 },
-  { id: 'td-2', rank: 2, name: 'Khoa Sản Nhi', revenueLabel: '540M', revenue: 540 },
-];
-
 export const ADMIN_QUARTERLY_GOAL: QuarterlyGoal = {
   title: 'Mục tiêu Quý 2',
   percent: 78.5,
   description:
     'Dự kiến đạt mốc 3.5B VNĐ vào cuối tháng 6 dựa trên tốc độ tăng trưởng hiện tại.',
 };
-
-export const ADMIN_NEW_USERS_TODAY = 15;
 
 // ─── Quản lý bác sĩ ──────────────────────────────
 export const DOCTOR_STATUS_LABELS: Record<AdminDoctor['status'], string> = {
@@ -193,21 +154,6 @@ export const ADMIN_DOCTOR_STATS: AdminSectionStat[] = [
   { id: 'specialty', label: 'Chuyên khoa', value: '18', note: '12 Khoa', noteTone: 'muted', icon: Building2, color: 'text-rose-600 bg-rose-50' },
   { id: 'leave', label: 'Lịch vắng', value: '5', note: '4 Nghỉ', noteTone: 'danger', icon: CalendarX, color: 'text-red-600 bg-red-50' },
 ];
-
-export const ADMIN_DOCTORS: AdminDoctor[] = [
-  { id: 'DOC-2024-001', fullName: 'TS.BS. Nguyễn Văn An', specialty: 'Nội tổng quát', experienceYears: 15, status: 'working' },
-  { id: 'DOC-2024-042', fullName: 'ThS.BS. Lê Thị Mai', specialty: 'Nhi khoa', experienceYears: 8, status: 'working' },
-  { id: 'DOC-2024-015', fullName: 'BSCKII. Trần Hoàng Nam', specialty: 'Ngoại thần kinh', experienceYears: 20, status: 'on_leave' },
-  { id: 'DOC-2024-007', fullName: 'TS.BS. Phạm Thu Hà', specialty: 'Tim mạch', experienceYears: 18, status: 'working' },
-  { id: 'DOC-2024-023', fullName: 'ThS.BS. Đỗ Quang Huy', specialty: 'Da liễu', experienceYears: 10, status: 'working' },
-  { id: 'DOC-2024-031', fullName: 'BSCKI. Vũ Khánh Linh', specialty: 'Tai mũi họng', experienceYears: 7, status: 'on_leave' },
-  { id: 'DOC-2024-056', fullName: 'TS.BS. Hoàng Văn Tú', specialty: 'Nội tổng quát', experienceYears: 22, status: 'working' },
-  { id: 'DOC-2024-061', fullName: 'ThS.BS. Bùi Phương Thảo', specialty: 'Nhi khoa', experienceYears: 6, status: 'working' },
-  { id: 'DOC-2024-074', fullName: 'BSCKII. Ngô Đức Thắng', specialty: 'Tim mạch', experienceYears: 16, status: 'working' },
-  { id: 'DOC-2024-088', fullName: 'BS. Trương Mỹ Duyên', specialty: 'Da liễu', experienceYears: 4, status: 'on_leave' },
-];
-
-export const ADMIN_TOTAL_DOCTORS = 128;
 
 // ─── Quản lý phòng khám ──────────────────────────
 export const ROOM_STATUS_LABELS: Record<AdminRoom['status'], string> = {
@@ -238,48 +184,10 @@ export const ADMIN_TOTAL_ROOMS = 124;
 
 // ─── Quản lý khoa khám ───────────────────────────
 export const ADMIN_DEPARTMENT_STATS: AdminSectionStat[] = [
-  { id: 'total', label: 'Tổng số khoa', value: '12', icon: Network, color: 'text-blue-600 bg-blue-50' },
-  { id: 'doctors', label: 'Bác sĩ phụ trách', value: '48', icon: Stethoscope, color: 'text-emerald-600 bg-emerald-50' },
+  { id: 'total', label: 'Tổng số khoa', value: '4', icon: Network, color: 'text-blue-600 bg-blue-50' },
+  { id: 'doctors', label: 'Bác sĩ phụ trách', value: '12', icon: Stethoscope, color: 'text-emerald-600 bg-emerald-50' },
   { id: 'patients', label: 'Bệnh nhân hôm nay', value: '245', icon: Users, color: 'text-rose-600 bg-rose-50' },
   { id: 'rooms', label: 'Phòng khám', value: '36', icon: Building2, color: 'text-slate-600 bg-slate-100' },
-];
-
-export const ADMIN_DEPARTMENTS: AdminDepartment[] = [
-  {
-    id: 'NO01',
-    name: 'Khoa Nội',
-    description: 'Điều trị các bệnh lý nội khoa, tim mạch, tiêu hóa và hô hấp cho người lớn.',
-    doctorCount: 12,
-    color: 'from-blue-500 to-blue-700',
-  },
-  {
-    id: 'NG02',
-    name: 'Khoa Ngoại',
-    description: 'Phẫu thuật tổng quát, chỉnh hình và các can thiệp ngoại khoa kỹ thuật cao.',
-    doctorCount: 15,
-    color: 'from-emerald-500 to-emerald-700',
-  },
-  {
-    id: 'SA03',
-    name: 'Khoa Sản',
-    description: 'Chăm sóc sức khỏe phụ nữ, thai sản và hỗ trợ sinh sản hiện đại.',
-    doctorCount: 8,
-    color: 'from-rose-500 to-rose-700',
-  },
-  {
-    id: 'NH04',
-    name: 'Khoa Nhi',
-    description: 'Khám và điều trị chuyên sâu cho trẻ em từ sơ sinh đến vị thành niên.',
-    doctorCount: 10,
-    color: 'from-amber-500 to-amber-700',
-  },
-  {
-    id: 'TM05',
-    name: 'Khoa Tai Mũi Họng',
-    description: 'Chẩn đoán và điều trị các bệnh lý tai mũi họng cho mọi lứa tuổi.',
-    doctorCount: 5,
-    color: 'from-violet-500 to-violet-700',
-  },
 ];
 
 // ─── Quản lý đánh giá ────────────────────────────
@@ -355,77 +263,6 @@ export const ADMIN_APPOINTMENT_STATS: AdminSectionStat[] = [
   { id: 'completed', label: 'Đã hoàn thành', value: '86', icon: CircleCheck, color: 'text-emerald-600 bg-emerald-50' },
   { id: 'cancelled', label: 'Lịch đã hủy', value: '5', icon: CircleX, color: 'text-red-600 bg-red-50' },
 ];
-
-export const ADMIN_APPOINTMENTS: AdminAppointment[] = [
-  {
-    id: '#LH-10293',
-    patientName: 'Nguyễn Văn Hùng',
-    patientPhone: '0908 123 ***',
-    patientInitials: 'NH',
-    doctorName: 'BS. Lê Minh Tâm',
-    doctorDept: 'Khoa Nội tổng quát',
-    date: '24/10/2023',
-    timeRange: '08:30 - 09:00',
-    status: 'pending',
-  },
-  {
-    id: '#LH-10294',
-    patientName: 'Trần Tuyết Mai',
-    patientPhone: '0345 678 ***',
-    patientInitials: 'TM',
-    doctorName: 'BS. Phạm Kim Liên',
-    doctorDept: 'Khoa Nhi',
-    date: '24/10/2023',
-    timeRange: '09:15 - 09:45',
-    status: 'confirmed',
-  },
-  {
-    id: '#LH-10290',
-    patientName: 'Lý Quốc Dũng',
-    patientPhone: '0768 221 ***',
-    patientInitials: 'LD',
-    doctorName: 'BS. Võ Hoàng Nam',
-    doctorDept: 'Khoa Ngoại',
-    date: '23/10/2023',
-    timeRange: '14:00 - 15:00',
-    status: 'completed',
-  },
-  {
-    id: '#LH-10288',
-    patientName: 'An Vy',
-    patientPhone: '0932 445 ***',
-    patientInitials: 'AV',
-    doctorName: 'BS. Lê Minh Tâm',
-    doctorDept: 'Khoa Nội tổng quát',
-    date: '23/10/2023',
-    timeRange: '10:30 - 11:00',
-    status: 'cancelled',
-  },
-  {
-    id: '#LH-10285',
-    patientName: 'Đặng Thu Trang',
-    patientPhone: '0911 552 ***',
-    patientInitials: 'ĐT',
-    doctorName: 'BS. Phạm Kim Liên',
-    doctorDept: 'Khoa Nhi',
-    date: '23/10/2023',
-    timeRange: '15:30 - 16:00',
-    status: 'confirmed',
-  },
-  {
-    id: '#LH-10280',
-    patientName: 'Hoàng Minh Quân',
-    patientPhone: '0987 114 ***',
-    patientInitials: 'HQ',
-    doctorName: 'BS. Võ Hoàng Nam',
-    doctorDept: 'Khoa Ngoại',
-    date: '22/10/2023',
-    timeRange: '08:00 - 08:30',
-    status: 'completed',
-  },
-];
-
-export const ADMIN_APPOINTMENT_TOTAL = 124;
 
 // ─── Nhật ký hệ thống (Audit Log) ────────────────
 export const AUDIT_ACTION_LABELS: Record<AuditLogEntry['actionType'], string> = {
@@ -520,129 +357,6 @@ export const DEFAULT_ADMIN_PROFILE: AdminProfileForm = {
   phone: '0901234567',
   role: 'Quản trị viên cấp cao (System Administrator)',
 };
-
-export const ADMIN_USERS: AdminUser[] = [
-  {
-    id: 'u-1001',
-    fullName: 'Nguyễn Thị Lan',
-    email: 'lan.nguyen@medicare.vn',
-    phone: '0901234567',
-    role: 'admin',
-    status: 'active',
-    createdAt: '2024-01-12',
-    lastActiveAt: '2026-06-18',
-  },
-  {
-    id: 'u-1002',
-    fullName: 'Trần Văn Minh',
-    email: 'minh.tran@medicare.vn',
-    phone: '0912345678',
-    role: 'doctor',
-    status: 'active',
-    createdAt: '2024-02-03',
-    lastActiveAt: '2026-06-18',
-  },
-  {
-    id: 'u-1003',
-    fullName: 'Lê Hồng Phúc',
-    email: 'phuc.le@medicare.vn',
-    phone: '0923456789',
-    role: 'doctor',
-    status: 'active',
-    createdAt: '2024-03-21',
-    lastActiveAt: '2026-06-17',
-  },
-  {
-    id: 'u-1004',
-    fullName: 'Phạm Thu Hà',
-    email: 'ha.pham@medicare.vn',
-    phone: '0934567890',
-    role: 'receptionist',
-    status: 'active',
-    createdAt: '2024-04-05',
-    lastActiveAt: '2026-06-18',
-  },
-  {
-    id: 'u-1005',
-    fullName: 'Đỗ Quang Huy',
-    email: 'huy.do@gmail.com',
-    phone: '0945678901',
-    role: 'patient',
-    status: 'active',
-    createdAt: '2024-05-19',
-    lastActiveAt: '2026-06-16',
-  },
-  {
-    id: 'u-1006',
-    fullName: 'Vũ Thị Mai',
-    email: 'mai.vu@gmail.com',
-    phone: '0956789012',
-    role: 'patient',
-    status: 'inactive',
-    createdAt: '2024-06-28',
-    lastActiveAt: '2026-04-02',
-  },
-  {
-    id: 'u-1007',
-    fullName: 'Hoàng Văn Tú',
-    email: 'tu.hoang@gmail.com',
-    phone: '0967890123',
-    role: 'patient',
-    status: 'active',
-    createdAt: '2024-07-14',
-    lastActiveAt: '2026-06-15',
-  },
-  {
-    id: 'u-1008',
-    fullName: 'Bùi Khánh Linh',
-    email: 'linh.bui@medicare.vn',
-    phone: '0978901234',
-    role: 'receptionist',
-    status: 'suspended',
-    createdAt: '2024-08-09',
-    lastActiveAt: '2026-03-11',
-  },
-  {
-    id: 'u-1009',
-    fullName: 'Ngô Đức Thắng',
-    email: 'thang.ngo@medicare.vn',
-    phone: '0989012345',
-    role: 'doctor',
-    status: 'inactive',
-    createdAt: '2024-09-22',
-    lastActiveAt: '2026-05-01',
-  },
-  {
-    id: 'u-1010',
-    fullName: 'Đặng Phương Thảo',
-    email: 'thao.dang@gmail.com',
-    phone: '0990123456',
-    role: 'patient',
-    status: 'active',
-    createdAt: '2024-10-30',
-    lastActiveAt: '2026-06-18',
-  },
-  {
-    id: 'u-1011',
-    fullName: 'Phan Tấn Lộc',
-    email: 'loc.phan@gmail.com',
-    phone: '0901112223',
-    role: 'patient',
-    status: 'suspended',
-    createdAt: '2025-01-08',
-    lastActiveAt: '2026-02-20',
-  },
-  {
-    id: 'u-1012',
-    fullName: 'Trương Mỹ Duyên',
-    email: 'duyen.truong@medicare.vn',
-    phone: '0902223334',
-    role: 'doctor',
-    status: 'active',
-    createdAt: '2025-02-17',
-    lastActiveAt: '2026-06-17',
-  },
-];
 
 export const ADMIN_ACTIVITY_LOGS: ActivityLog[] = [
   {

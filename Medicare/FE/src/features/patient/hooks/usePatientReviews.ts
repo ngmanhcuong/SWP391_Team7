@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { User } from '../../../types';
 import { PatientReviewsData, ReviewableVisit, SubmitReviewPayload } from '../types';
-import { buildPatientReviewsData } from '../utils/buildPatientReviewsData';
-import { saveSubmittedReview } from '../utils/serviceReviewStore';
+import { patientApi } from '../api/patientApi';
 
 export const patientReviewsQueryKey = (userId?: string) =>
   ['patient', 'reviews', userId] as const;
@@ -17,25 +16,13 @@ export const usePatientReviews = (
 
   const query = useQuery({
     queryKey: patientReviewsQueryKey(user?.id),
-    queryFn: async () => {
-      if (!user) throw new Error('Chưa đăng nhập');
-      return buildPatientReviewsData(user);
-    },
+    queryFn: () => patientApi.getReviews(),
     enabled: !!user,
     staleTime: 30_000,
   });
 
   const submitMutation = useMutation({
-    mutationFn: async ({
-      visit,
-      payload,
-    }: {
-      visit: ReviewableVisit;
-      payload: SubmitReviewPayload;
-    }) => {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      saveSubmittedReview(visit, payload);
-    },
+    mutationFn: (payload: SubmitReviewPayload) => patientApi.submitReview(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientReviewsQueryKey(user?.id) });
     },
@@ -43,8 +30,8 @@ export const usePatientReviews = (
 
   return {
     ...query,
-    submitReview: async (visit: ReviewableVisit, payload: SubmitReviewPayload) => {
-      await submitMutation.mutateAsync({ visit, payload });
+    submitReview: async (_visit: ReviewableVisit, payload: SubmitReviewPayload) => {
+      await submitMutation.mutateAsync(payload);
     },
     isSubmitting: submitMutation.isPending,
   };

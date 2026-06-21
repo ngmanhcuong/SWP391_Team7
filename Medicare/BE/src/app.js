@@ -9,10 +9,16 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const seedDevUsers = require('./config/seedDevUsers');
 const seedReceptionist = require('./config/seedReceptionist');
+const seedSpecialties = require('./config/seedSpecialties');
+const seedDoctors = require('./config/seedDoctors');
+const seedPatientData = require('./config/seedPatientData');
 const passport = require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 const receptionistRoutes = require('./routes/receptionistRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const parseAllowedOrigins = () => {
   const origins = new Set([
@@ -85,7 +91,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ─── Routes ──────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api/receptionist', receptionistRoutes);
+app.use('/api/patient', patientRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -117,7 +126,10 @@ const PORT = process.env.PORT || 8000;
 const startServer = async () => {
   await connectDB();
   await seedDevUsers();
+  await seedSpecialties();
+  await seedDoctors();
   await seedReceptionist();
+  await seedPatientData();
 
   app.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);

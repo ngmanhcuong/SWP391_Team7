@@ -97,6 +97,10 @@ export interface AdminDoctor {
   id: string;
   fullName: string;
   avatar?: string;
+  email: string;
+  phone: string;
+  userId?: string;
+  hasAccount: boolean;
   specialty: string;
   experienceYears: number;
   status: DoctorStatus;

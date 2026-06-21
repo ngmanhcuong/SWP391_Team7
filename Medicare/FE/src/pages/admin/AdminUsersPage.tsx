@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ban, CheckCircle2, Search, Trash2, UserPlus } from 'lucide-react';
+import { Ban, CheckCircle2, Pencil, Search, Trash2, UserPlus } from 'lucide-react';
 import { Avatar, Badge, Card, Modal } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -26,9 +26,7 @@ const EMPTY_USER: AdminUserInput = {
 const ROLE_FILTERS: { value: AdminUserRoleFilter; label: string }[] = [
   { value: 'all', label: 'Tất cả' },
   { value: 'patient', label: ROLE_LABELS.patient },
-  { value: 'doctor', label: ROLE_LABELS.doctor },
   { value: 'receptionist', label: ROLE_LABELS.receptionist },
-  { value: 'admin', label: ROLE_LABELS.admin },
 ];
 
 const STATUS_FILTERS: { value: AdminUserStatusFilter; label: string }[] = [
@@ -63,6 +61,7 @@ export const AdminUsersPage: React.FC = () => {
     statusFilter,
     setStatusFilter,
     setUserStatus,
+    updateUserRole,
     deleteUser,
     addUser,
     counts,
@@ -70,6 +69,7 @@ export const AdminUsersPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<AdminUserInput>(EMPTY_USER);
   const [error, setError] = useState('');
+  const [roleModal, setRoleModal] = useState<{ id: string; name: string; role: AdminUserRole } | null>(null);
 
   const openCreate = () => {
     setForm(EMPTY_USER);
@@ -85,6 +85,10 @@ export const AdminUsersPage: React.FC = () => {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setError('Email không hợp lệ.');
+      return;
+    }
+    if (form.role === 'doctor') {
+      setError('Không thể tạo tài khoản bác sĩ tại quản lý người dùng.');
       return;
     }
     addUser(form);
@@ -110,7 +114,7 @@ export const AdminUsersPage: React.FC = () => {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryStat label="Tổng tài khoản" value={counts.total} />
         <SummaryStat label="Đang hoạt động" value={counts.active} accent="text-emerald-600" />
-        <SummaryStat label="Bác sĩ" value={counts.doctors} accent="text-violet-600" />
+        <SummaryStat label="Lễ tân" value={counts.receptionists} accent="text-amber-600" />
         <SummaryStat label="Đã khóa" value={counts.suspended} accent="text-red-500" />
       </div>
 
@@ -203,6 +207,14 @@ export const AdminUsersPage: React.FC = () => {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setRoleModal({ id: user.id, name: user.fullName, role: user.role })}
+                        title="Chỉnh sửa vai trò"
+                        className="p-2 rounded-lg text-[#1a56db] hover:bg-blue-50 transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
                       {user.status === 'suspended' ? (
                         <button
                           type="button"
@@ -244,6 +256,50 @@ export const AdminUsersPage: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {/* Modal đổi vai trò */}
+      <Modal
+        open={!!roleModal}
+        onClose={() => setRoleModal(null)}
+        title="Chỉnh sửa vai trò"
+        description={roleModal ? `Thay đổi vai trò cho ${roleModal.name}` : ''}
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setRoleModal(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              leftIcon={<Pencil size={16} />}
+              onClick={() => {
+                if (roleModal) {
+                  updateUserRole(roleModal.id, roleModal.role);
+                  setRoleModal(null);
+                }
+              }}
+            >
+              Lưu vai trò
+            </Button>
+          </>
+        }
+      >
+        {roleModal && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Vai trò</label>
+            <select
+              value={roleModal.role}
+              onChange={(event) =>
+                setRoleModal((prev) => prev ? { ...prev, role: event.target.value as AdminUserRole } : prev)
+              }
+              className={formInputClass}
+            >
+              <option value="patient">{ROLE_LABELS.patient}</option>
+              <option value="doctor">{ROLE_LABELS.doctor}</option>
+              <option value="receptionist">{ROLE_LABELS.receptionist}</option>
+            </select>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={modalOpen}
@@ -297,9 +353,7 @@ export const AdminUsersPage: React.FC = () => {
                 className={formInputClass}
               >
                 <option value="patient">{ROLE_LABELS.patient}</option>
-                <option value="doctor">{ROLE_LABELS.doctor}</option>
                 <option value="receptionist">{ROLE_LABELS.receptionist}</option>
-                <option value="admin">{ROLE_LABELS.admin}</option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">

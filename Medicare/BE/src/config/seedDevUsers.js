@@ -1,5 +1,6 @@
 const User = require('../models/User');
 
+// Tài khoản seed dùng cho phát triển — giữ _id ổn định qua mỗi lần restart.
 const DEV_USERS = [
   {
     fullName: 'Bác sĩ Trực',
@@ -34,6 +35,30 @@ const DEV_USERS = [
     role: 'admin',
     isEmailVerified: true,
   },
+  {
+    fullName: 'Trần Thị Thu Hà',
+    email: 'letan1@medicare.com',
+    phone: '0901000005',
+    password: 'Password123',
+    role: 'receptionist',
+    isEmailVerified: true,
+  },
+  {
+    fullName: 'Phạm Văn Đại',
+    email: 'letan2@medicare.com',
+    phone: '0901000006',
+    password: 'Password123',
+    role: 'receptionist',
+    isEmailVerified: true,
+  },
+  {
+    fullName: 'Lê Hoàng Quản Trị',
+    email: 'admin1@medicare.com',
+    phone: '0901000007',
+    password: 'Password123',
+    role: 'admin',
+    isEmailVerified: true,
+  },
 ];
 
 const seedDevUsers = async () => {
@@ -42,9 +67,26 @@ const seedDevUsers = async () => {
   }
 
   for (const data of DEV_USERS) {
-    await User.deleteOne({ email: data.email.toLowerCase() });
-    await User.create({ ...data, email: data.email.toLowerCase() });
-    console.log(`🌱 Seeded dev user: ${data.email} (${data.role})`);
+    const email = data.email.toLowerCase();
+    const existing = await User.findOne({ email });
+
+    if (!existing) {
+      // Tạo mới: pre('save') hook sẽ tự hash mật khẩu.
+      await User.create({ ...data, email });
+      console.log(`🌱 Seeded dev user: ${email} (${data.role})`);
+      continue;
+    }
+
+    // Giữ nguyên _id để dữ liệu liên kết (lịch hẹn, hóa đơn...) không bị mồ côi sau mỗi lần
+    // restart. Vẫn cập nhật thông tin + reset mật khẩu qua save() để hook hash chạy.
+    existing.fullName = data.fullName;
+    existing.phone = data.phone;
+    existing.role = data.role;
+    existing.occupation = data.occupation;
+    existing.isEmailVerified = data.isEmailVerified;
+    existing.password = data.password;
+    await existing.save();
+    console.log(`🌱 Refreshed dev user: ${email} (${data.role})`);
   }
 };
 

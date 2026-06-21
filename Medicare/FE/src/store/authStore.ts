@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '../types';
+import { useChatStore } from './chatStore';
 
 interface AuthState {
   user: User | null;
@@ -28,6 +29,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        useChatStore.getState().reset(); // xóa lịch sử trợ lý sức khỏe khi đăng xuất
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
       },
     }),

@@ -155,7 +155,7 @@ export const PatientNotificationsPage: React.FC = () => {
         </div>
       </div>
 
-      <FloatingChatButton unreadCount={data.unreadCount > 0 ? 1 : 0} />
+      <FloatingChatButton />
     </div>
   );
 };

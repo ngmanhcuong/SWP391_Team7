@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { User } from '../../../types';
 import { DepositPaymentMethod, PatientPaymentsData } from '../types';
-import { buildPatientPaymentsData } from '../utils/buildPatientPaymentsData';
-import { markInvoicePaid } from '../utils/paymentInvoiceStore';
+import { patientApi } from '../api/patientApi';
 
 export const patientPaymentsQueryKey = (userId?: string) =>
   ['patient', 'payments', userId] as const;
@@ -17,28 +16,19 @@ export const usePatientPayments = (
 
   const query = useQuery({
     queryKey: patientPaymentsQueryKey(user?.id),
-    queryFn: async () => {
-      if (!user) throw new Error('Chưa đăng nhập');
-      return buildPatientPaymentsData(user);
-    },
+    queryFn: () => patientApi.getPayments(),
     enabled: !!user,
     staleTime: 30_000,
   });
 
   const payMutation = useMutation({
-    mutationFn: async ({
-      invoiceId,
-    }: {
-      invoiceId: string;
-      method: DepositPaymentMethod;
-    }) => {
-      await new Promise((resolve) => setTimeout(resolve, 900));
-      markInvoicePaid(invoiceId);
-    },
+    mutationFn: ({ invoiceId, method }: { invoiceId: string; method: DepositPaymentMethod }) =>
+      patientApi.payInvoice(invoiceId, method),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientPaymentsQueryKey(user?.id) });
       queryClient.invalidateQueries({ queryKey: ['patient', 'dashboard', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['patient', 'notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['patient', 'reviews', user?.id] });
     },
   });
 

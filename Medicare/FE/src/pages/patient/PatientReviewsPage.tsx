@@ -170,7 +170,7 @@ export const PatientReviewsPage: React.FC = () => {
         </div>
       </div>
 
-      <FloatingChatButton unreadCount={0} />
+      <FloatingChatButton />
     </div>
   );
 };

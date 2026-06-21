@@ -27,7 +27,7 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
   const isDoctorLayout = layout === 'doctor';
   const nameLabel = displayName || user.fullName;
   const dashboardPath = getRoleDashboardPath(user.role);
-  const profilePath = getRoleProfilePath();
+  const profilePath = getRoleProfilePath(user.role);
 
   return (
     <div className="relative">

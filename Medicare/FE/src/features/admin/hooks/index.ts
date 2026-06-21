@@ -1,20 +1,14 @@
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ADMIN_APPOINTMENTS,
   ADMIN_APPOINTMENT_STATS,
-  ADMIN_APPOINTMENT_TOTAL,
-  ADMIN_APPOINTMENT_TREND,
   ADMIN_AUDIT_LOGS,
   ADMIN_AUDIT_SUMMARY,
   ADMIN_AUDIT_TOTAL,
   ADMIN_DASHBOARD_STATS,
-  ADMIN_DEPARTMENTS,
   ADMIN_DEPARTMENT_STATS,
-  ADMIN_DOCTORS,
   ADMIN_DOCTOR_STATS,
   ADMIN_MONTHLY_SERIES,
-  ADMIN_NEW_APPOINTMENTS,
-  ADMIN_NEW_USERS_TODAY,
   ADMIN_PATIENT_TREND,
   ADMIN_QUARTERLY_GOAL,
   ADMIN_REPORT_METRICS,
@@ -29,31 +23,38 @@ import {
   ADMIN_SUPPLIES,
   ADMIN_SUPPLIES_TOTAL,
   ADMIN_SYSTEM_NOTICES,
-  ADMIN_TOP_DEPARTMENTS,
   ADMIN_TOP_SPECIALTIES,
-  ADMIN_TOTAL_DOCTORS,
   ADMIN_TOTAL_ROOMS,
-  ADMIN_USERS,
   DEFAULT_ADMIN_PROFILE,
   DEFAULT_ADMIN_SETTINGS,
 } from '../constants';
 import {
   AdminAppointment,
+  AdminDashboardStat,
   AdminDepartment,
   AdminDoctor,
   AdminProfileForm,
   AdminReview,
   AdminRoom,
+  AdminSectionStat,
   AdminSettingsForm,
   AdminUser,
   AdminUserRole,
   AdminUserStatus,
   AppointmentStatus,
+  AppointmentTrendPoint,
   AuditActionType,
   DoctorStatus,
+  NewAppointment,
   ReviewStatus,
   RoomStatus,
+  TopDepartment,
 } from '../types';
+import {
+  adminApi,
+  AdminAppointmentsResponse,
+  AdminDashboardResponse,
+} from '../services/adminApi';
 
 export type AdminUserRoleFilter = AdminUserRole | 'all';
 export type AdminUserStatusFilter = AdminUserStatus | 'all';
@@ -65,15 +66,61 @@ const matches = (query: string, ...values: string[]): boolean => {
   return values.some((value) => value.toLowerCase().includes(normalized));
 };
 
-export const useAdminDashboard = () => ({
-  stats: ADMIN_DASHBOARD_STATS,
-  appointmentTrend: ADMIN_APPOINTMENT_TREND,
-  newAppointments: ADMIN_NEW_APPOINTMENTS,
-  systemNotices: ADMIN_SYSTEM_NOTICES,
-  topDepartments: ADMIN_TOP_DEPARTMENTS,
-  quarterlyGoal: ADMIN_QUARTERLY_GOAL,
-  newUsersToday: ADMIN_NEW_USERS_TODAY,
+// Ghi đè value (và note) của khung thẻ thống kê tĩnh bằng số liệu thật.
+const overrideStat = (
+  stat: AdminSectionStat,
+  value: number | string,
+  note?: string,
+): AdminSectionStat => ({
+  ...stat,
+  value: typeof value === 'number' ? value.toLocaleString('vi-VN') : value,
+  ...(note !== undefined ? { note } : {}),
 });
+
+// ─── Dashboard ───────────────────────────────────────────
+export const useAdminDashboard = () => {
+  const { data } = useQuery<AdminDashboardResponse>({
+    queryKey: ['admin', 'dashboard'],
+    queryFn: () => adminApi.getDashboard(),
+  });
+
+  const stats: AdminDashboardStat[] = useMemo(() => {
+    const s = data?.stats;
+    return ADMIN_DASHBOARD_STATS.map((stat) => {
+      if (!s) return { ...stat, value: '…' };
+      switch (stat.id) {
+        case 'total-patients':
+          return { ...stat, value: s.patients.toLocaleString('vi-VN') };
+        case 'total-doctors':
+          return { ...stat, value: s.doctors.toLocaleString('vi-VN') };
+        case 'total-appointments':
+          return { ...stat, value: s.appointments.toLocaleString('vi-VN') };
+        case 'total-departments':
+          return { ...stat, value: s.specialties.toLocaleString('vi-VN') };
+        case 'total-rooms':
+          return { ...stat, value: s.rooms.toLocaleString('vi-VN') };
+        case 'revenue':
+          return { ...stat, value: s.revenueLabel };
+        default:
+          return stat;
+      }
+    });
+  }, [data]);
+
+  const appointmentTrend: AppointmentTrendPoint[] = data?.monthlyTrend ?? [];
+  const newAppointments: NewAppointment[] = data?.newAppointments ?? [];
+  const topDepartments: TopDepartment[] = data?.topDepartments ?? [];
+
+  return {
+    stats,
+    appointmentTrend,
+    newAppointments,
+    systemNotices: ADMIN_SYSTEM_NOTICES,
+    topDepartments,
+    quarterlyGoal: ADMIN_QUARTERLY_GOAL,
+    newUsersToday: data?.newUsersToday ?? 0,
+  };
+};
 
 export const useAdminReports = () => ({
   metrics: ADMIN_REPORT_METRICS,
@@ -87,11 +134,35 @@ export const useAdminReports = () => ({
   suppliesTotal: ADMIN_SUPPLIES_TOTAL,
 });
 
+// ─── Users ───────────────────────────────────────────────
 export const useAdminUsers = () => {
-  const [users, setUsers] = useState<AdminUser[]>(ADMIN_USERS);
+  const queryClient = useQueryClient();
+  const { data } = useQuery<AdminUser[]>({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminApi.getUsers(),
+  });
+  const users = useMemo<AdminUser[]>(
+    () => (data ?? []).filter((u: AdminUser) => u.role !== 'admin' && u.role !== 'doctor'),
+    [data],
+  );
+
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<AdminUserRoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<AdminUserStatusFilter>('all');
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: AdminUserStatus }) =>
+      adminApi.updateUserStatus(id, status),
+    onSuccess: invalidate,
+  });
+  const roleMutation = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      adminApi.updateUserRole(id, role),
+    onSuccess: invalidate,
+  });
+  const deleteMutation = useMutation({ mutationFn: adminApi.deleteUser, onSuccess: invalidate });
+  const addMutation = useMutation({ mutationFn: adminApi.createUser, onSuccess: invalidate });
 
   const filteredUsers = useMemo(
     () =>
@@ -107,32 +178,17 @@ export const useAdminUsers = () => {
     [users, search, roleFilter, statusFilter],
   );
 
-  const setUserStatus = (id: string, status: AdminUserStatus) =>
-    setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, status } : user)));
-
-  const deleteUser = (id: string) =>
-    setUsers((prev) => prev.filter((user) => user.id !== id));
-
-  const addUser = (data: AdminUserInput) =>
-    setUsers((prev) => {
-      const today = new Date().toISOString().slice(0, 10);
-      return [
-        {
-          ...data,
-          id: `u-${1000 + prev.length + 1}`,
-          createdAt: today,
-          lastActiveAt: today,
-        },
-        ...prev,
-      ];
-    });
+  const setUserStatus = (id: string, status: AdminUserStatus) => statusMutation.mutate({ id, status });
+  const updateUserRole = (id: string, role: string) => roleMutation.mutate({ id, role });
+  const deleteUser = (id: string) => deleteMutation.mutate(id);
+  const addUser = (input: AdminUserInput) => addMutation.mutate(input);
 
   const counts = useMemo(
     () => ({
       total: users.length,
       active: users.filter((user) => user.status === 'active').length,
       suspended: users.filter((user) => user.status === 'suspended').length,
-      doctors: users.filter((user) => user.role === 'doctor').length,
+      receptionists: users.filter((user) => user.role === 'receptionist').length,
     }),
     [users],
   );
@@ -147,33 +203,40 @@ export const useAdminUsers = () => {
     statusFilter,
     setStatusFilter,
     setUserStatus,
+    updateUserRole,
     deleteUser,
     addUser,
     counts,
   };
 };
 
+// ─── Doctors ─────────────────────────────────────────────
 export type DoctorStatusFilter = DoctorStatus | 'all';
-
 export type AdminDoctorInput = Omit<AdminDoctor, 'id'>;
 
-const generateDoctorId = (existing: AdminDoctor[]): string => {
-  const max = existing.reduce((acc, doctor) => {
-    const match = doctor.id.match(/(\d+)$/);
-    const num = match ? Number(match[1]) : 0;
-    return Math.max(acc, num);
-  }, 0);
-  return `DOC-2024-${String(max + 1).padStart(3, '0')}`;
-};
-
 export const useAdminDoctors = () => {
-  const [doctors, setDoctors] = useState<AdminDoctor[]>(ADMIN_DOCTORS);
+  const queryClient = useQueryClient();
+  const { data } = useQuery<AdminDoctor[]>({
+    queryKey: ['admin', 'doctors'],
+    queryFn: () => adminApi.getDoctors(),
+  });
+  const doctors = useMemo<AdminDoctor[]>(() => data ?? [], [data]);
+
   const [search, setSearch] = useState('');
   const [specialty, setSpecialty] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<DoctorStatusFilter>('all');
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'doctors'] });
+  const addMutation = useMutation({ mutationFn: adminApi.createDoctor, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<AdminDoctorInput> }) =>
+      adminApi.updateDoctor(id, input),
+    onSuccess: invalidate,
+  });
+  const deleteMutation = useMutation({ mutationFn: adminApi.deleteDoctor, onSuccess: invalidate });
+
   const specialties = useMemo(
-    () => Array.from(new Set(doctors.map((doctor) => doctor.specialty))),
+    () => Array.from(new Set(doctors.map((doctor) => doctor.specialty).filter(Boolean))),
     [doctors],
   );
 
@@ -187,26 +250,29 @@ export const useAdminDoctors = () => {
     [doctors, search, specialty, statusFilter],
   );
 
-  const deleteDoctor = (id: string) =>
-    setDoctors((prev) => prev.filter((doctor) => doctor.id !== id));
+  const stats: AdminSectionStat[] = useMemo(() => {
+    const working = doctors.filter((d) => d.status === 'working').length;
+    const onLeave = doctors.filter((d) => d.status === 'on_leave').length;
+    return [
+      overrideStat(ADMIN_DOCTOR_STATS[0], doctors.length, 'toàn hệ thống'),
+      overrideStat(ADMIN_DOCTOR_STATS[1], working, 'đang làm việc'),
+      overrideStat(ADMIN_DOCTOR_STATS[2], specialties.length, `${specialties.length} khoa`),
+      overrideStat(ADMIN_DOCTOR_STATS[3], onLeave, 'nghỉ phép'),
+    ];
+  }, [doctors, specialties]);
 
-  const addDoctor = (data: AdminDoctorInput) =>
-    setDoctors((prev) => [{ ...data, id: generateDoctorId(prev) }, ...prev]);
-
-  const updateDoctor = (id: string, data: AdminDoctorInput) =>
-    setDoctors((prev) => prev.map((doctor) => (doctor.id === id ? { ...doctor, ...data } : doctor)));
-
+  const deleteDoctor = (id: string) => deleteMutation.mutate(id);
+  const addDoctor = (input: AdminDoctorInput) => addMutation.mutate(input);
+  const updateDoctor = (id: string, input: AdminDoctorInput) => updateMutation.mutate({ id, input });
   const assignSpecialty = (id: string, nextSpecialty: string) =>
-    setDoctors((prev) =>
-      prev.map((doctor) => (doctor.id === id ? { ...doctor, specialty: nextSpecialty } : doctor)),
-    );
+    updateMutation.mutate({ id, input: { specialty: nextSpecialty } });
 
   return {
     doctors: filteredDoctors,
     allDoctors: doctors,
-    stats: ADMIN_DOCTOR_STATS,
+    stats,
     specialties,
-    total: ADMIN_TOTAL_DOCTORS - ADMIN_DOCTORS.length + doctors.length,
+    total: doctors.length,
     search,
     setSearch,
     specialty,
@@ -220,6 +286,7 @@ export const useAdminDoctors = () => {
   };
 };
 
+// ─── Rooms (mock - chưa có collection) ───────────────────
 export type RoomStatusFilter = RoomStatus | 'all';
 export type AdminRoomInput = Omit<AdminRoom, 'id'>;
 
@@ -275,17 +342,32 @@ export const useAdminRooms = () => {
   };
 };
 
+// ─── Departments / Specialties ───────────────────────────
 export type DepartmentSort = 'name-asc' | 'name-desc' | 'doctors-desc';
-
 export type AdminDepartmentInput = Omit<AdminDepartment, 'id'>;
 
-const generateDepartmentId = (existing: AdminDepartment[]): string =>
-  `KH${String(existing.length + 1).padStart(2, '0')}`;
-
 export const useAdminDepartments = () => {
-  const [departments, setDepartments] = useState<AdminDepartment[]>(ADMIN_DEPARTMENTS);
+  const queryClient = useQueryClient();
+  const { data } = useQuery<AdminDepartment[]>({
+    queryKey: ['admin', 'specialties'],
+    queryFn: () => adminApi.getSpecialties(),
+  });
+  const departments = useMemo<AdminDepartment[]>(() => data ?? [], [data]);
+
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<DepartmentSort>('name-asc');
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'specialties'] });
+    queryClient.invalidateQueries({ queryKey: ['admin', 'doctors'] });
+  };
+  const addMutation = useMutation({ mutationFn: adminApi.createSpecialty, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: AdminDepartmentInput }) =>
+      adminApi.updateSpecialty(id, input),
+    onSuccess: invalidate,
+  });
+  const deleteMutation = useMutation({ mutationFn: adminApi.deleteSpecialty, onSuccess: invalidate });
 
   const visibleDepartments = useMemo(() => {
     const filtered = departments.filter((dept) =>
@@ -300,18 +382,23 @@ export const useAdminDepartments = () => {
     return sorted;
   }, [departments, search, sort]);
 
-  const deleteDepartment = (id: string) =>
-    setDepartments((prev) => prev.filter((dept) => dept.id !== id));
+  const stats: AdminSectionStat[] = useMemo(() => {
+    const totalDoctors = departments.reduce((acc, dept) => acc + dept.doctorCount, 0);
+    return ADMIN_DEPARTMENT_STATS.map((stat) => {
+      if (stat.id === 'total') return overrideStat(stat, departments.length);
+      if (stat.id === 'doctors') return overrideStat(stat, totalDoctors);
+      return stat;
+    });
+  }, [departments]);
 
-  const addDepartment = (data: AdminDepartmentInput) =>
-    setDepartments((prev) => [{ ...data, id: generateDepartmentId(prev) }, ...prev]);
-
-  const updateDepartment = (id: string, data: AdminDepartmentInput) =>
-    setDepartments((prev) => prev.map((dept) => (dept.id === id ? { ...dept, ...data } : dept)));
+  const deleteDepartment = (id: string) => deleteMutation.mutate(id);
+  const addDepartment = (input: AdminDepartmentInput) => addMutation.mutate(input);
+  const updateDepartment = (id: string, input: AdminDepartmentInput) =>
+    updateMutation.mutate({ id, input });
 
   return {
     departments: visibleDepartments,
-    stats: ADMIN_DEPARTMENT_STATS,
+    stats,
     search,
     setSearch,
     sort,
@@ -322,6 +409,7 @@ export const useAdminDepartments = () => {
   };
 };
 
+// ─── Reviews (mock) ──────────────────────────────────────
 export type ReviewRatingFilter = number | 'all';
 
 export const useAdminReviews = () => {
@@ -370,24 +458,30 @@ export const useAdminReviews = () => {
   };
 };
 
+// ─── Appointments ────────────────────────────────────────
 export type AppointmentStatusFilter = AppointmentStatus | 'all';
 
 export type AdminAppointmentInput = Omit<AdminAppointment, 'id' | 'patientInitials' | 'status'> & {
   status?: AppointmentStatus;
 };
 
-const initialsOf = (name: string): string =>
-  name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .slice(-2)
-    .join('')
-    .toUpperCase();
-
 export const useAdminAppointments = () => {
-  const [appointments, setAppointments] = useState<AdminAppointment[]>(ADMIN_APPOINTMENTS);
+  const queryClient = useQueryClient();
+  const { data } = useQuery<AdminAppointmentsResponse>({
+    queryKey: ['admin', 'appointments'],
+    queryFn: () => adminApi.getAppointments(),
+  });
+  const appointments = useMemo<AdminAppointment[]>(() => data?.items ?? [], [data]);
+
   const [statusFilter, setStatusFilter] = useState<AppointmentStatusFilter>('all');
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'appointments'] });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: AppointmentStatus }) =>
+      adminApi.updateAppointmentStatus(id, status),
+    onSuccess: invalidate,
+  });
+  const addMutation = useMutation({ mutationFn: adminApi.createAppointment, onSuccess: invalidate });
 
   const filtered = useMemo(
     () =>
@@ -397,28 +491,26 @@ export const useAdminAppointments = () => {
     [appointments, statusFilter],
   );
 
-  const setAppointmentStatus = (id: string, status: AppointmentStatus) =>
-    setAppointments((prev) =>
-      prev.map((appointment) =>
-        appointment.id === id ? { ...appointment, status } : appointment,
-      ),
-    );
+  const stats: AdminSectionStat[] = useMemo(() => {
+    const s = data?.stats;
+    return ADMIN_APPOINTMENT_STATS.map((stat) => {
+      if (!s) return { ...stat, value: '…' };
+      if (stat.id === 'today') return overrideStat(stat, s.today);
+      if (stat.id === 'pending') return overrideStat(stat, s.pending);
+      if (stat.id === 'completed') return overrideStat(stat, s.completed);
+      if (stat.id === 'cancelled') return overrideStat(stat, s.cancelled);
+      return stat;
+    });
+  }, [data]);
 
-  const addAppointment = (data: AdminAppointmentInput) =>
-    setAppointments((prev) => [
-      {
-        ...data,
-        id: `#LH-${10293 + prev.length + 1}`,
-        patientInitials: initialsOf(data.patientName),
-        status: data.status ?? 'pending',
-      },
-      ...prev,
-    ]);
+  const setAppointmentStatus = (id: string, status: AppointmentStatus) =>
+    statusMutation.mutate({ id, status });
+  const addAppointment = (input: AdminAppointmentInput) => addMutation.mutate(input);
 
   return {
     appointments: filtered,
-    stats: ADMIN_APPOINTMENT_STATS,
-    total: ADMIN_APPOINTMENT_TOTAL,
+    stats,
+    total: data?.total ?? appointments.length,
     statusFilter,
     setStatusFilter,
     setAppointmentStatus,
@@ -426,6 +518,7 @@ export const useAdminAppointments = () => {
   };
 };
 
+// ─── Audit log (mock) ────────────────────────────────────
 export type AuditActionFilter = AuditActionType | 'all';
 
 export const useAdminAuditLog = () => {

@@ -39,7 +39,9 @@ export const PatientAppointmentsPage: React.FC = () => {
     isPayingDeposit,
     aiAnalysis,
     isAnalyzing,
+    analysisError,
     isSubmitting,
+    submitError,
     bookingResult,
     canContinue,
     canAnalyze,
@@ -74,7 +76,7 @@ export const PatientAppointmentsPage: React.FC = () => {
           selectedTime={selectedTime}
           onBookAnother={resetBooking}
         />
-        <FloatingChatButton unreadCount={2} />
+        <FloatingChatButton />
       </div>
     );
   }
@@ -114,7 +116,13 @@ export const PatientAppointmentsPage: React.FC = () => {
             />
           </div>
           <div className="lg:col-span-1">
-            <AiMedicalAssistantPanel analysis={aiAnalysis} isAnalyzing={isAnalyzing} />
+            <AiMedicalAssistantPanel
+              analysis={aiAnalysis}
+              isAnalyzing={isAnalyzing}
+              error={analysisError}
+              canRetry={canAnalyze}
+              onRetry={analyzeSymptoms}
+            />
           </div>
         </div>
       )}
@@ -192,6 +200,12 @@ export const PatientAppointmentsPage: React.FC = () => {
         />
       )}
 
+      {submitError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {submitError}
+        </div>
+      )}
+
       <AppointmentBookingFooter
         currentStep={currentStep}
         canContinue={canContinue}
@@ -204,7 +218,7 @@ export const PatientAppointmentsPage: React.FC = () => {
         selectedTime={selectedTime}
       />
 
-      <FloatingChatButton unreadCount={2} />
+      <FloatingChatButton />
     </div>
   );
 };

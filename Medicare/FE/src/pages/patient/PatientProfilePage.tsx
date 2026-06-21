@@ -137,7 +137,7 @@ export const PatientProfilePage: React.FC = () => {
         </Link>
       </div>
 
-      <FloatingChatButton unreadCount={2} />
+      <FloatingChatButton />
     </div>
   );
 };

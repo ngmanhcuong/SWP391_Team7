@@ -1,7 +1,6 @@
 import {
   LabResult,
   MedicalHistoryItem,
-  PatientHealthRecordsData,
   PrescriptionRecord,
   VisitRecord,
 } from '../types';

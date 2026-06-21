@@ -1,15 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Send, Sparkles, X } from 'lucide-react';
+import { aiApi, AiChatMessage } from '../api/aiApi';
+import { useChatStore, type ChatMessage } from '../../../store/chatStore';
 
 interface FloatingChatButtonProps {
-  unreadCount?: number;
   onClick?: () => void;
-}
-
-interface ChatMessage {
-  id: number;
-  sender: 'user' | 'bot';
-  text: string;
 }
 
 const QUICK_PROMPTS = [
@@ -18,38 +13,41 @@ const QUICK_PROMPTS = [
   'Tư vấn triệu chứng',
 ];
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: 1,
-    sender: 'bot',
-    text: 'Xin chào! Tôi là trợ lý sức khỏe MediCare AI. Tôi có thể giúp gì cho bạn hôm nay?',
-  },
-];
+// Render text có hỗ trợ in đậm bằng cú pháp **...** (dùng để in đậm tên chuyên khoa)
+const renderRichText = (text: string): React.ReactNode =>
+  text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={index} className="font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
 
-const buildBotReply = (userText: string): string => {
-  const text = userText.toLowerCase();
-  if (text.includes('lịch') || text.includes('đặt')) {
-    return 'Bạn có thể đặt lịch khám ở mục "Lịch hẹn". Bạn muốn khám chuyên khoa nào và vào thời gian nào ạ?';
-  }
-  if (text.includes('xét nghiệm') || text.includes('kết quả')) {
-    return 'Kết quả xét nghiệm của bạn được lưu trong "Hồ sơ bệnh án" → tab "Xét nghiệm". Bạn cần tôi giải thích chỉ số nào không?';
-  }
-  if (text.includes('triệu chứng') || text.includes('đau') || text.includes('sốt')) {
-    return 'Bạn vui lòng mô tả rõ triệu chứng (vị trí, mức độ, thời gian) để tôi tư vấn sơ bộ. Lưu ý: thông tin chỉ mang tính tham khảo, không thay thế chẩn đoán của bác sĩ.';
-  }
-  if (text.includes('thanh toán') || text.includes('hóa đơn') || text.includes('viện phí')) {
-    return 'Thông tin thanh toán và hóa đơn nằm ở mục "Thanh toán". Bạn cần hỗ trợ về khoản nào ạ?';
-  }
-  return 'Cảm ơn bạn đã liên hệ. Tôi đã ghi nhận yêu cầu và sẽ hỗ trợ bạn ngay. Bạn có thể mô tả thêm chi tiết để tôi giúp tốt hơn nhé!';
-};
+const toChatHistory = (messages: ChatMessage[]): AiChatMessage[] =>
+  messages
+    .filter((message) => !message.isError)
+    .map((message) => ({
+      role: message.sender === 'user' ? 'user' : 'model',
+      text: message.text,
+    }));
 
-const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ unreadCount = 0, onClick }) => {
+const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ onClick }) => {
+  const messages = useChatStore((state) => state.messages);
+  const unread = useChatStore((state) => state.unread);
+  const addMessage = useChatStore((state) => state.addMessage);
+  const markAllRead = useChatStore((state) => state.markAllRead);
+  const bumpUnread = useChatStore((state) => state.bumpUnread);
+
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -60,8 +58,9 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ unreadCount = 0
   useEffect(() => {
     if (open) {
       inputRef.current?.focus();
+      markAllRead(); // mở chat = đã đọc hết
     }
-  }, [open]);
+  }, [open, markAllRead]);
 
   const handleToggle = () => {
     if (onClick) {
@@ -71,22 +70,33 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ unreadCount = 0
     setOpen((prev) => !prev);
   };
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || isTyping) return;
 
     const userMessage: ChatMessage = { id: Date.now(), sender: 'user', text: trimmed };
-    setMessages((prev) => [...prev, userMessage]);
+    const history = toChatHistory([...messages, userMessage]);
+
+    addMessage(userMessage);
     setInput('');
     setIsTyping(true);
 
-    window.setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, sender: 'bot', text: buildBotReply(trimmed) },
-      ]);
+    try {
+      const reply = await aiApi.chat(history);
+      addMessage({ id: Date.now() + 1, sender: 'bot', text: reply });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Trợ lý AI hiện không phản hồi được. Vui lòng thử lại sau ít phút.';
+      addMessage({ id: Date.now() + 1, sender: 'bot', text: message, isError: true });
+    } finally {
       setIsTyping(false);
-    }, 900);
+      // Nếu người dùng đã đóng chat trước khi bot trả lời -> đánh dấu chưa đọc
+      if (!openRef.current) {
+        bumpUnread();
+      }
+    }
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -131,13 +141,15 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ unreadCount = 0
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                  className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                     message.sender === 'user'
                       ? 'rounded-br-md bg-[#2563eb] text-white'
-                      : 'rounded-bl-md border border-slate-200/70 bg-white text-slate-700 shadow-sm'
+                      : message.isError
+                        ? 'rounded-bl-md border border-red-200 bg-red-50 text-red-600 shadow-sm'
+                        : 'rounded-bl-md border border-slate-200/70 bg-white text-slate-700 shadow-sm'
                   }`}
                 >
-                  {message.text}
+                  {message.sender === 'bot' ? renderRichText(message.text) : message.text}
                 </div>
               </div>
             ))}
@@ -180,7 +192,7 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ unreadCount = 0
             />
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || isTyping}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] text-white shadow-md shadow-blue-500/30 transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Gửi"
             >
@@ -204,9 +216,9 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ unreadCount = 0
         ) : (
           <MessageCircle size={24} className="relative transition-transform duration-300 group-hover:rotate-6" />
         )}
-        {!open && unreadCount > 0 && (
+        {!open && unread > 0 && (
           <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#ba1a1a] px-1 text-xs font-semibold text-white ring-2 ring-white">
-            {unreadCount}
+            {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>

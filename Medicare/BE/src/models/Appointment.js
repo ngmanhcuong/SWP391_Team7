@@ -19,6 +19,16 @@ const appointmentSchema = new mongoose.Schema({
   status: { type: String, enum: APPOINTMENT_STATUSES, default: 'pending' },
   checkedInAt: { type: Date, default: null },
   queueTicket: { type: Number, default: null },
+  // ── Lịch do bệnh nhân tự đặt (module Bệnh nhân) ──
+  patientUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  specialty: { type: mongoose.Schema.Types.ObjectId, ref: 'Specialty', default: null },
+  doctorRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', default: null },
+  symptoms: { type: String, trim: true, default: '' },
+  additionalNotes: { type: String, trim: true, default: '' },
+  consultationFee: { type: Number, default: 0 },
+  depositAmount: { type: Number, default: 0 },
+  source: { type: String, enum: ['reception', 'patient'], default: 'reception' },
+  isSeed: { type: Boolean, default: false },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

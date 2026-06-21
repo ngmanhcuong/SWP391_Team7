@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { User } from '../../../types';
 import { PatientNotificationsData } from '../types';
-import { buildPatientNotificationsData } from '../utils/buildPatientNotificationsData';
-import {
-  markAllNotificationsRead,
-  markNotificationRead,
-} from '../utils/notificationReadStore';
+import { patientApi } from '../api/patientApi';
 
 export const patientNotificationsQueryKey = (userId?: string) =>
   ['patient', 'notifications', userId] as const;
@@ -20,10 +16,7 @@ export const usePatientNotifications = (
 
   const query = useQuery({
     queryKey: patientNotificationsQueryKey(user?.id),
-    queryFn: async () => {
-      if (!user) throw new Error('Chưa đăng nhập');
-      return buildPatientNotificationsData(user);
-    },
+    queryFn: () => patientApi.getNotifications(),
     enabled: !!user,
     staleTime: 30_000,
   });
@@ -33,26 +26,19 @@ export const usePatientNotifications = (
   };
 
   const markReadMutation = useMutation({
-    mutationFn: async (id: string) => {
-      markNotificationRead(id);
-    },
+    mutationFn: (id: string) => patientApi.markNotificationsRead({ id }),
     onSuccess: invalidate,
   });
 
   const markAllReadMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      markAllNotificationsRead(ids);
-    },
+    mutationFn: () => patientApi.markNotificationsRead(),
     onSuccess: invalidate,
   });
 
   return {
     ...query,
     markRead: (id: string) => markReadMutation.mutate(id),
-    markAllRead: () => {
-      const ids = query.data?.notifications.map((item: { id: string }) => item.id) ?? [];
-      markAllReadMutation.mutate(ids);
-    },
+    markAllRead: () => markAllReadMutation.mutate(),
   };
 };
 

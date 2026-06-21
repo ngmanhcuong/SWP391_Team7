@@ -97,4 +97,9 @@ export const getRoleSettingsPath = (role?: string | null): string => {
   return '/cai-dat';
 };
 
-export const getRoleProfilePath = (): string => PROFILE_PATH;
+export const getRoleProfilePath = (role?: string | null): string => {
+  if (role === 'doctor') return '/doctor/cai-dat';
+  if (role === 'receptionist') return '/receptionist/ho-so';
+  if (role === 'admin') return '/admin/cai-dat';
+  return PROFILE_PATH;
+};
