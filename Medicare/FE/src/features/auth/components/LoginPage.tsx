@@ -112,7 +112,7 @@ const LoginPage: React.FC = () => {
         {showDemoLogin && (
           <div className="mt-6 p-4 rounded-xl border border-dashed border-blue-200 bg-blue-50/50">
             <p className="text-xs font-semibold text-gray-600 mb-2">
-              Đăng nhập nhanh (demo — chưa cần database)
+              Đăng nhập nhanh (tài khoản mẫu • mật khẩu: Password123)
             </p>
             <div className="grid grid-cols-2 gap-2">
               {DEMO_ACCOUNTS.map((account) => (
