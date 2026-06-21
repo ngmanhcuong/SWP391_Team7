@@ -1,6 +1,14 @@
 export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'checked-in' | 'done';
 export type QueueStatus = 'waiting' | 'in-progress' | 'skipped' | 'done';
-export type RoomKey = 'P101' | 'P102';
+export type RoomKey =
+  | 'P101'
+  | 'P102'
+  | 'P201'
+  | 'P202'
+  | 'P301'
+  | 'P302'
+  | 'P401'
+  | 'P402';
 
 export interface PatientInsurance {
   code: string;
