@@ -1,75 +1,19 @@
-import { User } from '../../../types';
-
 export interface DemoAccount {
   email: string;
   password: string;
   label: string;
-  user: User;
+  role: 'admin' | 'doctor' | 'receptionist' | 'patient';
 }
 
-const buildUser = (
-  data: Pick<User, 'id' | 'email' | 'fullName' | 'role'> & Partial<User>,
-): User => ({
-  isEmailVerified: true,
-  createdAt: '2024-01-01T00:00:00.000Z',
-  ...data,
-});
-
 /**
- * Tài khoản demo dùng khi chưa có backend/database.
- * Đăng nhập bằng các thông tin dưới đây sẽ tạo phiên ngay trên frontend.
+ * Tài khoản mẫu để đăng nhập nhanh khi phát triển.
+ * Các tài khoản này được seed sẵn ở backend (xem BE/src/config/seedDevUsers.js),
+ * nên khi bấm đăng nhập nhanh sẽ đi qua API thật và nhận JWT hợp lệ —
+ * dùng được với mọi tính năng cần xác thực (lễ tân, bác sĩ, ...).
  */
 export const DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    email: 'admin@medicare.vn',
-    password: 'Admin@123',
-    label: 'Quản trị viên',
-    user: buildUser({
-      id: 'demo-admin',
-      email: 'admin@medicare.vn',
-      fullName: 'Quản trị viên',
-      role: 'admin',
-    }),
-  },
-  {
-    email: 'doctor@medicare.vn',
-    password: 'Doctor@123',
-    label: 'Bác sĩ',
-    user: buildUser({
-      id: 'demo-doctor',
-      email: 'doctor@medicare.vn',
-      fullName: 'BS. Trần Văn Minh',
-      role: 'doctor',
-    }),
-  },
-  {
-    email: 'receptionist@medicare.vn',
-    password: 'Reception@123',
-    label: 'Lễ tân',
-    user: buildUser({
-      id: 'demo-receptionist',
-      email: 'receptionist@medicare.vn',
-      fullName: 'Phạm Thu Hà',
-      role: 'receptionist',
-    }),
-  },
-  {
-    email: 'patient@medicare.vn',
-    password: 'Patient@123',
-    label: 'Bệnh nhân',
-    user: buildUser({
-      id: 'demo-patient',
-      email: 'patient@medicare.vn',
-      fullName: 'Đỗ Quang Huy',
-      role: 'patient',
-    }),
-  },
+  { email: 'admin@test.com', password: 'Password123', label: 'Quản trị viên', role: 'admin' },
+  { email: 'doctor@test.com', password: 'Password123', label: 'Bác sĩ', role: 'doctor' },
+  { email: 'receptionist@test.com', password: 'Password123', label: 'Lễ tân', role: 'receptionist' },
+  { email: 'patient@test.com', password: 'Password123', label: 'Bệnh nhân', role: 'patient' },
 ];
-
-export const matchDemoAccount = (email: string, password: string): User | null => {
-  const normalizedEmail = email.trim().toLowerCase();
-  const account = DEMO_ACCOUNTS.find(
-    (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
-  );
-  return account ? account.user : null;
-};

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Calendar,
   CheckCircle2,
@@ -9,242 +9,607 @@ import {
   Search,
   XCircle,
 } from 'lucide-react';
-import { Card } from '../../components/ui';
+import { Card, Modal, Spinner } from '../../components/ui';
 import Button from '../../components/ui/Button';
+import {
+  useAppointments,
+  useCreateAppointment,
+  useUpdateAppointmentStatus,
+} from '../../features/receptionist/hooks';
+import { Appointment, AppointmentStatus } from '../../features/receptionist/types';
 
-interface Stat {
-  label: string;
-  value: string;
-  icon: LucideIcon;
-  tone: string;
-}
-
-const STATS: Stat[] = [
-  { label: 'Tổng lịch hẹn (Hôm nay)', value: '42', icon: Calendar, tone: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40' },
-  { label: 'Đã xác nhận', value: '28', icon: CheckCircle2, tone: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40' },
-  { label: 'Chờ xác nhận', value: '10', icon: Clock, tone: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40' },
-  { label: 'Đã hủy', value: '4', icon: XCircle, tone: 'bg-red-100 text-red-600 dark:bg-red-950/40' },
-];
-
-type Status = 'pending' | 'confirmed' | 'in-progress' | 'done' | 'cancelled';
-
-const STATUS_STYLES: Record<Status, { label: string; className: string }> = {
+const STATUS_STYLES: Record<AppointmentStatus, { label: string; className: string }> = {
   pending: { label: 'Chờ xác nhận', className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40' },
   confirmed: { label: 'Đã xác nhận', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40' },
-  'in-progress': { label: 'Đang khám', className: 'bg-[#1a56db] text-white' },
+  'checked-in': { label: 'Đã check-in', className: 'bg-[#1a56db] text-white' },
   done: { label: 'Hoàn thành', className: 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-300' },
   cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-600 dark:bg-red-950/40' },
 };
 
-interface AppointmentRow {
-  code: string;
+const STATUS_FILTER_OPTIONS: { value: 'all' | AppointmentStatus; label: string }[] = [
+  { value: 'all', label: 'Tất cả trạng thái' },
+  { value: 'pending', label: 'Chờ xác nhận' },
+  { value: 'confirmed', label: 'Đã xác nhận' },
+  { value: 'checked-in', label: 'Đã check-in' },
+  { value: 'done', label: 'Hoàn thành' },
+  { value: 'cancelled', label: 'Đã hủy' },
+];
+
+const DEPARTMENTS = ['Khoa Nội tổng quát', 'Sản phụ khoa', 'Khoa Nhi', 'Khoa Chấn thương', 'Khoa Tim mạch'];
+const DOCTORS = ['BS. Lê Minh Hoàng', 'BS. Nguyễn Thu Thủy', 'BS. Đặng Quốc Anh', 'BS. Vũ Hà Phương', 'BS. Trần Mỹ Linh'];
+
+const PAGE_SIZE = 5;
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const formatDate = (iso?: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+interface NewAppointmentForm {
   name: string;
   phone: string;
   doctor: string;
   department: string;
   date: string;
   time: string;
-  status: Status;
 }
 
-const APPOINTMENTS: AppointmentRow[] = [
-  { code: '#LH-9802', name: 'Trần Văn Tú', phone: '0901 234 567', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội tổng quát', date: '24/10/2023', time: '08:30 AM', status: 'pending' },
-  { code: '#LH-9801', name: 'Phạm Mỹ Linh', phone: '0982 555 111', doctor: 'BS. Nguyễn Thu Thủy', department: 'Sản phụ khoa', date: '24/10/2023', time: '09:15 AM', status: 'confirmed' },
-  { code: '#LH-9799', name: 'Lê Hoàng Nam', phone: '0911 333 999', doctor: 'BS. Đặng Quốc Anh', department: 'Khoa Chấn thương', date: '24/10/2023', time: '08:00 AM', status: 'in-progress' },
-  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', phone: '0888 123 456', doctor: 'BS. Vũ Hà Phương', department: 'Khoa Nhi', date: '24/10/2023', time: '07:30 AM', status: 'done' },
-  { code: '#LH-9790', name: 'Hoàng Công Thành', phone: '0977 444 888', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội tổng quát', date: '24/10/2023', time: '10:00 AM', status: 'cancelled' },
+const EMPTY_NEW_FORM: NewAppointmentForm = {
+  name: '',
+  phone: '',
+  doctor: DOCTORS[0],
+  department: DEPARTMENTS[0],
+  date: todayISO(),
+  time: '08:00',
+};
+
+const TIMELINE = [
+  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', detail: 'Khám tổng quát nhi • BS. Hà Phương', state: 'done' as const, note: 'ĐÃ HOÀN THÀNH' },
+  { code: '#LH-9799', name: 'Lê Hoàng Nam', detail: 'Chụp X-Quang • BS. Quốc Anh', state: 'active' as const, note: 'Đang khám...' },
+  { code: '#LH-9802', name: 'Trần Văn Tú', detail: 'Tiếp nhận hồ sơ • Chờ BS. Minh Hoàng', state: 'upcoming' as const, note: 'Sắp tới (08:30)' },
 ];
 
-interface TimelineItem {
-  code: string;
-  name: string;
-  detail: string;
-  state: 'done' | 'active' | 'upcoming';
-  note: string;
-}
+const ReceptionistAppointmentManagement: React.FC = () => {
+  const { data: appointments = [], isLoading, isError } = useAppointments();
+  const createAppointment = useCreateAppointment();
+  const updateStatus = useUpdateAppointmentStatus();
 
-const TIMELINE: TimelineItem[] = [
-  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', detail: 'Khám tổng quát nhi • BS. Hà Phương', state: 'done', note: 'ĐÃ HOÀN THÀNH' },
-  { code: '#LH-9799', name: 'Lê Hoàng Nam', detail: 'Chụp X-Quang • BS. Quốc Anh', state: 'active', note: 'Đang khám...' },
-  { code: '#LH-9802', name: 'Trần Văn Tú', detail: 'Tiếp nhận hồ sơ • Chờ BS. Minh Hoàng', state: 'upcoming', note: 'Sắp tới (08:30)' },
-];
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [page, setPage] = useState(1);
 
-const ReceptionistAppointmentManagement: React.FC = () => (
-  <div className="space-y-6">
-    <h1 className="text-2xl font-bold text-[#1a56db]" style={{ fontFamily: 'Lexend' }}>
-      Quản lý lịch hẹn
-    </h1>
+  const [detail, setDetail] = useState<Appointment | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newForm, setNewForm] = useState<NewAppointmentForm>(EMPTY_NEW_FORM);
+  const [newErrors, setNewErrors] = useState<Partial<Record<keyof NewAppointmentForm, string>>>({});
+  const [toast, setToast] = useState<string | null>(null);
 
-    {/* Stats */}
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {STATS.map(({ label, value, icon: Icon, tone }) => (
-        <Card key={label}>
-          <div className="flex items-center gap-4">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tone}`}>
-              <Icon size={22} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
-              <p className="text-2xl font-bold">{value}</p>
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
-    {/* Filters */}
-    <Card>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-        <label className="flex-1">
-          <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Tìm kiếm</span>
-          <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-2 focus-within:border-[#1a56db]">
-            <Search size={16} className="text-gray-400" />
-            <input
-              type="text"
-              placeholder="ID, Tên bệnh nhân..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
-            />
-          </div>
-        </label>
-        <label className="lg:w-48">
-          <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Trạng thái</span>
-          <select className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]">
-            <option>Tất cả trạng thái</option>
-            <option>Chờ xác nhận</option>
-            <option>Đã xác nhận</option>
-            <option>Đã hủy</option>
-          </select>
-        </label>
-        <label className="lg:w-48">
-          <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Khoa khám</span>
-          <select className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]">
-            <option>Tất cả các khoa</option>
-            <option>Khoa Nội tổng quát</option>
-            <option>Sản phụ khoa</option>
-            <option>Khoa Nhi</option>
-          </select>
-        </label>
-        <Button leftIcon={<Plus size={16} />}>Tạo lịch hẹn mới</Button>
-      </div>
-    </Card>
+  // Keep the detail modal in sync after a status mutation.
+  useEffect(() => {
+    if (!detail) return;
+    const fresh = appointments.find((a) => a.id === detail.id);
+    if (fresh && fresh.status !== detail.status) setDetail(fresh);
+  }, [appointments, detail]);
 
-    {/* Table */}
-    <Card padding="none" className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-slate-700">
-              <th className="px-5 py-3">Mã LH</th>
-              <th className="px-3 py-3">Bệnh nhân</th>
-              <th className="px-3 py-3">Bác sĩ</th>
-              <th className="px-3 py-3">Khoa khám</th>
-              <th className="px-3 py-3">Ngày khám</th>
-              <th className="px-3 py-3">Giờ khám</th>
-              <th className="px-3 py-3">Trạng thái</th>
-              <th className="px-3 py-3 text-right pr-5">Hành động</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-            {APPOINTMENTS.map((appt) => (
-              <tr key={appt.code} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
-                <td className="px-5 py-4 font-semibold text-[#1a56db]">{appt.code}</td>
-                <td className="px-3 py-4">
-                  <p className="font-medium">{appt.name}</p>
-                  <p className="text-xs text-gray-400">{appt.phone}</p>
-                </td>
-                <td className="px-3 py-4 text-gray-600 dark:text-slate-300">{appt.doctor}</td>
-                <td className="px-3 py-4 text-gray-600 dark:text-slate-300">{appt.department}</td>
-                <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{appt.date}</td>
-                <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{appt.time}</td>
-                <td className="px-3 py-4">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[appt.status].className}`}>
-                    {STATUS_STYLES[appt.status].label}
-                  </span>
-                </td>
-                <td className="px-3 py-4 text-right pr-5">
-                  <button type="button" className="text-sm font-medium text-[#1a56db] hover:underline">
-                    Chi tiết
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
-        <p className="text-xs text-gray-400">Hiển thị 5 trên 42 kết quả</p>
-        <div className="flex items-center gap-1">
-          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50" aria-label="Trang trước">‹</button>
-          <button type="button" className="h-8 w-8 rounded-lg bg-[#1a56db] text-sm font-medium text-white">1</button>
-          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50">2</button>
-          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50">3</button>
-          <span className="px-1 text-gray-400">...</span>
-          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 hover:bg-gray-50">9</button>
-          <button type="button" className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50" aria-label="Trang sau">›</button>
-        </div>
-      </div>
-    </Card>
+  const stats: { label: string; value: number; icon: LucideIcon; tone: string }[] = useMemo(() => {
+    const by = (s: AppointmentStatus) => appointments.filter((a) => a.status === s).length;
+    return [
+      { label: 'Tổng lịch hẹn', value: appointments.length, icon: Calendar, tone: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40' },
+      { label: 'Đã xác nhận', value: by('confirmed'), icon: CheckCircle2, tone: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40' },
+      { label: 'Chờ xác nhận', value: by('pending'), icon: Clock, tone: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40' },
+      { label: 'Đã hủy', value: by('cancelled'), icon: XCircle, tone: 'bg-red-100 text-red-600 dark:bg-red-950/40' },
+    ];
+  }, [appointments]);
 
-    {/* Bottom: timeline + note */}
-    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-      <Card>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold">Tiến độ khám bệnh hôm nay</h2>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Trực tiếp
-          </span>
-        </div>
-        <div className="space-y-3">
-          {TIMELINE.map((item, idx) => {
-            const dotColor = item.state === 'done' ? 'bg-emerald-500' : item.state === 'active' ? 'bg-[#1a56db]' : 'bg-gray-300';
-            return (
-              <div key={item.code} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span className={`h-3.5 w-3.5 rounded-full ${dotColor} ${item.state === 'active' ? 'ring-4 ring-blue-100 dark:ring-blue-950/40' : ''}`} />
-                  {idx < TIMELINE.length - 1 && <span className="w-px flex-1 bg-gray-200 dark:bg-slate-700" />}
-                </div>
-                <div
-                  className={`mb-2 flex-1 rounded-xl border p-3 ${
-                    item.state === 'active'
-                      ? 'border-[#1a56db]/30 bg-blue-50/60 dark:bg-blue-950/20'
-                      : 'border-gray-100 dark:border-slate-700'
-                  } ${item.state === 'upcoming' ? 'opacity-70' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{item.code}: {item.name}</p>
-                      <p className="text-xs text-gray-400">{item.detail}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-xs font-semibold ${
-                        item.state === 'done' ? 'text-emerald-600' : item.state === 'active' ? 'text-[#1a56db]' : 'text-gray-400'
-                      }`}
-                    >
-                      {item.note}
-                    </span>
-                  </div>
-                </div>
+  const filtered = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return appointments.filter((a) => {
+      const matchStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchDept = departmentFilter === 'all' || a.department === departmentFilter;
+      const matchSearch =
+        keyword === '' ||
+        a.patientName.toLowerCase().includes(keyword) ||
+        a.code.toLowerCase().includes(keyword) ||
+        (a.phone ?? '').replace(/\s/g, '').includes(keyword.replace(/\s/g, ''));
+      return matchStatus && matchDept && matchSearch;
+    });
+  }, [appointments, search, statusFilter, departmentFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, departmentFilter]);
+
+  const changeStatus = (id: string, status: AppointmentStatus, message: string) => {
+    updateStatus.mutate(
+      { id, status },
+      {
+        onSuccess: () => setToast(message),
+        onError: () => setToast('Cập nhật trạng thái thất bại.'),
+      },
+    );
+  };
+
+  const handleCreate = () => {
+    const errors: Partial<Record<keyof NewAppointmentForm, string>> = {};
+    if (!newForm.name.trim()) errors.name = 'Vui lòng nhập tên bệnh nhân.';
+    if (!/^0\d{9}$/.test(newForm.phone.trim())) errors.phone = 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.';
+    if (!newForm.date) errors.date = 'Chọn ngày khám.';
+    if (!newForm.time) errors.time = 'Chọn giờ khám.';
+    setNewErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    createAppointment.mutate(
+      {
+        patientName: newForm.name.trim(),
+        phone: newForm.phone.trim(),
+        doctor: newForm.doctor,
+        department: newForm.department,
+        date: newForm.date,
+        time: newForm.time,
+      },
+      {
+        onSuccess: (appt) => {
+          setCreateOpen(false);
+          setNewForm(EMPTY_NEW_FORM);
+          setNewErrors({});
+          setStatusFilter('all');
+          setDepartmentFilter('all');
+          setSearch('');
+          setToast(`Đã tạo lịch hẹn ${appt.code} cho ${appt.patientName}.`);
+        },
+        onError: () => setToast('Không thể tạo lịch hẹn.'),
+      },
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-[#1a56db]" style={{ fontFamily: 'Lexend' }}>
+        Quản lý lịch hẹn
+      </h1>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map(({ label, value, icon: Icon, tone }) => (
+          <Card key={label}>
+            <div className="flex items-center gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tone}`}>
+                <Icon size={22} />
               </div>
-            );
-          })}
+              <div>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
+                <p className="text-2xl font-bold">{value}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <label className="flex-1">
+            <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Tìm kiếm</span>
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-2 focus-within:border-[#1a56db]">
+              <Search size={16} className="text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Mã LH, Tên bệnh nhân, SĐT..."
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+              />
+            </div>
+          </label>
+          <label className="lg:w-48">
+            <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Trạng thái</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | AppointmentStatus)}
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]"
+            >
+              {STATUS_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="lg:w-48">
+            <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Khoa khám</span>
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]"
+            >
+              <option value="all">Tất cả các khoa</option>
+              {DEPARTMENTS.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button leftIcon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
+            Tạo lịch hẹn mới
+          </Button>
         </div>
       </Card>
 
-      <div className="rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-5 text-white shadow-lg">
-        <h2 className="text-base font-semibold mb-3">Ghi chú quan trọng</h2>
-        <p className="text-sm text-blue-50">
-          Hôm nay có lịch họp giao ban định kỳ lúc 10:30 AM tại phòng hội nghị tầng 3. Các bác sĩ khoa Nội cần chuẩn bị báo cáo tháng.
-        </p>
-        <div className="mt-4 flex gap-3 rounded-xl bg-white/10 p-3">
-          <Info size={18} className="shrink-0" />
-          <div>
-            <p className="text-sm font-semibold">Cập nhật hệ thống</p>
-            <p className="mt-0.5 text-xs text-blue-100">Phiên bản 2.4.0 sẽ được triển khai vào 22:00 đêm nay.</p>
+      {/* Table */}
+      <Card padding="none" className="overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Spinner size="lg" />
+          </div>
+        ) : isError ? (
+          <div className="px-5 py-12 text-center text-sm text-red-500">Không tải được danh sách lịch hẹn.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                  <th className="px-5 py-3">Mã LH</th>
+                  <th className="px-3 py-3">Bệnh nhân</th>
+                  <th className="px-3 py-3">Bác sĩ</th>
+                  <th className="px-3 py-3">Khoa khám</th>
+                  <th className="px-3 py-3">Ngày khám</th>
+                  <th className="px-3 py-3">Giờ khám</th>
+                  <th className="px-3 py-3">Trạng thái</th>
+                  <th className="px-3 py-3 text-right pr-5">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {paginated.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-12 text-center text-sm text-gray-400">
+                      Không tìm thấy lịch hẹn phù hợp.
+                    </td>
+                  </tr>
+                ) : (
+                  paginated.map((appt) => (
+                    <tr key={appt.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                      <td className="px-5 py-4 font-semibold text-[#1a56db]">{appt.code}</td>
+                      <td className="px-3 py-4">
+                        <p className="font-medium">{appt.patientName}</p>
+                        <p className="text-xs text-gray-400">{appt.phone}</p>
+                      </td>
+                      <td className="px-3 py-4 text-gray-600 dark:text-slate-300">{appt.doctor}</td>
+                      <td className="px-3 py-4 text-gray-600 dark:text-slate-300">{appt.department}</td>
+                      <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{formatDate(appt.date)}</td>
+                      <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{appt.time}</td>
+                      <td className="px-3 py-4">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[appt.status].className}`}>
+                          {STATUS_STYLES[appt.status].label}
+                        </span>
+                      </td>
+                      <td className="px-3 py-4 text-right pr-5">
+                        <button
+                          type="button"
+                          onClick={() => setDetail(appt)}
+                          className="text-sm font-medium text-[#1a56db] hover:underline"
+                        >
+                          Chi tiết
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
+          <p className="text-xs text-gray-400">
+            Hiển thị {paginated.length} trên {filtered.length} kết quả
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Trang trước"
+            >
+              ‹
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`h-8 w-8 rounded-lg text-sm font-medium ${
+                  p === currentPage
+                    ? 'bg-[#1a56db] text-white'
+                    : 'border border-gray-200 dark:border-slate-600 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Trang sau"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Bottom: timeline + note */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <Card>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-semibold">Tiến độ khám bệnh hôm nay</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Trực tiếp
+            </span>
+          </div>
+          <div className="space-y-3">
+            {TIMELINE.map((item, idx) => {
+              const dotColor = item.state === 'done' ? 'bg-emerald-500' : item.state === 'active' ? 'bg-[#1a56db]' : 'bg-gray-300';
+              return (
+                <div key={item.code} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className={`h-3.5 w-3.5 rounded-full ${dotColor} ${item.state === 'active' ? 'ring-4 ring-blue-100 dark:ring-blue-950/40' : ''}`} />
+                    {idx < TIMELINE.length - 1 && <span className="w-px flex-1 bg-gray-200 dark:bg-slate-700" />}
+                  </div>
+                  <div
+                    className={`mb-2 flex-1 rounded-xl border p-3 ${
+                      item.state === 'active'
+                        ? 'border-[#1a56db]/30 bg-blue-50/60 dark:bg-blue-950/20'
+                        : 'border-gray-100 dark:border-slate-700'
+                    } ${item.state === 'upcoming' ? 'opacity-70' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">{item.code}: {item.name}</p>
+                        <p className="text-xs text-gray-400">{item.detail}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 text-xs font-semibold ${
+                          item.state === 'done' ? 'text-emerald-600' : item.state === 'active' ? 'text-[#1a56db]' : 'text-gray-400'
+                        }`}
+                      >
+                        {item.note}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        <div className="rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-5 text-white shadow-lg">
+          <h2 className="text-base font-semibold mb-3">Ghi chú quan trọng</h2>
+          <p className="text-sm text-blue-50">
+            Hôm nay có lịch họp giao ban định kỳ lúc 10:30 AM tại phòng hội nghị tầng 3. Các bác sĩ khoa Nội cần chuẩn bị báo cáo tháng.
+          </p>
+          <div className="mt-4 flex gap-3 rounded-xl bg-white/10 p-3">
+            <Info size={18} className="shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">Cập nhật hệ thống</p>
+              <p className="mt-0.5 text-xs text-blue-100">Phiên bản 2.4.0 sẽ được triển khai vào 22:00 đêm nay.</p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Detail modal */}
+      <Modal
+        open={detail !== null}
+        onClose={() => setDetail(null)}
+        title={detail ? `Chi tiết lịch hẹn ${detail.code}` : ''}
+        footer={
+          detail && (
+            <>
+              <Button variant="ghost" onClick={() => setDetail(null)}>
+                Đóng
+              </Button>
+              {detail.status === 'pending' && (
+                <>
+                  <Button
+                    variant="danger"
+                    loading={updateStatus.isPending}
+                    onClick={() => changeStatus(detail.id, 'cancelled', `Đã hủy lịch hẹn ${detail.code}.`)}
+                  >
+                    Hủy lịch
+                  </Button>
+                  <Button
+                    loading={updateStatus.isPending}
+                    onClick={() => changeStatus(detail.id, 'confirmed', `Đã xác nhận lịch hẹn ${detail.code}.`)}
+                    leftIcon={<CheckCircle2 size={16} />}
+                  >
+                    Xác nhận
+                  </Button>
+                </>
+              )}
+              {detail.status === 'confirmed' && (
+                <Button
+                  variant="danger"
+                  loading={updateStatus.isPending}
+                  onClick={() => changeStatus(detail.id, 'cancelled', `Đã hủy lịch hẹn ${detail.code}.`)}
+                >
+                  Hủy lịch
+                </Button>
+              )}
+            </>
+          )
+        }
+      >
+        {detail && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{detail.patientName}</p>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[detail.status].className}`}>
+                {STATUS_STYLES[detail.status].label}
+              </span>
+            </div>
+            <dl className="divide-y divide-gray-100 dark:divide-slate-700 rounded-xl border border-gray-100 dark:border-slate-700 text-sm">
+              {[
+                { label: 'Số điện thoại', value: detail.phone || '—' },
+                { label: 'Bác sĩ', value: detail.doctor },
+                { label: 'Khoa khám', value: detail.department },
+                { label: 'Ngày khám', value: formatDate(detail.date) },
+                { label: 'Giờ khám', value: detail.time },
+                { label: 'Số thứ tự', value: detail.queueTicket ? `#${detail.queueTicket}` : 'Chưa check-in' },
+              ].map((item) => (
+                <div key={item.label} className="flex justify-between px-4 py-2.5">
+                  <dt className="text-gray-500 dark:text-slate-400">{item.label}</dt>
+                  <dd className="font-medium text-slate-800 dark:text-slate-200">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {(detail.status === 'cancelled' || detail.status === 'done' || detail.status === 'checked-in') && (
+              <p className="text-xs text-gray-400">
+                {detail.status === 'cancelled'
+                  ? 'Lịch hẹn này đã bị hủy.'
+                  : detail.status === 'done'
+                  ? 'Lịch hẹn này đã hoàn thành.'
+                  : 'Bệnh nhân đã check-in và đang trong hàng chờ.'}
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Create modal */}
+      <Modal
+        open={createOpen}
+        onClose={() => { setCreateOpen(false); setNewErrors({}); }}
+        title="Tạo lịch hẹn mới"
+        description="Lịch hẹn mới sẽ ở trạng thái Chờ xác nhận."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setCreateOpen(false); setNewErrors({}); }}>
+              Hủy
+            </Button>
+            <Button onClick={handleCreate} loading={createAppointment.isPending} leftIcon={<Plus size={16} />}>
+              Tạo lịch hẹn
+            </Button>
+          </>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block sm:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+              Tên bệnh nhân <span className="text-red-500">*</span>
+            </span>
+            <input
+              type="text"
+              value={newForm.name}
+              onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="VD: Nguyễn Văn A"
+              className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
+                newErrors.name ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+              }`}
+            />
+            {newErrors.name && <span className="mt-1 block text-xs text-red-500">{newErrors.name}</span>}
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+              Số điện thoại <span className="text-red-500">*</span>
+            </span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={newForm.phone}
+              onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+              placeholder="090..."
+              className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
+                newErrors.phone ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+              }`}
+            />
+            {newErrors.phone && <span className="mt-1 block text-xs text-red-500">{newErrors.phone}</span>}
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Bác sĩ</span>
+            <select
+              value={newForm.doctor}
+              onChange={(e) => setNewForm((f) => ({ ...f, doctor: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
+            >
+              {DOCTORS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Khoa khám</span>
+            <select
+              value={newForm.department}
+              onChange={(e) => setNewForm((f) => ({ ...f, department: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
+            >
+              {DEPARTMENTS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+              Ngày khám <span className="text-red-500">*</span>
+            </span>
+            <input
+              type="date"
+              value={newForm.date}
+              min={todayISO()}
+              onChange={(e) => setNewForm((f) => ({ ...f, date: e.target.value }))}
+              className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
+                newErrors.date ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+              }`}
+            />
+            {newErrors.date && <span className="mt-1 block text-xs text-red-500">{newErrors.date}</span>}
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
+              Giờ khám <span className="text-red-500">*</span>
+            </span>
+            <input
+              type="time"
+              value={newForm.time}
+              onChange={(e) => setNewForm((f) => ({ ...f, time: e.target.value }))}
+              className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
+                newErrors.time ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+              }`}
+            />
+            {newErrors.time && <span className="mt-1 block text-xs text-red-500">{newErrors.time}</span>}
+          </label>
+        </div>
+      </Modal>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-fade-up"
+        >
+          <CheckCircle2 size={18} className="text-emerald-400" />
+          {toast}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default ReceptionistAppointmentManagement;

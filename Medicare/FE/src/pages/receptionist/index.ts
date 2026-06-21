@@ -1,8 +1,8 @@
 export {
-  ReceptionistReceptionPage,
   ReceptionistPatientsPage,
   ReceptionistInvoicesPage,
 } from './ReceptionistPages';
+export { default as ReceptionistReceptionPage } from './ReceptionistReceptionPage';
 export { default as ReceptionistProfilePage } from './ReceptionistProfilePage';
 export { default as ReceptionistDashboardPage } from './ReceptionistDashboardPage';
 export { default as ReceptionistPatientRegisterPage } from './ReceptionistPatientRegisterPage';

@@ -26,6 +26,14 @@ const DEV_USERS = [
     role: 'receptionist',
     isEmailVerified: true,
   },
+  {
+    fullName: 'Quản trị viên',
+    email: 'admin@test.com',
+    phone: '0901000004',
+    password: 'Password123',
+    role: 'admin',
+    isEmailVerified: true,
+  },
 ];
 
 const seedDevUsers = async () => {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   CheckCircle2,
@@ -9,40 +10,18 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
-import { Avatar, Card } from '../../components/ui';
+import { Avatar, Card, Spinner } from '../../components/ui';
 import Button from '../../components/ui/Button';
+import { Modal } from '../../components/ui';
+import { useReceptionistOverview, useUpdateQueueTicket } from '../../features/receptionist/hooks';
+import { QueueTicket } from '../../features/receptionist/types';
 
-interface Stat {
-  label: string;
-  value: string;
-  icon: LucideIcon;
-  tone: string;
-}
-
-const STATS: Stat[] = [
-  { label: 'Bệnh nhân chờ khám', value: '42', icon: Users, tone: 'bg-blue-50 text-[#2563eb]' },
-  { label: 'Lịch hẹn hôm nay', value: '124', icon: Calendar, tone: 'bg-emerald-50 text-emerald-600' },
-  { label: 'Đã check-in', value: '86', icon: CheckCircle2, tone: 'bg-cyan-50 text-cyan-600' },
-  { label: 'Hóa đơn chưa trả', value: '12', icon: Receipt, tone: 'bg-amber-50 text-amber-600' },
-];
-
-type QueueStatus = 'priority' | 'waiting';
-
-interface QueueRow {
-  ticket: string;
-  name: string;
-  code: string;
-  service: string;
-  room: string;
-  wait: string;
-  status: QueueStatus;
-}
-
-const QUEUE: QueueRow[] = [
-  { ticket: '#082', name: 'Trần Văn Long', code: 'BN-2023-4512', service: 'Khám Nội', room: 'Phòng 101', wait: '15 phút', status: 'priority' },
-  { ticket: '#083', name: 'Lê Thị Mai Anh', code: 'BN-2023-8821', service: 'Khám Nhi', room: 'Phòng 103', wait: '22 phút', status: 'waiting' },
-  { ticket: '#084', name: 'Phạm Quang Huy', code: 'BN-2023-1209', service: 'X-Quang', room: 'Phòng 204', wait: '5 phút', status: 'waiting' },
-];
+const PATHS = {
+  reception: '/receptionist/tiep-nhan',
+  queue: '/receptionist/hang-cho',
+  appointments: '/receptionist/lich-hen',
+  invoices: '/receptionist/hoa-don',
+} as const;
 
 interface Room {
   name: string;
@@ -58,25 +37,56 @@ const ROOMS: Room[] = [
   { name: 'Phòng 103', specialty: 'Khám Nhi', doctor: 'BS. Trần Mỹ Linh - Đang khám', busy: true, progress: 45 },
 ];
 
-interface Appointment {
-  time: string;
-  name: string;
-  detail: string;
-}
-
-const APPOINTMENTS: Appointment[] = [
-  { time: '09:00 AM', name: 'Vương Quốc Anh', detail: 'Khám tổng quát • BS. Tuấn' },
-  { time: '09:30 AM', name: 'Nguyễn Hải Yến', detail: 'Siêu âm thai • BS. Phương' },
-  { time: '10:15 AM', name: 'Đặng Hoàng Nam', detail: 'Khám Nha khoa • BS. Sơn' },
-];
-
 const NOTICES = [
   { title: 'Họp giao ban định kỳ', body: '14:00 chiều nay tại phòng hội trường tầng 5.' },
   { title: 'Cập nhật phần mềm', body: 'Hệ thống sẽ bảo trì từ 23:00 tối mai trong 30 phút.' },
 ];
 
+const formatTicket = (n: number) => `#${String(n).padStart(3, '0')}`;
+
 const ReceptionistDashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { data, isLoading, isError } = useReceptionistOverview();
+  const updateTicket = useUpdateQueueTicket();
+
   const [queueFilter, setQueueFilter] = useState<'all' | 'waiting'>('all');
+  const [pendingCall, setPendingCall] = useState<QueueTicket | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const stats = data?.stats;
+  const queuePreview = useMemo(() => data?.queuePreview ?? [], [data]);
+  const upcoming = data?.upcoming ?? [];
+
+  const statCards: { label: string; value: string; icon: LucideIcon; tone: string; to: string }[] = [
+    { label: 'Bệnh nhân chờ khám', value: String(stats?.waitingCount ?? 0), icon: Users, tone: 'bg-blue-50 text-[#2563eb]', to: PATHS.queue },
+    { label: 'Lịch hẹn hôm nay', value: String(stats?.appointmentsToday ?? 0), icon: Calendar, tone: 'bg-emerald-50 text-emerald-600', to: PATHS.appointments },
+    { label: 'Đã check-in', value: String(stats?.checkedInToday ?? 0), icon: CheckCircle2, tone: 'bg-cyan-50 text-cyan-600', to: PATHS.queue },
+    { label: 'Hóa đơn chưa trả', value: '12', icon: Receipt, tone: 'bg-amber-50 text-amber-600', to: PATHS.invoices },
+  ];
+
+  const filteredQueue = useMemo(
+    () => (queueFilter === 'all' ? queuePreview : queuePreview.filter((row) => row.status === 'waiting')),
+    [queueFilter, queuePreview],
+  );
+
+  const confirmCall = () => {
+    if (!pendingCall) return;
+    const row = pendingCall;
+    updateTicket.mutate(
+      { id: row.id, action: 'call' },
+      {
+        onSuccess: () => setToast(`Đã mời ${row.patientName} (${formatTicket(row.ticket)}) vào ${row.room}.`),
+        onError: () => setToast('Không thể mời khám. Vui lòng thử lại.'),
+      },
+    );
+    setPendingCall(null);
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
@@ -98,10 +108,11 @@ const ReceptionistDashboardPage: React.FC = () => {
               Tổng quan Lễ tân
             </h1>
             <p className="text-sm sm:text-[15px] text-blue-50/90">
-              Chào mừng trở lại! Hôm nay có 124 bệnh nhân dự kiến.
+              Chào mừng trở lại! Hôm nay có {stats?.appointmentsToday ?? 0} bệnh nhân dự kiến.
             </p>
           </div>
           <Button
+            onClick={() => navigate(PATHS.reception)}
             leftIcon={<UserPlus size={16} />}
             className="!bg-white !text-[#1e40af] !border-white hover:!bg-blue-50 shrink-0 shadow-lg shadow-blue-900/20"
           >
@@ -112,21 +123,25 @@ const ReceptionistDashboardPage: React.FC = () => {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STATS.map(({ label, value, icon: Icon, tone }, index) => (
-          <div
+        {statCards.map(({ label, value, icon: Icon, tone, to }, index) => (
+          <button
             key={label}
-            className={`group bg-white border border-slate-200/70 rounded-[20px] shadow-soft p-5 hover:shadow-soft-lg hover:-translate-y-1 transition-all duration-300 animate-fade-up stagger-${index + 1}`}
+            type="button"
+            onClick={() => navigate(to)}
+            className={`group text-left bg-white border border-slate-200/70 rounded-[20px] shadow-soft p-5 hover:shadow-soft-lg hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/40 transition-all duration-300 animate-fade-up stagger-${index + 1}`}
           >
             <div className="flex items-center gap-4">
               <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tone}`}>
                 <Icon size={22} />
               </div>
               <div>
-                <p className="text-[28px] font-bold text-slate-900 tracking-tight leading-8">{value}</p>
+                <p className="text-[28px] font-bold text-slate-900 tracking-tight leading-8">
+                  {isLoading ? '…' : value}
+                </p>
                 <p className="text-[13px] text-slate-500 font-medium mt-0.5">{label}</p>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -152,60 +167,88 @@ const ReceptionistDashboardPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    <th className="px-5 py-3">STT</th>
-                    <th className="px-3 py-3">Bệnh nhân</th>
-                    <th className="px-3 py-3">Dịch vụ/Phòng</th>
-                    <th className="px-3 py-3">Thời gian chờ</th>
-                    <th className="px-3 py-3">Trạng thái</th>
-                    <th className="px-3 py-3 text-right pr-5">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                  {QUEUE.map((row) => (
-                    <tr key={row.ticket} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
-                      <td className="px-5 py-4 font-semibold text-[#2563eb]">{row.ticket}</td>
-                      <td className="px-3 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar name={row.name} size="sm" />
-                          <div>
-                            <p className="font-medium">{row.name}</p>
-                            <p className="text-xs text-gray-400">{row.code}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <p>{row.service}</p>
-                        <p className="text-xs text-gray-400">({row.room})</p>
-                      </td>
-                      <td className="px-3 py-4 text-gray-500 dark:text-slate-400">{row.wait}</td>
-                      <td className="px-3 py-4">
-                        {row.status === 'priority' ? (
-                          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase text-emerald-700 dark:bg-emerald-950/40">
-                            Ưu tiên
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase text-gray-500 dark:bg-slate-700 dark:text-slate-300">
-                            Chờ ghi
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-4 text-right pr-5">
-                        <button type="button" className="text-sm font-medium text-[#2563eb] hover:underline">
-                          Mời khám
-                        </button>
-                      </td>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Spinner size="lg" />
+              </div>
+            ) : isError ? (
+              <div className="px-5 py-10 text-center text-sm text-red-500">Không tải được hàng chờ.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      <th className="px-5 py-3">STT</th>
+                      <th className="px-3 py-3">Bệnh nhân</th>
+                      <th className="px-3 py-3">Dịch vụ/Phòng</th>
+                      <th className="px-3 py-3">Trạng thái</th>
+                      <th className="px-3 py-3 text-right pr-5">Thao tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                    {filteredQueue.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400">
+                          Không còn bệnh nhân nào đang chờ.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredQueue.map((row) => (
+                        <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
+                          <td className="px-5 py-4 font-semibold text-[#2563eb]">{formatTicket(row.ticket)}</td>
+                          <td className="px-3 py-4">
+                            <div className="flex items-center gap-2.5">
+                              <Avatar name={row.patientName} size="sm" />
+                              <div>
+                                <p className="font-medium">{row.patientName}</p>
+                                <p className="text-xs text-gray-400">{row.code}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-4">
+                            <p>{row.department}</p>
+                            <p className="text-xs text-gray-400">({row.room})</p>
+                          </td>
+                          <td className="px-3 py-4">
+                            {row.status === 'in-progress' ? (
+                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase text-emerald-700 dark:bg-emerald-950/40">
+                                Đang khám
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase text-gray-500 dark:bg-slate-700 dark:text-slate-300">
+                                Chờ ghi
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-4 text-right pr-5">
+                            {row.status === 'in-progress' ? (
+                              <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600">
+                                <CheckCircle2 size={14} /> Đang khám
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setPendingCall(row)}
+                                className="text-sm font-medium text-[#2563eb] hover:underline"
+                              >
+                                Mời khám
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
             <div className="border-t border-gray-100 dark:border-slate-700 py-3 text-center">
-              <button type="button" className="text-sm font-medium text-[#2563eb] hover:underline">
-                Xem tất cả hàng đợi (42)
+              <button
+                type="button"
+                onClick={() => navigate(PATHS.queue)}
+                className="text-sm font-medium text-[#2563eb] hover:underline"
+              >
+                Xem tất cả hàng đợi ({stats?.waitingCount ?? 0})
               </button>
             </div>
           </Card>
@@ -237,28 +280,36 @@ const ReceptionistDashboardPage: React.FC = () => {
           <Card padding="none" className="overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
               <h2 className="text-base font-semibold">Lịch hẹn sắp tới</h2>
-              <button type="button" className="text-sm font-medium text-[#2563eb] hover:underline">
+              <button
+                type="button"
+                onClick={() => navigate(PATHS.appointments)}
+                className="text-sm font-medium text-[#2563eb] hover:underline"
+              >
                 Xem hết
               </button>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-slate-700">
-              {APPOINTMENTS.map((appt) => (
-                <button
-                  key={appt.name}
-                  type="button"
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors"
-                >
-                  <div className="flex w-14 shrink-0 flex-col items-center rounded-lg bg-blue-50 dark:bg-blue-950/40 py-1.5 text-[#2563eb]">
-                    <span className="text-sm font-bold leading-tight">{appt.time.split(' ')[0]}</span>
-                    <span className="text-[10px]">{appt.time.split(' ')[1]}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{appt.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{appt.detail}</p>
-                  </div>
-                  <ChevronRight size={16} className="shrink-0 text-gray-300" />
-                </button>
-              ))}
+              {upcoming.length === 0 ? (
+                <p className="px-5 py-8 text-center text-sm text-gray-400">Chưa có lịch hẹn sắp tới.</p>
+              ) : (
+                upcoming.map((appt) => (
+                  <button
+                    key={appt.id}
+                    type="button"
+                    onClick={() => navigate(PATHS.appointments)}
+                    className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors"
+                  >
+                    <div className="flex w-14 shrink-0 flex-col items-center rounded-lg bg-blue-50 dark:bg-blue-950/40 py-1.5 text-[#2563eb]">
+                      <span className="text-sm font-bold leading-tight">{appt.time}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{appt.patientName}</p>
+                      <p className="text-xs text-gray-400 truncate">{appt.service} • {appt.doctor}</p>
+                    </div>
+                    <ChevronRight size={16} className="shrink-0 text-gray-300" />
+                  </button>
+                ))
+              )}
             </div>
           </Card>
 
@@ -279,6 +330,51 @@ const ReceptionistDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm call modal */}
+      <Modal
+        open={pendingCall !== null}
+        onClose={() => setPendingCall(null)}
+        title="Xác nhận mời khám"
+        description="Vui lòng kiểm tra thông tin trước khi mời bệnh nhân vào phòng."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setPendingCall(null)}>
+              Hủy
+            </Button>
+            <Button onClick={confirmCall} loading={updateTicket.isPending} leftIcon={<CheckCircle2 size={16} />}>
+              Xác nhận mời
+            </Button>
+          </>
+        }
+      >
+        {pendingCall && (
+          <div className="flex items-center gap-3">
+            <Avatar name={pendingCall.patientName} size="lg" />
+            <div className="min-w-0">
+              <p className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                {pendingCall.patientName}{' '}
+                <span className="font-medium text-[#2563eb]">{formatTicket(pendingCall.ticket)}</span>
+              </p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{pendingCall.code}</p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                {pendingCall.department} • {pendingCall.room}
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-fade-up"
+        >
+          <CheckCircle2 size={18} className="text-emerald-400" />
+          {toast}
+        </div>
+      )}
     </div>
   );
 };
