@@ -78,7 +78,7 @@ export const DoctorRecordsPage: React.FC = () => {
             Mã bệnh nhân không hợp lệ hoặc hồ sơ chưa được tạo.
           </p>
           <Link to={DOCTOR_PATHS.patients} className="inline-block mt-5">
-            <Button className="bg-[#003d9b] border-[#003d9b] hover:bg-[#002d75]">
+            <Button className="bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8]">
               Quay lại danh sách bệnh nhân
             </Button>
           </Link>
@@ -141,25 +141,23 @@ export const DoctorRecordsPage: React.FC = () => {
   };
 
   return (
-    <div className="relative space-y-5 pb-32">
+    <div className="relative space-y-5 pb-16">
       <div id="medical-record-top" className="h-0 w-full" aria-hidden />
 
-      <div className="space-y-4">
-        <MedicalRecordHeader
-          patientName={recordData.patient.name}
-          patientCode={recordData.patient.id}
-        />
+      <MedicalRecordHeader
+        patientName={recordData.patient.name}
+        patientCode={recordData.patient.id}
+      />
 
-        <MedicalRecordActionBar
-          placement="top"
-          onSave={handleSave}
-          onSaveAndNext={handleSaveAndNext}
-          onToggleEdit={() => setIsEditing((prev) => !prev)}
-          isSaving={isSaving}
-          hasNextPatient={Boolean(nextPatientId)}
-          isEditing={isEditing}
-        />
-      </div>
+      <MedicalRecordActionBar
+        placement="top"
+        onSave={handleSave}
+        onSaveAndNext={handleSaveAndNext}
+        onToggleEdit={() => setIsEditing((prev) => !prev)}
+        isSaving={isSaving}
+        hasNextPatient={Boolean(nextPatientId)}
+        isEditing={isEditing}
+      />
 
       {saveMessage && (
         <p className="text-sm font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
@@ -167,14 +165,15 @@ export const DoctorRecordsPage: React.FC = () => {
         </p>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-12">
-        <div className="xl:col-span-3 space-y-4">
+      <div className="grid gap-5 xl:grid-cols-12 items-start">
+        <div className="xl:col-span-3 space-y-5">
           <PatientInfoCard patient={recordData.patient} />
           <ImportantWarningCard patient={recordData.patient} />
           <ExaminationHistoryCard history={recordData.examinationHistory} />
+          <WaitingPatientsWidget patients={recordData.waitingPatients} />
         </div>
 
-        <div className="xl:col-span-5 space-y-4">
+        <div className="xl:col-span-5 space-y-5">
           <CurrentExaminationCard
             examination={examination}
             isEditing={isEditing}
@@ -190,7 +189,7 @@ export const DoctorRecordsPage: React.FC = () => {
           <LatestTestResultsCard results={recordData.labResults} />
         </div>
 
-        <div className="xl:col-span-4 space-y-4">
+        <div className="xl:col-span-4 space-y-5">
           <PrescriptionCard
             prescriptions={prescriptions}
             clinicalContext={clinicalContext}
@@ -203,24 +202,13 @@ export const DoctorRecordsPage: React.FC = () => {
         </div>
       </div>
 
-      <WaitingPatientsWidget patients={recordData.waitingPatients} />
-
-      <MedicalRecordActionBar
-        placement="bottom"
-        onSave={handleSave}
-        onSaveAndNext={handleSaveAndNext}
-        onToggleEdit={() => setIsEditing((prev) => !prev)}
-        isSaving={isSaving}
-        hasNextPatient={Boolean(nextPatientId)}
-        isEditing={isEditing}
-      />
-
       <button
         type="button"
-        className="fixed bottom-24 right-6 z-50 w-14 h-14 bg-[#003d9b] text-white rounded-full shadow-lg shadow-[#003d9b]/30 flex items-center justify-center hover:bg-[#002d75] transition-colors"
+        className="group fixed bottom-24 right-6 z-50 w-14 h-14 bg-gradient-to-br from-[#2563eb] to-[#06b6d4] text-white rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center hover:shadow-xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300"
         aria-label="Nhắn tin"
       >
-        <MessageCircle size={24} />
+        <span className="absolute inset-0 rounded-full bg-[#2563eb]/40 animate-ping opacity-75 group-hover:opacity-0" />
+        <MessageCircle size={24} className="relative transition-transform duration-300 group-hover:rotate-6" />
       </button>
     </div>
   );

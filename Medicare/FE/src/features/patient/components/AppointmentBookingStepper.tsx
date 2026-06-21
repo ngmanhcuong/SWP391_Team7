@@ -8,7 +8,7 @@ interface AppointmentBookingStepperProps {
 }
 
 const AppointmentBookingStepper: React.FC<AppointmentBookingStepperProps> = ({ currentStep }) => (
-  <div className={`${currentStep === 1 ? 'bg-white border border-[#c3c6d6] rounded-2xl shadow-sm px-6 py-8' : 'px-4 py-2'}`}>
+  <div className={`${currentStep === 1 ? 'bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 px-6 py-8' : 'px-4 py-2'}`}>
     <div className="relative flex items-start justify-between">
       <div className="absolute left-0 right-0 top-5 h-0.5 bg-[#e1e2e4]" aria-hidden />
 

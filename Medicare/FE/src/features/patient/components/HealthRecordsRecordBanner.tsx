@@ -10,9 +10,9 @@ const HealthRecordsRecordBanner: React.FC<HealthRecordsRecordBannerProps> = ({
   recordCode,
   updatedAt,
 }) => (
-  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-[#c3c6d6] bg-[#f8f9fb] px-5 py-4">
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-[#c3c6d6]/60 bg-gradient-to-r from-[#f8f9fb] to-[#003d9b]/[0.03] px-5 py-4">
     <div className="flex items-center gap-3 min-w-0">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#003d9b]/10">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#003d9b]/10 ring-1 ring-[#003d9b]/10">
         <FileText size={20} className="text-[#003d9b]" />
       </div>
       <div className="min-w-0">

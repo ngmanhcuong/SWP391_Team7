@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Mail, MapPin, Phone, UserPen } from 'lucide-react';
+import { Calendar, IdCard, Mail, MapPin, Phone, UserPen } from 'lucide-react';
 import { Spinner } from '../../components/ui';
 import { useAuthStore } from '../../store/authStore';
 import { FloatingChatButton, PatientHealthSummaryCard } from '../../features/patient/components';
@@ -30,29 +30,36 @@ export const PatientProfilePage: React.FC = () => {
 
   return (
     <div className="relative space-y-6 pb-16">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-[32px] font-semibold leading-10 tracking-tight text-[#003d9b]">
-            Bệnh nhân
-          </h1>
-          <p className="text-base text-[#434654]">
-            Thông tin cá nhân và hồ sơ định danh của bạn tại MedCare Clinic.
-          </p>
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#003d9b]/5 via-white to-[#82f9be]/10 border border-[#c3c6d6]/60 p-6 sm:p-8 shadow-sm">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#003d9b]/5 blur-2xl" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#003d9b]/10 px-3 py-1 text-xs font-medium text-[#003d9b]">
+              <IdCard size={14} />
+              Hồ sơ định danh
+            </div>
+            <h1 className="text-3xl font-semibold leading-tight tracking-tight text-[#003d9b]">
+              Thông tin bệnh nhân
+            </h1>
+            <p className="text-base text-[#434654] max-w-xl">
+              Thông tin cá nhân và hồ sơ định danh của bạn tại MedCare Clinic.
+            </p>
+          </div>
+          <Link
+            to="/ho-so"
+            state={{ from: '/patient/benh-nhan' }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#003d9b] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#002d75] transition-colors shrink-0 shadow-sm shadow-[#003d9b]/20"
+          >
+            <UserPen size={16} />
+            Chỉnh sửa hồ sơ
+          </Link>
         </div>
-        <Link
-          to="/ho-so"
-          state={{ from: '/patient/benh-nhan' }}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#003d9b] px-5 py-2.5 text-sm text-white hover:bg-[#002d75] transition-colors shrink-0"
-        >
-          <UserPen size={16} />
-          Chỉnh sửa hồ sơ
-        </Link>
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-        <div className="bg-white border border-[#c3c6d6] rounded-lg shadow-sm overflow-hidden">
-          <div className="border-b border-[#c3c6d6] px-6 py-4">
-            <h2 className="text-lg font-medium text-[#191c1e]">Thông tin liên hệ</h2>
+        <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
+          <div className="border-b border-[#c3c6d6]/60 px-6 py-4">
+            <h2 className="text-lg font-semibold text-[#191c1e]">Thông tin liên hệ</h2>
           </div>
           <div className="p-6 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
@@ -117,7 +124,7 @@ export const PatientProfilePage: React.FC = () => {
         />
       </div>
 
-      <div className="rounded-lg border border-[#c3c6d6] bg-[#f8f9fb] px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rounded-2xl border border-[#c3c6d6]/60 bg-gradient-to-r from-[#f8f9fb] to-[#003d9b]/[0.03] px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[#434654]">
           Cần cập nhật ảnh đại diện, CCCD hoặc thông tin y tế chi tiết?
         </p>

@@ -8,7 +8,7 @@ interface PatientInfoCardProps {
 }
 
 const PatientInfoCard: React.FC<PatientInfoCardProps> = ({ patient }) => (
-  <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 p-5">
+  <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 p-5">
     <div className="flex items-start gap-4 mb-5">
       <Avatar name={patient.name} size="lg" />
       <div className="min-w-0 flex-1">

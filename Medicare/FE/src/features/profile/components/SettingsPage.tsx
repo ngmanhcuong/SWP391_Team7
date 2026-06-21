@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Globe, Shield, CreditCard, ChevronRight, Check } from 'lucide-react';
+import { Bell, Globe, Shield, ChevronRight } from 'lucide-react';
 import MainLayout from '../../../components/layout/MainLayout';
 import { Card, Toggle, HealthScoreBadge } from '../../../components/ui';
 import Button from '../../../components/ui/Button';
@@ -39,11 +39,6 @@ const SettingsPage: React.FC = () => {
     setLocalSettings(next);
     updateSettings.mutate(next);
   };
-
-  const PLANS = [
-    { name: 'MacBook Pro - Ultimate', price: '199.000đ/tháng', status: 'active', icon: '💎' },
-    { name: 'iPhone Pro - Sadoc', price: '9.000đ/tháng', status: 'inactive', icon: '📱' },
-  ];
 
   return (
     <MainLayout>
@@ -109,35 +104,6 @@ const SettingsPage: React.FC = () => {
             {activeSecuritySection === 'password' ? (
               <ChangePasswordForm onClose={() => setActiveSecuritySection(null)} />
             ) : null}
-          </Card>
-
-          <Card className="mb-5">
-            <div className="flex items-center gap-2 mb-5">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                <CreditCard size={15} className="text-amber-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-slate-100">Thuê bao đang sử dụng</h3>
-            </div>
-            <div className="space-y-3">
-              {PLANS.map(plan => (
-                <div key={plan.name} className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition-colors ${plan.status === 'active' ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30' : 'border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50'}`}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{plan.icon}</span>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{plan.name}</div>
-                      <div className="text-xs text-gray-500 dark:text-slate-400">{plan.price}</div>
-                    </div>
-                  </div>
-                  {plan.status === 'active' ? (
-                    <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <Check size={11} /> Thật bị lỗi
-                    </span>
-                  ) : (
-                    <button type="button" className="text-xs font-medium text-gray-500 hover:text-blue-600 transition-colors">Đang tắt</button>
-                  )}
-                </div>
-              ))}
-            </div>
           </Card>
 
           <Card className="mb-5">

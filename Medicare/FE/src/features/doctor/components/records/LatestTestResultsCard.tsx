@@ -25,10 +25,10 @@ const statusStyles: Record<
 };
 
 const LatestTestResultsCard: React.FC<LatestTestResultsCardProps> = ({ results }) => (
-  <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
+  <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 overflow-hidden">
     <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#c3c6d6]/40">
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f0fe]">
-        <TestTube2 size={16} className="text-[#003d9b]" />
+        <TestTube2 size={16} className="text-[#2563eb]" />
       </div>
       <h3 className="text-sm font-semibold text-[#191c1e]">Kết quả Xét nghiệm mới nhất</h3>
     </div>

@@ -106,10 +106,10 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
   };
 
   return (
-    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
+    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 overflow-hidden">
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#c3c6d6]/40">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f0fe]">
-          <FlaskConical size={16} className="text-[#003d9b]" />
+          <FlaskConical size={16} className="text-[#2563eb]" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -141,7 +141,7 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
               checked={test.checked}
               disabled={!isEditing}
               onChange={() => onToggle(test.id)}
-              className="h-4 w-4 rounded border-[#c3c6d6] text-[#003d9b] focus:ring-[#003d9b]/20 disabled:opacity-60"
+              className="h-4 w-4 rounded border-[#c3c6d6] text-[#2563eb] focus:ring-[#2563eb]/20 disabled:opacity-60"
             />
             <span className="text-sm text-[#434654] flex-1">{test.name}</span>
             {test.priority && test.checked && (
@@ -157,7 +157,7 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
             <button
               type="button"
               onClick={() => setPickerOpen((open) => !open)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#003d9b] hover:underline"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#2563eb] hover:underline"
             >
               <Plus size={16} />
               Thêm chỉ định mới
@@ -188,7 +188,7 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
 
               {recommendations.recommended.length > 0 ? (
                 <div className="px-4 py-3 border-b border-[#c3c6d6]/30 bg-gradient-to-br from-[#e8f0fe]/60 to-white">
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#003d9b] mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#2563eb] mb-2">
                     Đề xuất theo chẩn đoán & triệu chứng
                   </p>
                   <div className="space-y-2 max-h-44 overflow-y-auto">
@@ -203,11 +203,11 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
                           className={`w-full text-left rounded-lg border px-3 py-2.5 transition-colors ${
                             alreadyAdded
                               ? 'border-[#c3c6d6]/40 bg-[#f8f9fb]/60 opacity-60 cursor-not-allowed'
-                              : 'border-[#003d9b]/15 bg-white hover:border-[#003d9b]/30 hover:bg-[#e8f0fe]/30'
+                              : 'border-[#2563eb]/15 bg-white hover:border-[#2563eb]/30 hover:bg-[#e8f0fe]/30'
                           }`}
                         >
                           <div className="flex items-start gap-2">
-                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#003d9b] text-white">
+                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#2563eb] text-white">
                               {entry.item.code}
                             </span>
                             <div className="flex-1 min-w-0">
@@ -216,7 +216,7 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
                                 {entry.rationale}
                               </p>
                             </div>
-                            {!alreadyAdded && <Plus size={14} className="text-[#003d9b] shrink-0 mt-0.5" />}
+                            {!alreadyAdded && <Plus size={14} className="text-[#2563eb] shrink-0 mt-0.5" />}
                           </div>
                         </button>
                       );
@@ -237,8 +237,8 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
                     onClick={() => setActiveCategory(category)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                       activeCategory === category
-                        ? 'bg-[#003d9b] text-white'
-                        : 'bg-[#f8f9fb] text-[#434654] hover:bg-[#e8f0fe] hover:text-[#003d9b]'
+                        ? 'bg-[#2563eb] text-white'
+                        : 'bg-[#f8f9fb] text-[#434654] hover:bg-[#e8f0fe] hover:text-[#2563eb]'
                     }`}
                   >
                     {category}
@@ -265,7 +265,7 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
                             : 'hover:bg-[#e8f0fe]/40'
                       }`}
                     >
-                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-[#e8f0fe] text-[#003d9b]">
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded bg-[#e8f0fe] text-[#2563eb]">
                         {indication.code}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
                       {alreadyAdded ? (
                         <span className="text-xs text-[#737685] shrink-0">Đã có</span>
                       ) : (
-                        <Plus size={14} className="text-[#003d9b] shrink-0 mt-0.5" />
+                        <Plus size={14} className="text-[#2563eb] shrink-0 mt-0.5" />
                       )}
                     </button>
                   );
@@ -300,13 +300,13 @@ const ParaclinicalIndicationsCard: React.FC<ParaclinicalIndicationsCardProps> = 
                     onChange={(e) => setCustomName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddCustom()}
                     placeholder="Ví dụ: Xét nghiệm CRP, định lượng Ferritin..."
-                    className="flex-1 px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#003d9b] focus:ring-2 focus:ring-[#003d9b]/10"
+                    className="flex-1 px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
                   />
                   <button
                     type="button"
                     onClick={handleAddCustom}
                     disabled={!customName.trim()}
-                    className="px-3 py-2 text-sm font-medium text-white bg-[#003d9b] rounded-lg hover:bg-[#002d75] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-2 text-sm font-medium text-white bg-[#2563eb] rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Thêm
                   </button>

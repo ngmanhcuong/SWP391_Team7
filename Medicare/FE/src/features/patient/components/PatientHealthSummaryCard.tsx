@@ -19,9 +19,9 @@ const PatientHealthSummaryCard: React.FC<PatientHealthSummaryCardProps> = ({
   summary,
   allergyCount,
 }) => (
-  <div className="bg-white border border-[#c3c6d6] rounded-lg shadow-sm overflow-hidden">
-    <div className="border-b border-[#c3c6d6] px-6 py-5">
-      <h3 className="text-lg font-medium text-[#191c1e]">Thông tin sức khỏe</h3>
+  <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
+    <div className="border-b border-[#c3c6d6]/60 px-6 py-5">
+      <h3 className="text-lg font-semibold text-[#191c1e]">Thông tin sức khỏe</h3>
     </div>
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-4">
@@ -34,38 +34,38 @@ const PatientHealthSummaryCard: React.FC<PatientHealthSummaryCardProps> = ({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-[#f8f9fb] border border-[#c3c6d6] p-3">
+        <div className="rounded-xl bg-[#f8f9fb] border border-[#c3c6d6]/60 p-3 transition-colors hover:border-[#003d9b]/20">
           <div className="flex items-center gap-2 text-[#737685] text-xs mb-1">
             <Droplets size={14} />
             Nhóm máu
           </div>
-          <p className="text-base font-medium text-[#191c1e]">{summary.bloodType ?? '—'}</p>
+          <p className="text-base font-semibold text-[#191c1e]">{summary.bloodType ?? '—'}</p>
         </div>
-        <div className="rounded-lg bg-[#f8f9fb] border border-[#c3c6d6] p-3">
+        <div className="rounded-xl bg-[#f8f9fb] border border-[#c3c6d6]/60 p-3 transition-colors hover:border-[#003d9b]/20">
           <div className="flex items-center gap-2 text-[#737685] text-xs mb-1">
             <Activity size={14} />
             Khám gần nhất
           </div>
-          <p className="text-base font-medium text-[#191c1e]">{summary.lastCheckup ?? '—'}</p>
+          <p className="text-base font-semibold text-[#191c1e]">{summary.lastCheckup ?? '—'}</p>
         </div>
-        <div className="rounded-lg bg-[#f8f9fb] border border-[#c3c6d6] p-3">
+        <div className="rounded-xl bg-[#f8f9fb] border border-[#c3c6d6]/60 p-3 transition-colors hover:border-[#003d9b]/20">
           <div className="flex items-center gap-2 text-[#737685] text-xs mb-1">
             <Ruler size={14} />
             Chiều cao
           </div>
-          <p className="text-base font-medium text-[#191c1e]">{summary.height ?? '—'}</p>
+          <p className="text-base font-semibold text-[#191c1e]">{summary.height ?? '—'}</p>
         </div>
-        <div className="rounded-lg bg-[#f8f9fb] border border-[#c3c6d6] p-3">
+        <div className="rounded-xl bg-[#f8f9fb] border border-[#c3c6d6]/60 p-3 transition-colors hover:border-[#003d9b]/20">
           <div className="flex items-center gap-2 text-[#737685] text-xs mb-1">
             <Scale size={14} />
             Cân nặng
           </div>
-          <p className="text-base font-medium text-[#191c1e]">{summary.weight ?? '—'}</p>
+          <p className="text-base font-semibold text-[#191c1e]">{summary.weight ?? '—'}</p>
         </div>
       </div>
 
       {allergyCount > 0 && (
-        <div className="rounded-lg border border-[#ba1a1a]/20 bg-[#fff1f0] px-4 py-3 text-sm text-[#ba1a1a]">
+        <div className="rounded-xl border border-[#ba1a1a]/20 bg-[#fff1f0] px-4 py-3 text-sm text-[#ba1a1a]">
           Bạn có {allergyCount} dị ứng đã ghi nhận. Vui lòng thông báo bác sĩ trước khi kê đơn.
         </div>
       )}

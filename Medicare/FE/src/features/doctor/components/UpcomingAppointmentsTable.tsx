@@ -25,7 +25,7 @@ interface UpcomingAppointmentsTableProps {
 const dashboardStatusConfig: Record<AppointmentStatus, { label: string; className: string }> = {
   arrived: { label: 'Đã khám', className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' },
   waiting: { label: 'Chờ khám', className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100' },
-  upcoming: { label: 'Đã xác nhận', className: 'bg-[#e8f0fe] text-[#003d9b] ring-1 ring-[#003d9b]/10' },
+  upcoming: { label: 'Đã xác nhận', className: 'bg-blue-50 text-[#2563eb] ring-1 ring-[#2563eb]/10' },
 };
 
 const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
@@ -46,18 +46,18 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
   }, [appointments, safePage]);
 
   return (
-    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
-      <div className="px-5 sm:px-6 py-4 border-b border-[#c3c6d6]/40 space-y-4">
+    <div className="bg-white border border-slate-200/70 rounded-[20px] shadow-soft overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-slate-100 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base sm:text-lg font-semibold text-[#191c1e]">Lịch hẹn hôm nay</h2>
-            <p className="text-[11px] text-[#737685] mt-0.5">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">Lịch hẹn hôm nay</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">
               {appointments.length} ca chưa khám · đồng bộ thời khóa biểu
             </p>
           </div>
           <Link
             to={DOCTOR_PATHS.schedule}
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#003d9b] hover:underline shrink-0"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-[#2563eb] hover:gap-1.5 transition-all shrink-0"
           >
             Thời khóa biểu
             <ArrowRight size={14} />
@@ -74,10 +74,10 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
       </div>
 
       {appointments.length === 0 ? (
-        <p className="px-5 py-8 text-sm text-[#737685]">Đã hoàn thành tất cả lịch hẹn hôm nay.</p>
+        <p className="px-5 py-8 text-sm text-slate-500">Đã hoàn thành tất cả lịch hẹn hôm nay.</p>
       ) : (
         <>
-          <div className="divide-y divide-[#c3c6d6]/25">
+          <div className="divide-y divide-slate-100">
             {paginatedAppointments.map((appt) => {
               const recordId = appt.patientId;
               const statusStyle = dashboardStatusConfig[appt.status];
@@ -89,19 +89,19 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
               return (
                 <div
                   key={appt.id}
-                  className={`relative px-5 sm:px-6 py-4 transition-colors hover:bg-[#f8f9fb]/60 ${
-                    appt.isNext ? 'bg-[#e8f0fe]/25' : ''
+                  className={`relative px-5 sm:px-6 py-4 transition-colors hover:bg-slate-50 ${
+                    appt.isNext ? 'bg-blue-50/40' : ''
                   }`}
                 >
                   {appt.isNext && (
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-[#003d9b] rounded-r" />
+                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-[#2563eb] rounded-r" />
                   )}
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <div className="shrink-0 text-center w-14">
-                        <p className="text-sm font-bold text-[#003d9b]">{appt.time}</p>
-                        <Clock3 size={12} className="mx-auto mt-1 text-[#c3c6d6]" />
+                        <p className="text-sm font-bold text-[#2563eb]">{appt.time}</p>
+                        <Clock3 size={12} className="mx-auto mt-1 text-slate-300" />
                       </div>
 
                       <Avatar name={appt.patientName} size="sm" className="mt-0.5" />
@@ -111,23 +111,23 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
                           {recordId ? (
                             <Link
                               to={DOCTOR_PATHS.record(recordId)}
-                              className="text-sm font-semibold text-[#191c1e] hover:text-[#003d9b] hover:underline"
+                              className="text-sm font-semibold text-slate-900 hover:text-[#2563eb] hover:underline"
                             >
                               {appt.patientName}
                             </Link>
                           ) : (
-                            <span className="text-sm font-semibold text-[#191c1e]">{appt.patientName}</span>
+                            <span className="text-sm font-semibold text-slate-900">{appt.patientName}</span>
                           )}
                           {appt.isNext && (
-                            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#003d9b] text-white">
+                            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#2563eb] text-white">
                               Tiếp theo
                             </span>
                           )}
                         </div>
                         {appt.patientCode && (
-                          <p className="text-xs text-[#737685] mt-0.5">{appt.patientCode}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{appt.patientCode}</p>
                         )}
-                        <p className="text-xs text-[#434654] mt-1 line-clamp-2">{appt.reason}</p>
+                        <p className="text-xs text-slate-600 mt-1 line-clamp-2">{appt.reason}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           {typeStyle && (
                             <span
@@ -136,7 +136,7 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
                               {typeStyle.label}
                             </span>
                           )}
-                          <span className="text-[11px] text-[#737685]">{appt.department}</span>
+                          <span className="text-[11px] text-slate-500">{appt.department}</span>
                         </div>
                       </div>
                     </div>
@@ -150,7 +150,7 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
                       {recordId ? (
                         <Link
                           to={DOCTOR_PATHS.record(recordId)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#003d9b] text-white text-[10px] font-bold uppercase tracking-wide hover:bg-[#002d75] transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#2563eb] text-white text-[10px] font-bold uppercase tracking-wide hover:bg-[#1d4ed8] transition-colors"
                         >
                           <Stethoscope size={12} />
                           Khám
@@ -158,7 +158,7 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
                       ) : (
                         <Link
                           to={DOCTOR_PATHS.schedule}
-                          className="text-xs font-medium text-[#003d9b] hover:underline"
+                          className="text-xs font-medium text-[#2563eb] hover:underline"
                         >
                           Chi tiết
                         </Link>

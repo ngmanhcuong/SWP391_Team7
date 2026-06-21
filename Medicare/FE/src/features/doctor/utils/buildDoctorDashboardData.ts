@@ -136,7 +136,7 @@ export const buildDoctorDashboardData = (user: User): DoctorDashboardData => {
         label: 'Lịch hẹn hôm nay',
         value: String(progress.total),
         icon: 'users',
-        iconBg: 'bg-[#e8f0fe] text-[#003d9b]',
+        iconBg: 'bg-blue-50 text-[#2563eb]',
         trend: `${getDoctorPatientTotalCount()} hồ sơ`,
         trendType: 'neutral',
         href: DOCTOR_PATHS.schedule,

@@ -19,11 +19,11 @@ const WaitingPatientsWidget: React.FC<WaitingPatientsWidgetProps> = ({ patients 
   };
 
   return (
-    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden xl:max-w-xl">
+    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 overflow-hidden">
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#c3c6d6]/40">
         <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f0fe]">
-          <UserRound size={15} className="text-[#003d9b]" />
-          <Clock size={9} className="absolute -bottom-0.5 -right-0.5 text-[#003d9b] bg-[#e8f0fe] rounded-full" />
+          <UserRound size={15} className="text-[#2563eb]" />
+          <Clock size={9} className="absolute -bottom-0.5 -right-0.5 text-[#2563eb] bg-[#e8f0fe] rounded-full" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-[#191c1e]">Bệnh nhân đang chờ</h3>
@@ -47,20 +47,20 @@ const WaitingPatientsWidget: React.FC<WaitingPatientsWidgetProps> = ({ patients 
               <Avatar
                 name={patient.name}
                 size="sm"
-                className="!bg-[#003d9b] from-[#003d9b] to-[#003d9b]"
+                className="!bg-[#2563eb] from-[#2563eb] to-[#2563eb]"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#191c1e] truncate group-hover:text-[#003d9b] transition-colors">
+                <p className="text-sm font-semibold text-[#191c1e] truncate group-hover:text-[#2563eb] transition-colors">
                   {patient.name}
                 </p>
                 <p className="text-xs text-[#737685] mt-0.5">Số thứ tự {patient.queueNumber}</p>
               </div>
-              <span className="text-xs font-bold text-[#003d9b] bg-[#e8f0fe] px-2.5 py-1 rounded-full shrink-0">
+              <span className="text-xs font-bold text-[#2563eb] bg-[#e8f0fe] px-2.5 py-1 rounded-full shrink-0">
                 #{patient.queueNumber}
               </span>
               <ChevronRight
                 size={16}
-                className="text-[#c3c6d6] group-hover:text-[#003d9b] shrink-0 transition-colors"
+                className="text-[#c3c6d6] group-hover:text-[#2563eb] shrink-0 transition-colors"
               />
             </button>
           ))

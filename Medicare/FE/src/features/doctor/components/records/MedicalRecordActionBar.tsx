@@ -68,7 +68,7 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
         leftIcon={isEditing ? <Lock size={15} /> : <Edit3 size={15} />}
         onClick={onToggleEdit}
         className={`rounded-xl bg-white border-[#c3c6d6] text-[#434654] hover:bg-[#f8f9fb] ${
-          isEditing ? 'border-[#003d9b] text-[#003d9b] bg-[#e8f0fe]/40 ring-2 ring-[#003d9b]/10' : ''
+          isEditing ? 'border-[#2563eb] text-[#2563eb] bg-[#e8f0fe]/40 ring-2 ring-[#2563eb]/10' : ''
         }`}
       >
         {isEditing ? 'Khóa chỉnh sửa' : 'Chỉnh sửa'}
@@ -84,7 +84,7 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
         onClick={onSave}
         loading={isSaving}
         disabled={!isEditing}
-        className="bg-[#003d9b] border-[#003d9b] hover:bg-[#002d75] rounded-xl shadow-sm shadow-[#003d9b]/20 disabled:opacity-50"
+        className="bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8] rounded-xl shadow-sm shadow-[#2563eb]/20 disabled:opacity-50"
       >
         Lưu hồ sơ hiện tại
       </Button>
@@ -104,7 +104,7 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
 
   if (isTop) {
     return (
-      <div className="rounded-2xl border border-[#c3c6d6]/50 bg-white shadow-sm shadow-[#003d9b]/5 px-4 py-3 sm:px-5 sm:py-3.5">
+      <div className="rounded-2xl border border-[#c3c6d6]/50 bg-white shadow-sm shadow-[#2563eb]/5 px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">{secondaryActions}</div>
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -127,7 +127,7 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
             onClick={onSave}
             loading={isSaving}
             disabled={!isEditing}
-            className="bg-[#003d9b] border-[#003d9b] hover:bg-[#002d75] rounded-xl shadow-sm shadow-[#003d9b]/20 sm:ml-auto disabled:opacity-50"
+            className="bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8] rounded-xl shadow-sm shadow-[#2563eb]/20 sm:ml-auto disabled:opacity-50"
           >
             Lưu hồ sơ hiện tại
           </Button>

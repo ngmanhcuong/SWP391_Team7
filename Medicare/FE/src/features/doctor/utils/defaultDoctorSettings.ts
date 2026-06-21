@@ -45,7 +45,6 @@ export const DEFAULT_DOCTOR_SETTINGS: DoctorSettingsData = {
       { day: 'thu', dayLabel: 'Thứ 5', slots: { ...weekdaySlots } },
       { day: 'fri', dayLabel: 'Thứ 6', slots: { ...weekdaySlots } },
       { day: 'sat', dayLabel: 'Thứ 7', slots: { ...weekendSlots } },
-      { day: 'sun', dayLabel: 'Chủ nhật', slots: { ...weekendSlots } },
     ],
     consultationMinutes: 15,
     customConsultationMinutes: '',

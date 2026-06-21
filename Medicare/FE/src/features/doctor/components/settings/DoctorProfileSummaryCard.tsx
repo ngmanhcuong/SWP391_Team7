@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
 import { User } from '../../../../types';
 import { DoctorProfileSettings } from '../../types';
@@ -13,6 +13,8 @@ interface DoctorProfileSummaryCardProps {
 const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ user, profile }) => {
   const avatarUrl = getAvatarUrl(user.avatar);
   const [imgError, setImgError] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setImgError(false);
@@ -22,18 +24,48 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
     ? profile.fullName
     : `BS. ${profile.fullName}`;
 
+  const currentImage = uploadedImage ?? (avatarUrl && !imgError ? avatarUrl : null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một tệp ảnh hợp lệ.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
   return (
-    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 p-5 sm:p-6">
-      <div className="relative mx-auto w-full max-w-[220px] aspect-square rounded-2xl overflow-hidden bg-[#e8f0fe] mb-5 group">
-        {avatarUrl && !imgError ? (
+    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 p-5 sm:p-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <div className="relative mx-auto w-full max-w-[220px] aspect-square rounded-2xl overflow-hidden bg-[#eff6ff] mb-5 group">
+        {currentImage ? (
           <img
-            src={avatarUrl}
+            src={currentImage}
             alt={displayName}
             className="h-full w-full object-cover"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#003d9b] to-[#1a56db] text-white text-4xl font-bold">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2563eb] to-[#1a56db] text-white text-4xl font-bold">
             {profile.fullName
               .split(' ')
               .filter(Boolean)
@@ -45,6 +77,7 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
         )}
         <button
           type="button"
+          onClick={() => fileInputRef.current?.click()}
           className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 py-2 bg-black/50 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label="Đổi ảnh đại diện"
         >

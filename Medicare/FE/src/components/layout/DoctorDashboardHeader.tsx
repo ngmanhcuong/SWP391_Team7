@@ -28,12 +28,14 @@ const DoctorDashboardHeader: React.FC<DoctorDashboardHeaderProps> = ({
   }
 
   return (
-    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-      <DoctorHeaderSearch />
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex flex-1 justify-center px-6 min-w-0">
+        <DoctorHeaderSearch />
+      </div>
 
-      <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <DoctorNotificationDropdown />
-        <div className="hidden sm:flex items-center pl-2 ml-1 border-l border-[#c3c6d6]/50">
+        <div className="hidden sm:flex items-center pl-2 ml-1 border-l border-slate-200/70">
           <DashboardUserMenu
             user={user}
             variant="dark"

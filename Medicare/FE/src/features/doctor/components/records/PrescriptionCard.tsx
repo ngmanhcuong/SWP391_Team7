@@ -145,7 +145,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
   };
 
   return (
-    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
+    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#c3c6d6]/40">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -172,10 +172,10 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
       </div>
 
       {aiEnabled && (
-        <div className="mx-5 mt-4 p-4 rounded-xl bg-gradient-to-br from-[#e8f0fe] to-indigo-50 border border-[#003d9b]/10">
+        <div className="mx-5 mt-4 p-4 rounded-xl bg-gradient-to-br from-[#e8f0fe] to-indigo-50 border border-[#2563eb]/10">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles size={16} className="text-[#003d9b]" />
-            <span className="text-xs font-bold uppercase tracking-wide text-[#003d9b]">
+            <Sparkles size={16} className="text-[#2563eb]" />
+            <span className="text-xs font-bold uppercase tracking-wide text-[#2563eb]">
               Đề xuất theo chẩn đoán ICD-10 / WHO
             </span>
             {!isEditing && (
@@ -216,7 +216,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                         type="button"
                         onClick={() => handleAddFromAi(suggestion)}
                         disabled={alreadyAdded}
-                        className="shrink-0 p-1.5 rounded-lg text-[#003d9b] hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="shrink-0 p-1.5 rounded-lg text-[#2563eb] hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         aria-label={`Thêm ${suggestion.name}`}
                       >
                         <Plus size={14} />
@@ -289,7 +289,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
             <button
               type="button"
               onClick={() => setPickerOpen((open) => !open)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#003d9b] hover:underline"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#2563eb] hover:underline"
             >
               <Plus size={16} />
               Thêm thuốc thủ công
@@ -320,7 +320,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
 
               {recommendations.recommended.length > 0 && (
                 <div className="px-4 py-3 border-b border-[#c3c6d6]/30 bg-gradient-to-br from-[#e8f0fe]/60 to-white">
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#003d9b] mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#2563eb] mb-2">
                     Đề xuất theo chẩn đoán & triệu chứng
                   </p>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -335,7 +335,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                           className={`w-full text-left rounded-lg border px-3 py-2.5 transition-colors ${
                             alreadyAdded
                               ? 'border-[#c3c6d6]/40 bg-[#f8f9fb]/60 opacity-60 cursor-not-allowed'
-                              : 'border-[#003d9b]/15 bg-white hover:border-[#003d9b]/30 hover:bg-[#e8f0fe]/30'
+                              : 'border-[#2563eb]/15 bg-white hover:border-[#2563eb]/30 hover:bg-[#e8f0fe]/30'
                           }`}
                         >
                           <p className="text-sm font-medium text-[#191c1e]">{entry.item.name}</p>
@@ -357,8 +357,8 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                     onClick={() => setActiveCategory(category)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                       activeCategory === category
-                        ? 'bg-[#003d9b] text-white'
-                        : 'bg-[#f8f9fb] text-[#434654] hover:bg-[#e8f0fe] hover:text-[#003d9b]'
+                        ? 'bg-[#2563eb] text-white'
+                        : 'bg-[#f8f9fb] text-[#434654] hover:bg-[#e8f0fe] hover:text-[#2563eb]'
                     }`}
                   >
                     {category}
@@ -412,7 +412,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                       ) : isContraindicated ? (
                         <AlertTriangle size={14} className="text-rose-600 shrink-0 mt-0.5" />
                       ) : (
-                        <Plus size={14} className="text-[#003d9b] shrink-0 mt-0.5" />
+                        <Plus size={14} className="text-[#2563eb] shrink-0 mt-0.5" />
                       )}
                     </button>
                   );
@@ -427,28 +427,28 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                     value={customForm.name}
                     onChange={(e) => setCustomForm((f) => ({ ...f, name: e.target.value }))}
                     placeholder="Tên thuốc (VD: Amlodipine 5mg)"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#003d9b] focus:ring-2 focus:ring-[#003d9b]/10"
+                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
                   />
                   <input
                     type="text"
                     value={customForm.dosage}
                     onChange={(e) => setCustomForm((f) => ({ ...f, dosage: e.target.value }))}
                     placeholder="Liều dùng (VD: 5mg)"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#003d9b] focus:ring-2 focus:ring-[#003d9b]/10"
+                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
                   />
                   <input
                     type="text"
                     value={customForm.quantity}
                     onChange={(e) => setCustomForm((f) => ({ ...f, quantity: e.target.value }))}
                     placeholder="Số lượng (VD: 30 viên)"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#003d9b] focus:ring-2 focus:ring-[#003d9b]/10"
+                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
                   />
                   <input
                     type="text"
                     value={customForm.instructions}
                     onChange={(e) => setCustomForm((f) => ({ ...f, instructions: e.target.value }))}
                     placeholder="Hướng dẫn dùng"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#003d9b] focus:ring-2 focus:ring-[#003d9b]/10"
+                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
                   />
                 </div>
                 <button
@@ -460,7 +460,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                     !customForm.quantity.trim() ||
                     !customForm.instructions.trim()
                   }
-                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#003d9b] rounded-lg hover:bg-[#002d75] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#2563eb] rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Thêm vào đơn
                 </button>

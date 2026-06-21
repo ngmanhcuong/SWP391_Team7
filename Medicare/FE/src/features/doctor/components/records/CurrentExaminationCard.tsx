@@ -9,7 +9,7 @@ interface CurrentExaminationCardProps {
 }
 
 const editableFieldClassName =
-  'w-full px-4 py-2.5 text-sm border border-[#c3c6d6]/60 rounded-xl outline-none transition-all bg-white text-[#191c1e] placeholder:text-[#737685] focus:border-[#003d9b] focus:ring-2 focus:ring-[#003d9b]/10 resize-y';
+  'w-full px-4 py-2.5 text-sm border border-[#c3c6d6]/60 rounded-xl outline-none transition-all bg-white text-[#191c1e] placeholder:text-[#737685] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-y';
 
 const readOnlyFieldClassName =
   'w-full px-4 py-2.5 text-sm border border-transparent rounded-xl bg-[#f8f9fb] text-[#434654] resize-y cursor-default';
@@ -20,7 +20,7 @@ const CurrentExaminationCard: React.FC<CurrentExaminationCardProps> = ({
   onChange,
 }) => (
   <div
-    className={`bg-white border rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden transition-colors ${
+    className={`bg-white border rounded-2xl shadow-sm shadow-[#2563eb]/5 overflow-hidden transition-colors ${
       isEditing ? 'border-[#c3c6d6]/60' : 'border-[#c3c6d6]/40'
     }`}
   >

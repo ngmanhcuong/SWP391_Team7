@@ -18,22 +18,22 @@ const ScheduleProgressBar: React.FC<ScheduleProgressBarProps> = ({
   return (
     <div className={compact ? 'space-y-2' : 'space-y-3'}>
       <div className={`flex items-center justify-between gap-3 ${compact ? 'text-xs' : 'text-sm'}`}>
-        <span className="font-medium text-[#434654]">
+        <span className="font-medium text-slate-600">
           Tiến độ khám:{' '}
-          <span className="text-[#191c1e] font-semibold">
+          <span className="text-slate-900 font-semibold">
             {completed}/{total} ca
           </span>
         </span>
-        <span className="font-semibold text-[#003d9b]">{percent}%</span>
+        <span className="font-semibold text-[#2563eb]">{percent}%</span>
       </div>
-      <div className={`w-full rounded-full bg-[#e8f0fe] ${compact ? 'h-1.5' : 'h-2'}`}>
+      <div className={`w-full rounded-full bg-blue-50 ${compact ? 'h-1.5' : 'h-2'}`}>
         <div
-          className={`rounded-full bg-gradient-to-r from-[#003d9b] to-[#4a7fd4] transition-all duration-500 ${compact ? 'h-1.5' : 'h-2'}`}
+          className={`rounded-full bg-gradient-to-r from-[#2563eb] to-[#06b6d4] transition-all duration-500 ${compact ? 'h-1.5' : 'h-2'}`}
           style={{ width: `${percent}%` }}
         />
       </div>
       {pending !== undefined && !compact && (
-        <p className="text-xs text-[#737685]">
+        <p className="text-xs text-slate-500">
           Còn <span className="font-semibold text-amber-700">{pending} ca</span> chưa hoàn thành
         </p>
       )}

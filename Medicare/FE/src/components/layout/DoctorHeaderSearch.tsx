@@ -58,16 +58,16 @@ const DoctorHeaderSearch: React.FC<DoctorHeaderSearchProps> = ({ compact = false
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors"
+          className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
           aria-label="Tìm kiếm"
         >
           <Search size={18} />
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-2rem))] bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-xl shadow-[#003d9b]/10 z-50 overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#c3c6d6]/30">
-              <Search size={16} className="text-[#737685] shrink-0" />
+          <div className="absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-2rem))] bg-white border border-slate-200/70 rounded-2xl shadow-xl shadow-blue-500/10 z-50 overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100">
+              <Search size={16} className="text-slate-400 shrink-0" />
               <input
                 type="search"
                 value={query}
@@ -91,15 +91,15 @@ const DoctorHeaderSearch: React.FC<DoctorHeaderSearchProps> = ({ compact = false
   }
 
   return (
-    <div ref={containerRef} className="relative flex-1 max-w-xl min-w-0">
+    <div ref={containerRef} className="relative w-full max-w-sm min-w-0">
       <div
-        className={`flex items-center gap-3 px-4 py-2.5 bg-[#f8f9fb] rounded-xl border transition-all ${
+        className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg border transition-all ${
           open
-            ? 'border-[#003d9b]/40 ring-2 ring-[#003d9b]/10 bg-white'
-            : 'border-[#c3c6d6]/50'
+            ? 'border-[#2563eb]/40 ring-2 ring-[#2563eb]/10 bg-white'
+            : 'border-transparent bg-slate-100/70'
         }`}
       >
-        <Search size={18} className="text-[#737685] shrink-0" />
+        <Search size={18} className="text-slate-400 shrink-0" />
         <input
           type="search"
           value={query}
@@ -109,7 +109,7 @@ const DoctorHeaderSearch: React.FC<DoctorHeaderSearchProps> = ({ compact = false
           }}
           onFocus={() => setOpen(true)}
           placeholder="Tìm bệnh nhân, mã BN, lịch hẹn..."
-          className="flex-1 bg-transparent text-sm text-[#191c1e] placeholder:text-[#737685] outline-none min-w-0"
+          className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none min-w-0"
         />
         {query && (
           <button
@@ -118,19 +118,16 @@ const DoctorHeaderSearch: React.FC<DoctorHeaderSearchProps> = ({ compact = false
               setQuery('');
               setOpen(false);
             }}
-            className="p-1 rounded-md text-[#737685] hover:bg-[#e8f0fe]"
+            className="p-1 rounded-md text-slate-400 hover:bg-blue-50"
             aria-label="Xóa tìm kiếm"
           >
             <X size={14} />
           </button>
         )}
-        <kbd className="hidden xl:inline-flex text-[10px] font-medium text-[#737685] bg-white border border-[#c3c6d6]/60 px-1.5 py-0.5 rounded">
-          Ctrl+K
-        </kbd>
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-xl shadow-[#003d9b]/10 z-50 overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200/70 rounded-2xl shadow-xl shadow-blue-500/10 z-50 overflow-hidden">
           <SearchPanel
             query={query}
             results={results}
@@ -160,32 +157,32 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
   onClose,
 }) => (
   <div className="p-2">
-    <div className="px-3 py-2 border-b border-[#c3c6d6]/30">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-[#737685]">Tìm kiếm nhanh</p>
+    <div className="px-3 py-2 border-b border-slate-100">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Tìm kiếm nhanh</p>
     </div>
 
     {!hasQuery ? (
-      <div className="px-3 py-4 text-xs text-[#737685] space-y-2">
+      <div className="px-3 py-4 text-xs text-slate-500 space-y-2">
         <p>Nhập tên BN, mã BN hoặc giờ hẹn (tối thiểu 2 ký tự).</p>
         <div className="flex flex-wrap gap-2">
           <Link
             to={DOCTOR_PATHS.patients}
             onClick={onClose}
-            className="text-[#003d9b] font-semibold hover:underline"
+            className="text-[#2563eb] font-semibold hover:underline"
           >
             Danh sách BN
           </Link>
           <Link
             to={DOCTOR_PATHS.schedule}
             onClick={onClose}
-            className="text-[#003d9b] font-semibold hover:underline"
+            className="text-[#2563eb] font-semibold hover:underline"
           >
             Lịch khám
           </Link>
         </div>
       </div>
     ) : results.length === 0 ? (
-      <p className="px-3 py-6 text-sm text-[#737685] text-center">Không tìm thấy kết quả phù hợp.</p>
+      <p className="px-3 py-6 text-sm text-slate-500 text-center">Không tìm thấy kết quả phù hợp.</p>
     ) : (
       <ul className="max-h-[280px] overflow-y-auto py-1">
         {results.map((result) => {
@@ -195,19 +192,19 @@ const SearchPanel: React.FC<SearchPanelProps> = ({
               <button
                 type="button"
                 onClick={() => onSelect(result.href)}
-                className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-[#f8f9fb] text-left transition-colors"
+                className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-slate-50 text-left transition-colors"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e8f0fe] text-[#003d9b]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#2563eb]">
                   <Icon size={15} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-[#191c1e] truncate">{result.title}</span>
-                  <span className="block text-xs text-[#737685] truncate">{result.subtitle}</span>
+                  <span className="block text-sm font-semibold text-slate-900 truncate">{result.title}</span>
+                  <span className="block text-xs text-slate-500 truncate">{result.subtitle}</span>
                   {result.meta && (
-                    <span className="block text-[11px] text-[#737685] truncate mt-0.5">{result.meta}</span>
+                    <span className="block text-[11px] text-slate-500 truncate mt-0.5">{result.meta}</span>
                   )}
                 </span>
-                <span className="text-[10px] font-bold uppercase text-[#003d9b] shrink-0">
+                <span className="text-[10px] font-bold uppercase text-[#2563eb] shrink-0">
                   {result.type === 'patient' ? 'BN' : 'Lịch'}
                 </span>
               </button>

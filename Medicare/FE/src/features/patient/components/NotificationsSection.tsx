@@ -9,21 +9,26 @@ interface NotificationsSectionProps {
 }
 
 const iconConfig: Record<DashboardNotification['type'], { icon: React.ElementType; bg: string; color: string }> = {
-  lab: { icon: FlaskConical, bg: 'bg-orange-50 ring-1 ring-orange-100', color: 'text-[#b02300]' },
-  appointment: { icon: Calendar, bg: 'bg-emerald-50 ring-1 ring-emerald-100', color: 'text-[#006c47]' },
-  system: { icon: Bell, bg: 'bg-blue-50 ring-1 ring-blue-100', color: 'text-[#003d9b]' },
+  lab: { icon: FlaskConical, bg: 'bg-violet-50 ring-1 ring-violet-100', color: 'text-violet-600' },
+  appointment: { icon: Calendar, bg: 'bg-emerald-50 ring-1 ring-emerald-100', color: 'text-emerald-600' },
+  system: { icon: Bell, bg: 'bg-blue-50 ring-1 ring-blue-100', color: 'text-[#2563eb]' },
 };
 
 const NotificationsSection: React.FC<NotificationsSectionProps> = ({ notifications, onMarkAllRead }) => (
-  <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
-    <div className="px-6 py-5 border-b border-[#c3c6d6]/40 bg-gradient-to-r from-[#f8f9fb] to-white flex items-start justify-between gap-3">
-      <div>
-        <h2 className="text-base font-semibold text-[#191c1e]">Thông báo của bạn</h2>
-        <p className="text-xs text-[#737685] mt-0.5">Cập nhật lịch khám và sức khỏe</p>
+  <div className="bg-white border border-slate-200/70 rounded-[24px] shadow-soft overflow-hidden">
+    <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 ring-1 ring-amber-100">
+          <Bell size={18} className="text-amber-500" />
+        </span>
+        <div>
+          <h2 className="text-base font-bold text-slate-900">Hoạt động gần đây</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Cập nhật lịch khám và sức khỏe</p>
+        </div>
       </div>
       <Link
         to="/patient/thong-bao"
-        className="inline-flex items-center gap-0.5 text-xs font-semibold text-[#003d9b] hover:underline shrink-0"
+        className="inline-flex items-center gap-0.5 text-xs font-semibold text-[#2563eb] hover:underline shrink-0"
       >
         Xem tất cả
         <ChevronRight size={14} />
@@ -37,19 +42,19 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = ({ notificatio
           <Link
             key={notif.id}
             to="/patient/thong-bao"
-            className={`relative flex gap-3 p-3.5 rounded-xl transition-all hover:bg-[#f8f9fb] hover:shadow-sm ${
-              notif.isUnread ? 'bg-[#003d9b]/[0.04] ring-1 ring-[#003d9b]/10' : 'bg-transparent'
+            className={`relative flex gap-3 p-3.5 rounded-xl transition-all hover:bg-slate-50 hover:shadow-sm ${
+              notif.isUnread ? 'bg-[#2563eb]/[0.04] ring-1 ring-[#2563eb]/10' : 'bg-transparent'
             }`}
           >
             {notif.isUnread && (
-              <span className="absolute top-3.5 right-3.5 h-2 w-2 rounded-full bg-[#003d9b]" />
+              <span className="absolute top-3.5 right-3.5 h-2 w-2 rounded-full bg-[#2563eb]" />
             )}
             <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${bg}`}>
               <Icon size={18} className={color} />
             </div>
             <div className="min-w-0 pr-4">
-              <p className="text-sm font-medium text-[#191c1e] leading-snug line-clamp-2">{notif.title}</p>
-              <p className="text-xs text-[#737685] mt-1">{notif.timeAgo}</p>
+              <p className="text-sm font-medium text-slate-900 leading-snug line-clamp-2">{notif.title}</p>
+              <p className="text-xs text-slate-400 mt-1">{notif.timeAgo}</p>
             </div>
           </Link>
         );
@@ -60,7 +65,7 @@ const NotificationsSection: React.FC<NotificationsSectionProps> = ({ notificatio
       <button
         type="button"
         onClick={onMarkAllRead}
-        className="w-full py-2.5 rounded-xl bg-[#f8f9fb] text-sm font-medium text-[#003d9b] hover:bg-[#edeef0] transition-colors ring-1 ring-[#c3c6d6]/60"
+        className="w-full py-2.5 rounded-xl bg-slate-50 text-sm font-medium text-[#2563eb] hover:bg-slate-100 transition-colors ring-1 ring-slate-200/70"
       >
         Đánh dấu tất cả đã đọc
       </button>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Save, UserPen } from 'lucide-react';
+import { Lock, Save, UserPen } from 'lucide-react';
 import { User } from '../../../../types';
 import Button from '../../../../components/ui/Button';
 import { DoctorProfileSettings } from '../../types';
-import { DOCTOR_SPECIALTIES } from '../../utils/defaultDoctorSettings';
+import { getDepartmentLabel } from '../../../../constants/clinicSpecialties';
 import { getRoleProfilePath } from '../../../../pages/shared/roleConfig';
 import DoctorProfileSummaryCard from './DoctorProfileSummaryCard';
 
@@ -63,20 +63,19 @@ const DoctorProfileSettingsSection: React.FC<DoctorProfileSettingsSectionProps> 
 
         <div className="p-5 sm:p-6 space-y-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">
-              Chuyên khoa<span className="text-red-500 ml-1">*</span>
-            </label>
-            <select
-              value={profile.specialty}
-              onChange={(e) => onChange('specialty', e.target.value)}
-              className={fieldClassName}
-            >
-              {DOCTOR_SPECIALTIES.map((specialty) => (
-                <option key={specialty} value={specialty}>
-                  {specialty}
-                </option>
-              ))}
-            </select>
+            <label className="text-sm font-medium text-gray-700">Chuyên khoa</label>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-4 py-2.5">
+              <span className="text-sm font-medium text-[#334155]">
+                {getDepartmentLabel(profile.specialty)}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#64748b] ring-1 ring-[#e2e8f0]">
+                <Lock size={11} />
+                Do quản trị viên sắp xếp
+              </span>
+            </div>
+            <p className="text-xs text-[#64748b]">
+              Chuyên khoa được phân công bởi quản trị viên. Vui lòng liên hệ quản trị viên nếu cần thay đổi.
+            </p>
           </div>
 
           <div className="flex flex-col gap-1.5">

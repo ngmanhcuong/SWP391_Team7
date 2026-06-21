@@ -1,21 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lexend:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --primary: #1a56db;
-  --primary-dark: #1342a8;
-  --primary-light: #e8f0fe;
-  --secondary: #10b981;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #eff6ff;
+  --secondary: #3b82f6;
+  --accent: #06b6d4;
   --danger: #ef4444;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --bg-main: #f9fafb;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --border: #e5e7eb;
-  --radius-md: 12px;
+  --border: #e2e8f0;
+  --radius-md: 16px;
+  --radius-lg: 20px;
 }
 
 .dark {
@@ -30,17 +32,20 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text-primary);
   background: var(--bg-main);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Lexend', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
 
 a { text-decoration: none; color: inherit; }
@@ -86,6 +91,26 @@ input, select, textarea { font-family: inherit; }
 .fade-in { animation: fadeIn 0.4s ease both; }
 
 .animate-spin { animation: spin 1s linear infinite; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-up { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes softFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-soft-float { animation: softFloat 6s ease-in-out infinite; }
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Premium soft shadow used across cards */
+.shadow-soft { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12); }
+.shadow-soft-lg { box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 16px 40px -16px rgba(37, 99, 235, 0.18); }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }

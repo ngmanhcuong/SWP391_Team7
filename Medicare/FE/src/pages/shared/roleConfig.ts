@@ -47,8 +47,7 @@ export interface NavItem {
 export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   patient: [
     { label: 'Tổng quan', path: '/patient', icon: LayoutDashboard },
-    { label: 'Bệnh nhân', path: '/patient/benh-nhan', icon: Users },
-    { label: 'Lịch hẹn', path: '/patient/lich-hen', icon: Calendar },
+    { label: 'Đặt lịch khám', path: '/patient/lich-hen', icon: Calendar },
     { label: 'Hồ sơ bệnh án', path: '/patient/ho-so', icon: FileText },
     { label: 'Thông báo', path: '/patient/thong-bao', icon: Bell },
     { label: 'Thanh toán', path: '/patient/thanh-toan', icon: CreditCard },
@@ -81,7 +80,6 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { label: 'Quản lý đánh giá', path: '/admin/danh-gia', icon: Star },
     { label: 'Báo cáo thống kê', path: '/admin/bao-cao', icon: BarChart3 },
     { label: 'Nhật ký hệ thống', path: '/admin/nhat-ky', icon: History },
-    { label: 'Hồ sơ cá nhân', path: '/admin/ho-so', icon: UserCircle },
   ],
 };
 

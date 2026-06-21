@@ -9,10 +9,10 @@ const DoctorFloatingActionButton: React.FC<DoctorFloatingActionButtonProps> = ({
   <button
     type="button"
     onClick={onClick}
-    className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#003d9b] text-white rounded-full shadow-lg shadow-[#003d9b]/30 flex items-center justify-center hover:bg-[#002d75] transition-colors"
+    className="group fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-[#2563eb] to-[#06b6d4] text-white rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center hover:shadow-xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300"
     aria-label="Thêm mới"
   >
-    <Plus size={24} strokeWidth={2.5} />
+    <Plus size={24} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-90" />
   </button>
 );
 

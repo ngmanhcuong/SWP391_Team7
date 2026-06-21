@@ -24,9 +24,9 @@ const Button: React.FC<ButtonProps> = ({
   const base = 'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const variants: Record<string, string> = {
-    primary: 'bg-[#1a56db] text-white border-[#1a56db] hover:bg-[#1342a8] focus:ring-[#1a56db] active:scale-[0.98]',
+    primary: 'bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1d4ed8] focus:ring-[#2563eb] active:scale-[0.98] shadow-sm shadow-blue-500/25',
     secondary: 'bg-[#10b981] text-white border-[#10b981] hover:bg-[#059669] focus:ring-[#10b981]',
-    outline: 'bg-transparent text-[#1a56db] border-[#1a56db] hover:bg-[#e8f0fe] focus:ring-[#1a56db]',
+    outline: 'bg-transparent text-[#2563eb] border-[#2563eb] hover:bg-[#eff6ff] focus:ring-[#2563eb]',
     ghost: 'bg-transparent text-[#374151] border-transparent hover:bg-[#f3f4f6] focus:ring-gray-300',
     danger: 'bg-[#ef4444] text-white border-[#ef4444] hover:bg-[#dc2626] focus:ring-[#ef4444]',
   };

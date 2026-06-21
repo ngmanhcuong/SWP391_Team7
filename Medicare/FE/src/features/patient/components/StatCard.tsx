@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, FlaskConical, Receipt } from 'lucide-react';
 import { DashboardStat } from '../types';
+import { getStatTheme, STAT_TREND_STYLES } from '../constants/statCardTheme';
 
 const ICON_MAP = {
   calendar: Calendar,
@@ -21,37 +22,38 @@ interface StatCardProps {
   stat: DashboardStat;
 }
 
-const trendStyles: Record<string, string> = {
-  positive: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
-  negative: 'bg-rose-50 text-rose-700 ring-1 ring-rose-100',
-  neutral: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
-};
-
 const StatCard: React.FC<StatCardProps> = ({ stat }) => {
   const Icon = ICON_MAP[stat.icon];
   const href = STAT_LINKS[stat.id];
+  const theme = getStatTheme(stat.icon);
 
   const content = (
     <>
-      <div className="flex items-start justify-between">
-        <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${stat.iconBg} ring-1 ring-[#003d9b]/10`}>
-          <Icon size={20} className="text-[#003d9b]" />
+      <span
+        className={`pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full ${theme.glow} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+      />
+
+      <div className="relative flex items-start justify-between">
+        <div
+          className={`flex items-center justify-center w-11 h-11 rounded-2xl ${theme.tile} ring-1 ${theme.ring} transition-transform duration-300 group-hover:scale-110`}
+        >
+          <Icon size={20} className={theme.iconColor} />
         </div>
         {stat.trend && (
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${trendStyles[stat.trendType ?? 'neutral']}`}>
+          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STAT_TREND_STYLES[stat.trendType ?? 'neutral']}`}>
             {stat.trend}
           </span>
         )}
       </div>
-      <div>
-        <p className="text-xs uppercase tracking-wider text-[#737685] leading-5 font-medium">{stat.label}</p>
-        <p className="text-3xl font-semibold text-[#191c1e] leading-10 tracking-tight mt-0.5">{stat.value}</p>
+      <div className="relative mt-1">
+        <p className="text-[28px] font-bold text-slate-900 leading-9 tracking-tight">{stat.value}</p>
+        <p className="text-[13px] text-slate-500 leading-5 font-medium mt-0.5">{stat.label}</p>
       </div>
     </>
   );
 
   const className =
-    'group bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 p-6 flex flex-col gap-3 hover:shadow-md hover:border-[#003d9b]/30 hover:-translate-y-0.5 transition-all duration-200';
+    'group relative overflow-hidden bg-white border border-slate-200/70 rounded-[24px] shadow-soft p-5 flex flex-col gap-2.5 hover:shadow-soft-lg hover:border-[#2563eb]/30 hover:-translate-y-1 transition-all duration-300';
 
   if (href) {
     return (

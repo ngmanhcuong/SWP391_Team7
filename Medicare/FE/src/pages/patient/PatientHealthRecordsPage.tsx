@@ -18,6 +18,7 @@ import {
 import { usePatientHealthRecords } from '../../features/patient/hooks';
 import { useProfile } from '../../features/profile/hooks';
 import { HealthRecordTab } from '../../features/patient/types';
+import { exportHealthRecordsPdf } from '../../features/patient/utils/exportHealthRecordsPdf';
 
 const VALID_TABS: HealthRecordTab[] = ['visits', 'prescriptions', 'labs', 'history'];
 
@@ -132,12 +133,26 @@ export const PatientHealthRecordsPage: React.FC = () => {
     setActiveTab('labs');
   };
 
+  const handleDownloadPdf = () => {
+    exportHealthRecordsPdf({
+      patientName: displayUser.fullName,
+      recordCode: data.recordCode,
+      updatedAt: data.updatedAt,
+      visits: data.visits,
+      prescriptions: data.prescriptions,
+      labResults: data.labResults,
+      medicalHistory: data.medicalHistory,
+      patientSummary,
+    });
+  };
+
   return (
     <div className="relative space-y-6 pb-16">
       <HealthRecordsHeader
         patientName={displayUser.fullName}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onDownload={handleDownloadPdf}
       />
 
       <HealthRecordsRecordBanner recordCode={data.recordCode} updatedAt={data.updatedAt} />
@@ -155,7 +170,7 @@ export const PatientHealthRecordsPage: React.FC = () => {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <div className="space-y-4 min-w-0">
-          <div className="bg-white border border-[#c3c6d6] rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
+          <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 p-4 sm:p-6 space-y-4">
             <HealthRecordsTabNav
               activeTab={activeTab}
               onTabChange={setActiveTab}
@@ -193,7 +208,7 @@ export const PatientHealthRecordsPage: React.FC = () => {
             )}
 
             {activeTab === 'labs' && visitLabFilter && (
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-[#f8f9fb] border border-[#c3c6d6] px-4 py-2 text-sm text-[#434654]">
+              <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f8f9fb] border border-[#c3c6d6]/60 px-4 py-2.5 text-sm text-[#434654]">
                 <span>Đang lọc xét nghiệm theo lần khám đã chọn</span>
                 <button
                   type="button"

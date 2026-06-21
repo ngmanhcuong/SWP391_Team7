@@ -5,6 +5,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import { DashboardLayout, RoleProtectedRoute } from './pages';
 import RootRedirect from './pages/shared/RootRedirect';
 import ThemeSync from './components/ThemeSync';
+import ErrorBoundary from './components/ErrorBoundary';
 import { Spinner } from './components/ui';
 
 const LoginPage = lazy(() => import('./features/auth/components/LoginPage'));
@@ -76,7 +77,8 @@ const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeSync />
     <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public auth */}
           <Route path="/dang-nhap" element={<LoginPage />} />
@@ -141,7 +143,8 @@ const App: React.FC = () => (
 
           <Route path="*" element={<RootRedirect />} />
         </Routes>
-      </Suspense>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   </QueryClientProvider>
 );

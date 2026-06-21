@@ -18,7 +18,7 @@ interface DoctorStatCardProps {
 const trendStyles: Record<string, string> = {
   positive: 'text-emerald-600',
   negative: 'text-rose-600',
-  neutral: 'text-[#737685]',
+  neutral: 'text-slate-500',
 };
 
 const cardContent = (stat: DoctorDashboardStat, showNotificationDot?: boolean) => {
@@ -40,15 +40,15 @@ const cardContent = (stat: DoctorDashboardStat, showNotificationDot?: boolean) =
             </span>
           )}
           {stat.href && (
-            <ArrowUpRight size={14} className="text-[#c3c6d6] group-hover:text-[#003d9b] transition-colors" />
+            <ArrowUpRight size={14} className="text-slate-300 group-hover:text-[#2563eb] transition-colors" />
           )}
         </div>
       </div>
       <div>
-        <p className="text-sm text-[#737685]">{stat.label}</p>
-        <p className="text-3xl font-bold text-[#191c1e] mt-1 tracking-tight">{stat.value}</p>
+        <p className="text-[28px] font-bold text-slate-900 tracking-tight leading-9">{stat.value}</p>
+        <p className="text-[13px] text-slate-500 font-medium mt-0.5">{stat.label}</p>
         {stat.hint && (
-          <p className="text-[11px] text-[#737685] mt-2 line-clamp-2">{stat.hint}</p>
+          <p className="text-[11px] text-slate-400 mt-2 line-clamp-2">{stat.hint}</p>
         )}
       </div>
     </>
@@ -57,7 +57,7 @@ const cardContent = (stat: DoctorDashboardStat, showNotificationDot?: boolean) =
 
 const DoctorStatCard: React.FC<DoctorStatCardProps> = ({ stat, showNotificationDot }) => {
   const className =
-    'group bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 p-5 flex flex-col gap-4 hover:shadow-md hover:border-[#003d9b]/20 transition-all';
+    'group bg-white border border-slate-200/70 rounded-[20px] shadow-soft p-5 flex flex-col gap-4 hover:shadow-soft-lg hover:border-[#2563eb]/30 hover:-translate-y-1 transition-all duration-300';
 
   if (stat.href) {
     return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, User, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { Avatar } from '../ui';
 import { useLogout } from '../../features/auth/hooks';
 import { getRoleDashboardPath, getRoleProfilePath, getRoleSettingsPath } from '../../pages/shared/roleConfig';
@@ -84,13 +84,6 @@ const DashboardUserMenu: React.FC<DashboardUserMenuProps> = ({
               <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{user.fullName}</p>
               <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
             </div>
-            <Link
-              to={dashboardPath}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <LayoutDashboard size={15} className="text-gray-400" /> Bảng điều khiển
-            </Link>
             <Link
               to={profilePath}
               state={{ from: dashboardPath }}

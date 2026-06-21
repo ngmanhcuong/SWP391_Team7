@@ -30,7 +30,7 @@ export const DoctorDashboardPage: React.FC = () => {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-[#434654]">Vui lòng đăng nhập để xem dashboard bác sĩ.</p>
+        <p className="text-slate-600">Vui lòng đăng nhập để xem dashboard bác sĩ.</p>
       </div>
     );
   }
@@ -46,7 +46,7 @@ export const DoctorDashboardPage: React.FC = () => {
   if (isError || !data) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-[#434654]">Không thể tải dữ liệu dashboard. Vui lòng thử lại.</p>
+        <p className="text-slate-600">Không thể tải dữ liệu dashboard. Vui lòng thử lại.</p>
       </div>
     );
   }
@@ -55,34 +55,37 @@ export const DoctorDashboardPage: React.FC = () => {
 
   return (
     <div className="relative space-y-6 pb-20">
-      <DoctorDashboardWelcome
-        userName={user.fullName}
-        summary={data.summaryMessage}
-        todayDateLabel={data.todayDateLabel}
-        department={data.department}
-        nextPatientName={data.nextAppointment?.patientName}
-        nextPatientTime={data.nextAppointment?.time}
-        nextPatientHref={nextRecordId ? DOCTOR_PATHS.record(nextRecordId) : undefined}
-      />
+      <div className="animate-fade-up">
+        <DoctorDashboardWelcome
+          userName={user.fullName}
+          summary={data.summaryMessage}
+          todayDateLabel={data.todayDateLabel}
+          department={data.department}
+          nextPatientName={data.nextAppointment?.patientName}
+          nextPatientTime={data.nextAppointment?.time}
+          nextPatientHref={nextRecordId ? DOCTOR_PATHS.record(nextRecordId) : undefined}
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {data.stats.map((stat) => (
-          <DoctorStatCard
-            key={stat.id}
-            stat={stat}
-            showNotificationDot={stat.id === 'messages' && data.newMessageCount > 0}
-          />
+        {data.stats.map((stat, index) => (
+          <div key={stat.id} className={`animate-fade-up stagger-${index + 1}`}>
+            <DoctorStatCard
+              stat={stat}
+              showNotificationDot={stat.id === 'messages' && data.newMessageCount > 0}
+            />
+          </div>
         ))}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-12 items-start">
-        <div className="xl:col-span-7 min-w-0 self-start">
+      <div className="grid gap-6 xl:grid-cols-12 items-start">
+        <div className="xl:col-span-7 min-w-0 self-start animate-fade-up stagger-3">
           <UpcomingAppointmentsTable
             appointments={data.upcomingAppointments}
             progress={data.scheduleProgress}
           />
         </div>
-        <div className="xl:col-span-5 min-w-0 self-start flex flex-col gap-5">
+        <div className="xl:col-span-5 min-w-0 self-start flex flex-col gap-6 animate-fade-up stagger-4">
           <DashboardWaitingQueue patients={data.waitingQueue} />
           <ExaminationFrequencyChart
             data={data.chartData}
@@ -93,7 +96,7 @@ export const DoctorDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative isolate">
+      <div className="relative isolate animate-fade-up stagger-5">
         <NewPatientsSection patients={data.newPatients} />
       </div>
 

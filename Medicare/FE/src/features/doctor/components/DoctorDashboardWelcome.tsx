@@ -34,63 +34,72 @@ const DoctorDashboardWelcome: React.FC<DoctorDashboardWelcomeProps> = ({
     : `Bác sĩ ${userName.split(' ').slice(-1)[0]}`;
 
   return (
-    <section className="rounded-2xl border border-[#c3c6d6]/50 bg-gradient-to-br from-white via-white to-[#e8f0fe]/30 shadow-sm shadow-[#003d9b]/5 overflow-hidden">
-      <div className="p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#003d9b]">
-              {todayDateLabel}
-            </p>
-            <h1 className="text-2xl sm:text-[1.75rem] font-bold text-[#191c1e] tracking-tight mt-1">
-              {getGreeting()}, {displayName}!
-            </h1>
-            <p className="text-sm text-[#737685] mt-1">{department}</p>
-            <p className="text-sm sm:text-base text-[#434654] mt-3 leading-relaxed">{summary}</p>
+    <section className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#1e40af] via-[#2563eb] to-[#06b6d4] p-7 sm:p-9 shadow-soft-lg">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.12]"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+          backgroundSize: '24px 24px',
+        }}
+      />
+      <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/15 blur-3xl animate-soft-float" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/4 h-56 w-56 rounded-full bg-[#06b6d4]/30 blur-3xl" />
+
+      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm ring-1 ring-white/20">
+            <CalendarDays size={14} className="text-cyan-200" />
+            <span className="capitalize">{todayDateLabel}</span>
           </div>
+          <h1 className="text-[26px] sm:text-[34px] font-bold text-white tracking-tight leading-tight">
+            {getGreeting()}, {displayName}!
+          </h1>
+          <p className="text-sm text-blue-50/80">{department}</p>
+          <p className="text-sm sm:text-[15px] text-blue-50/90 leading-relaxed max-w-xl">{summary}</p>
 
-          {nextPatientName && nextPatientHref && (
-            <div className="shrink-0 w-full lg:w-auto lg:min-w-[260px] rounded-xl border border-[#003d9b]/15 bg-[#e8f0fe]/40 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#003d9b]">
-                Ca khám tiếp theo
-              </p>
-              <p className="text-sm font-semibold text-[#191c1e] mt-1">{nextPatientName}</p>
-              {nextPatientTime && (
-                <p className="text-xs text-[#737685] mt-0.5">{nextPatientTime}</p>
-              )}
-              <Link
-                to={nextPatientHref}
-                className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-[#003d9b] hover:underline"
-              >
-                Bắt đầu khám
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Link
+              to={DOCTOR_PATHS.schedule}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
+            >
+              <CalendarDays size={15} />
+              Lịch khám hôm nay
+            </Link>
+            <Link
+              to={DOCTOR_PATHS.records}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
+            >
+              <ClipboardList size={15} />
+              Hồ sơ bệnh án
+            </Link>
+            <Link
+              to={DOCTOR_PATHS.patients}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white text-[#1e40af] hover:bg-blue-50 transition-colors shadow-lg shadow-blue-900/20"
+            >
+              <UserPlus size={15} />
+              Thêm bệnh nhân
+            </Link>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-[#c3c6d6]/30">
-          <Link
-            to={DOCTOR_PATHS.schedule}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-[#c3c6d6]/50 text-[#434654] hover:border-[#003d9b]/30 hover:text-[#003d9b] transition-colors"
-          >
-            <CalendarDays size={15} />
-            Lịch khám hôm nay
-          </Link>
-          <Link
-            to={DOCTOR_PATHS.records}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-white border border-[#c3c6d6]/50 text-[#434654] hover:border-[#003d9b]/30 hover:text-[#003d9b] transition-colors"
-          >
-            <ClipboardList size={15} />
-            Hồ sơ bệnh án
-          </Link>
-          <Link
-            to={DOCTOR_PATHS.patients}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-[#003d9b] text-white hover:bg-[#002d75] transition-colors"
-          >
-            <UserPlus size={15} />
-            Thêm bệnh nhân
-          </Link>
-        </div>
+        {nextPatientName && nextPatientHref && (
+          <div className="shrink-0 w-full lg:w-auto lg:min-w-[260px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4 ring-1 ring-white/10">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-200">
+              Ca khám tiếp theo
+            </p>
+            <p className="text-base font-semibold text-white mt-1">{nextPatientName}</p>
+            {nextPatientTime && (
+              <p className="text-xs text-blue-50/80 mt-0.5">{nextPatientTime}</p>
+            )}
+            <Link
+              to={nextPatientHref}
+              className="inline-flex items-center gap-1.5 mt-3 rounded-lg bg-white px-3.5 py-2 text-sm font-semibold text-[#1e40af] hover:bg-blue-50 transition-colors"
+            >
+              Bắt đầu khám
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

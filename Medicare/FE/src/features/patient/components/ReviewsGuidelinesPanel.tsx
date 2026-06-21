@@ -4,7 +4,7 @@ import { CheckCircle2, Clock, CreditCard, Star } from 'lucide-react';
 const ReviewsGuidelinesPanel: React.FC = () => (
   <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
     <div className="border-b border-[#c3c6d6]/40 bg-gradient-to-r from-[#f8f9fb] to-white px-6 py-4">
-      <h3 className="text-lg font-medium text-[#191c1e]">Khi nào được đánh giá?</h3>
+      <h3 className="text-lg font-semibold text-[#191c1e]">Khi nào được đánh giá?</h3>
       <p className="text-xs text-[#737685] mt-0.5">Quy trình hợp lệ</p>
     </div>
     <div className="p-6 space-y-4">

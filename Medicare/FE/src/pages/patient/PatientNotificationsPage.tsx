@@ -133,7 +133,7 @@ export const PatientNotificationsPage: React.FC = () => {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-        <div className="bg-white border border-[#c3c6d6] rounded-lg shadow-sm p-4 sm:p-6 space-y-4 min-w-0">
+        <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 p-4 sm:p-6 space-y-4 min-w-0">
           <NotificationsFilterNav
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}

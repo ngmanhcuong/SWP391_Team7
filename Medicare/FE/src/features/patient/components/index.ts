@@ -27,6 +27,8 @@ export { default as ReviewsGuidelinesPanel } from './ReviewsGuidelinesPanel';
 export { default as RecentPrescriptionsSection } from './RecentPrescriptionsSection';
 export { default as ExaminationStatusSection } from './ExaminationStatusSection';
 export { default as HealthReportSection } from './HealthReportSection';
+export { default as AiHealthAssistantCard } from './AiHealthAssistantCard';
+export { default as MedicalRemindersCard } from './MedicalRemindersCard';
 export { default as FloatingChatButton } from './FloatingChatButton';
 export { default as AppointmentBookingStepper } from './AppointmentBookingStepper';
 export { default as SymptomInputSection } from './SymptomInputSection';

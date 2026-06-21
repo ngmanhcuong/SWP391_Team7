@@ -1,4 +1,5 @@
 import React from 'react';
+import { CalendarPlus } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import {
   AiMedicalAssistantPanel,
@@ -81,13 +82,21 @@ export const PatientAppointmentsPage: React.FC = () => {
   return (
     <div className="relative mx-auto max-w-6xl space-y-6 pb-16">
       {currentStep === 1 && (
-        <header className="space-y-2">
-          <h1 className="text-[32px] font-semibold leading-10 tracking-tight text-[#003d9b]">
-            Đặt lịch khám mới
-          </h1>
-          <p className="text-base text-[#434654]">
-            Vui lòng cung cấp thông tin để chúng tôi hỗ trợ bạn tốt nhất.
-          </p>
+        <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#003d9b] via-[#1a56db] to-[#2563eb] p-6 sm:p-8 shadow-lg shadow-[#003d9b]/20">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-[#82f9be]/20 blur-3xl" />
+          <div className="relative space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+              <CalendarPlus size={14} />
+              Đặt lịch khám
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-white">
+              Đặt lịch khám mới
+            </h1>
+            <p className="text-sm sm:text-base text-blue-100/90 max-w-xl">
+              Vui lòng cung cấp thông tin để chúng tôi hỗ trợ bạn tốt nhất.
+            </p>
+          </div>
         </header>
       )}
 

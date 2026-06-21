@@ -17,8 +17,8 @@ const HealthReportSection: React.FC<HealthReportSectionProps> = ({
   const monthLabel = new Intl.DateTimeFormat('vi-VN', { month: 'long' }).format(new Date());
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#003d9b] via-[#1a56db] to-[#1e40af] p-6 shadow-lg shadow-[#003d9b]/25">
-      <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-[#82f9be]/20 blur-3xl" />
+    <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1e40af] via-[#2563eb] to-[#06b6d4] p-6 shadow-soft-lg">
+      <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-cyan-300/25 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
 
       <div className="relative flex flex-col gap-6">
@@ -41,9 +41,9 @@ const HealthReportSection: React.FC<HealthReportSectionProps> = ({
                 <span className="text-white/75 text-sm">{metric.label}</span>
                 <span className="text-white text-sm font-semibold">{metric.value}</span>
               </div>
-              <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#82f9be] to-emerald-300 rounded-full transition-all duration-700"
+                  className="h-full bg-gradient-to-r from-cyan-200 to-white rounded-full transition-all duration-700"
                   style={{ width: `${metric.progress}%` }}
                 />
               </div>
@@ -53,7 +53,7 @@ const HealthReportSection: React.FC<HealthReportSectionProps> = ({
 
         <Button
           variant="ghost"
-          className="!bg-white !text-[#003d9b] hover:!bg-blue-50 !border-0 w-full !rounded-xl !font-semibold !shadow-sm"
+          className="!bg-white !text-[#2563eb] hover:!bg-blue-50 !border-0 w-full !rounded-xl !font-semibold !shadow-sm"
           leftIcon={<Download size={16} />}
           onClick={onDownload}
         >

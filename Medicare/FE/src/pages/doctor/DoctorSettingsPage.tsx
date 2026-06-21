@@ -3,30 +3,22 @@ import { RotateCcw, Save } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
 import {
-  ConsultationTimeSection,
   DoctorNotificationSettingsSection,
   DoctorProfileSettingsSection,
   DoctorSecuritySettingsSection,
   DoctorSettingsFooter,
-  GoogleCalendarSyncBanner,
-  HolidaysLeaveSection,
-  WeeklyScheduleSection,
 } from '../../features/doctor/components/settings';
 import {
   buildDoctorProfileFromUser,
   DEFAULT_DOCTOR_SETTINGS,
 } from '../../features/doctor/utils/defaultDoctorSettings';
-import { applyWeeklySchedulePreset, WeeklySchedulePreset } from '../../features/doctor/utils/weeklyScheduleUtils';
 import {
   DoctorProfileSettings,
   DoctorSettingsData,
   DoctorSettingsTab,
-  HolidayEntry,
-  TimeSlotKey,
 } from '../../features/doctor/types';
 
 const SETTINGS_TABS: { id: DoctorSettingsTab; label: string }[] = [
-  { id: 'schedule', label: 'Lịch làm việc' },
   { id: 'professional', label: 'Hồ sơ chuyên môn' },
   { id: 'notifications', label: 'Thông báo' },
   { id: 'security', label: 'Bảo mật' },
@@ -41,7 +33,7 @@ const TAB_DESCRIPTIONS: Record<DoctorSettingsTab, string> = {
 
 export const DoctorSettingsPage: React.FC = () => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<DoctorSettingsTab>('schedule');
+  const [activeTab, setActiveTab] = useState<DoctorSettingsTab>('professional');
   const [settings, setSettings] = useState<DoctorSettingsData>(DEFAULT_DOCTOR_SETTINGS);
   const [profileInitialized, setProfileInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,75 +73,6 @@ export const DoctorSettingsPage: React.FC = () => {
     }));
   };
 
-  const handleSlotToggle = (dayIndex: number, slot: TimeSlotKey) => {
-    setSettings((prev) => ({
-      ...prev,
-      workSchedule: {
-        ...prev.workSchedule,
-        weeklySchedule: prev.workSchedule.weeklySchedule.map((day, index) =>
-          index === dayIndex
-            ? { ...day, slots: { ...day.slots, [slot]: !day.slots[slot] } }
-            : day,
-        ),
-      },
-    }));
-  };
-
-  const handleColumnToggle = (slot: TimeSlotKey, enabled: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
-      workSchedule: {
-        ...prev.workSchedule,
-        weeklySchedule: prev.workSchedule.weeklySchedule.map((day) => ({
-          ...day,
-          slots: { ...day.slots, [slot]: enabled },
-        })),
-      },
-    }));
-  };
-
-  const handleApplySchedulePreset = (preset: WeeklySchedulePreset) => {
-    setSettings((prev) => ({
-      ...prev,
-      workSchedule: {
-        ...prev.workSchedule,
-        weeklySchedule: applyWeeklySchedulePreset(prev.workSchedule.weeklySchedule, preset),
-      },
-    }));
-  };
-
-  const handleAddHoliday = (entry: HolidayEntry) => {
-    setSettings((prev) => ({
-      ...prev,
-      workSchedule: {
-        ...prev.workSchedule,
-        holidays: [...prev.workSchedule.holidays, entry],
-      },
-    }));
-  };
-
-  const handleUpdateHoliday = (entry: HolidayEntry) => {
-    setSettings((prev) => ({
-      ...prev,
-      workSchedule: {
-        ...prev.workSchedule,
-        holidays: prev.workSchedule.holidays.map((holiday) =>
-          holiday.id === entry.id ? entry : holiday,
-        ),
-      },
-    }));
-  };
-
-  const handleRemoveHoliday = (id: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      workSchedule: {
-        ...prev.workSchedule,
-        holidays: prev.workSchedule.holidays.filter((h) => h.id !== id),
-      },
-    }));
-  };
-
   const handleNotificationToggle = (key: keyof DoctorSettingsData['notifications']) => {
     setSettings((prev) => ({
       ...prev,
@@ -160,8 +83,6 @@ export const DoctorSettingsPage: React.FC = () => {
     }));
   };
 
-  const showTopSaveButton = activeTab === 'schedule';
-
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -169,16 +90,6 @@ export const DoctorSettingsPage: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-[#191c1e]">Cài đặt hệ thống</h1>
           <p className="text-sm text-[#737685] mt-1">{TAB_DESCRIPTIONS[activeTab]}</p>
         </div>
-        {showTopSaveButton && (
-          <Button
-            leftIcon={<Save size={16} />}
-            onClick={handleSave}
-            loading={isSaving}
-            className="shrink-0 bg-[#003d9b] border-[#003d9b] hover:bg-[#002d75]"
-          >
-            Lưu thay đổi
-          </Button>
-        )}
       </div>
 
       {saveMessage && (
@@ -214,62 +125,6 @@ export const DoctorSettingsPage: React.FC = () => {
           onSave={handleSave}
           isSaving={isSaving}
         />
-      )}
-
-      {activeTab === 'schedule' && (
-        <div className="space-y-5">
-          <WeeklyScheduleSection
-            applyToAllWeeks={settings.workSchedule.applyToAllWeeks}
-            schedule={settings.workSchedule.weeklySchedule}
-            onApplyToAllWeeksChange={(value) =>
-              setSettings((prev) => ({
-                ...prev,
-                workSchedule: { ...prev.workSchedule, applyToAllWeeks: value },
-              }))
-            }
-            onSlotToggle={handleSlotToggle}
-            onColumnToggle={handleColumnToggle}
-            onApplyPreset={handleApplySchedulePreset}
-          />
-
-          <ConsultationTimeSection
-            selectedMinutes={settings.workSchedule.consultationMinutes}
-            customMinutes={settings.workSchedule.customConsultationMinutes}
-            onPresetSelect={(minutes) =>
-              setSettings((prev) => ({
-                ...prev,
-                workSchedule: {
-                  ...prev.workSchedule,
-                  consultationMinutes: minutes,
-                  customConsultationMinutes: '',
-                },
-              }))
-            }
-            onCustomChange={(value) => {
-              const parsed = parseInt(value, 10);
-              setSettings((prev) => ({
-                ...prev,
-                workSchedule: {
-                  ...prev.workSchedule,
-                  customConsultationMinutes: value,
-                  consultationMinutes:
-                    Number.isFinite(parsed) && parsed > 0
-                      ? parsed
-                      : prev.workSchedule.consultationMinutes,
-                },
-              }));
-            }}
-          />
-
-          <HolidaysLeaveSection
-            holidays={settings.workSchedule.holidays}
-            onAdd={handleAddHoliday}
-            onUpdate={handleUpdateHoliday}
-            onRemove={handleRemoveHoliday}
-          />
-
-          <GoogleCalendarSyncBanner />
-        </div>
       )}
 
       {activeTab === 'notifications' && (

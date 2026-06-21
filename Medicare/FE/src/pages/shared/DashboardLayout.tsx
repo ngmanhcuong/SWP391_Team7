@@ -1,26 +1,20 @@
 import React, { useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Bell,
-  Calendar,
-  Headphones,
-  HelpCircle,
-  LogOut,
+  ChevronRight,
+  Home,
   Menu,
   Search,
-  Settings,
   X,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useLogout } from '../../features/auth/hooks';
-import { useUnreadNotificationCount } from '../../features/patient/hooks';
 import BrandLogo from '../../components/layout/BrandLogo';
 import DashboardUserMenu from '../../components/layout/DashboardUserMenu';
 import DoctorDashboardHeader from '../../components/layout/DoctorDashboardHeader';
+import PatientNotificationDropdown from '../../components/layout/PatientNotificationDropdown';
+import ReceptionistNotificationDropdown from '../../components/layout/ReceptionistNotificationDropdown';
 import SidebarNavItem from '../../components/layout/SidebarNavItem';
-import Button from '../../components/ui/Button';
-import { Avatar } from '../../components/ui';
-import { AppRole, ROLE_LABELS, ROLE_NAV_ITEMS, getRoleSettingsPath } from './roleConfig';
+import { AppRole, ROLE_LABELS, ROLE_NAV_ITEMS } from './roleConfig';
 import { formatDoctorDepartment } from '../../constants/clinicSpecialties';
 
 interface DashboardLayoutProps {
@@ -29,142 +23,64 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const { user } = useAuthStore();
-  const logout = useLogout();
+  const location = useLocation();
+  const navigate = useNavigate();
   const navItems = ROLE_NAV_ITEMS[role];
   const isPatient = role === 'patient';
   const isDoctor = role === 'doctor';
   const isReceptionist = role === 'receptionist';
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const unreadNotificationCount = useUnreadNotificationCount(isPatient ? user : null);
   const doctorDepartment = formatDoctorDepartment(user?.occupation);
+
+  const roleRoot = `/${role}`;
+  const activeNav =
+    navItems.find((item) => item.path === location.pathname) ??
+    navItems.find((item) => item.path !== roleRoot && location.pathname.startsWith(item.path));
+  const breadcrumbLabel = activeNav?.label ?? 'Tổng quan';
 
   const sidebarContent = (
     <>
-      <div className="p-5 border-b border-[#c3c6d6] shrink-0">
+      <div className="h-16 flex items-center px-5 bg-white/75 backdrop-blur-xl border-b border-slate-200/70 shrink-0">
         <BrandLogo to={isPatient ? '/patient' : `/${role}`} variant="dark" />
-        <p className="mt-2 text-xs font-medium text-[#003d9b]">
-          {isReceptionist ? 'Hệ thống quản lý' : ROLE_LABELS[role]}
-        </p>
       </div>
 
-      <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
-        {navItems.map(({ label, path, icon }) => (
-          <SidebarNavItem
-            key={path}
-            to={path}
-            icon={icon}
-            label={label}
-            end={path === `/${role}`}
-            accent={isReceptionist ? 'green' : 'blue'}
-            onClick={() => setMobileNavOpen(false)}
-          />
-        ))}
-
-        {isPatient && (
-          <Link to="/patient/lich-hen" onClick={() => setMobileNavOpen(false)} className="block mt-4 mx-1">
-            <Button fullWidth leftIcon={<Calendar size={16} />}>
-              Đặt lịch khám
-            </Button>
-          </Link>
-        )}
-      </nav>
-
-      <div className="p-3 border-t border-[#c3c6d6] space-y-1 shrink-0">
-        {isDoctor ? (
-          <>
-            <button
-              type="button"
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#003d9b] px-3 text-sm font-semibold text-white hover:bg-[#002d75] transition-colors mx-1 mb-2"
-              style={{ width: 'calc(100% - 8px)' }}
-            >
-              <Headphones size={16} />
-              Hỗ trợ kỹ thuật
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMobileNavOpen(false); logout(); }}
-              className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <LogOut size={18} />
-              </span>
-              Đăng xuất
-            </button>
-          </>
-        ) : isReceptionist ? (
-          <>
-            {user && (
-              <div className="flex items-center gap-2.5 rounded-lg px-2 py-2 mb-1">
-                <Avatar name={user.fullName} src={user.avatar} size="sm" />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#191c1e] truncate">{user.fullName}</p>
-                  <p className="text-xs text-[#737685]">{ROLE_LABELS[role]}</p>
-                </div>
-              </div>
-            )}
-            <SidebarNavItem
-              to={getRoleSettingsPath(role)}
-              icon={Settings}
-              label="Cài đặt"
-              onClick={() => setMobileNavOpen(false)}
-            />
-            <button
-              type="button"
-              className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <HelpCircle size={18} />
-              </span>
-              Hỗ trợ
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMobileNavOpen(false); logout(); }}
-              className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <LogOut size={18} />
-              </span>
-              Đăng xuất
-            </button>
-          </>
-        ) : (
-          <>
-            <SidebarNavItem
-              to={getRoleSettingsPath(role)}
-              icon={Settings}
-              label="Cài đặt"
-              onClick={() => setMobileNavOpen(false)}
-            />
-            <button
-              type="button"
-              className="group flex h-10 w-full items-center gap-3 rounded-lg border-l-4 border-transparent px-3 text-sm font-medium text-[#434654] hover:bg-[#f8f9fb] hover:text-[#191c1e] transition-all"
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <HelpCircle size={18} />
-              </span>
-              Trợ giúp
-            </button>
-          </>
-        )}
+      <div className="flex-1 min-h-0 flex flex-col px-3 pt-4 pb-3">
+        <div className="flex-1 min-h-0 flex flex-col bg-white rounded-2xl border border-slate-200/70 shadow-soft overflow-hidden">
+          <nav className="flex-1 min-h-0 px-3 py-4 space-y-1 overflow-y-auto">
+            <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              {isReceptionist ? 'Hệ thống quản lý' : ROLE_LABELS[role]}
+            </p>
+            {navItems.map(({ label, path, icon }) => (
+              <SidebarNavItem
+                key={path}
+                to={path}
+                icon={icon}
+                label={label}
+                end={path === `/${role}`}
+                accent="blue"
+                onClick={() => setMobileNavOpen(false)}
+              />
+            ))}
+          </nav>
+        </div>
       </div>
     </>
   );
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gradient-to-br from-slate-50 via-[#f8f9fb] to-blue-50/40 text-[var(--text-primary)]">
-      <aside className="hidden lg:flex w-[260px] h-full flex-col border-r border-[#c3c6d6]/40 bg-white/80 backdrop-blur-sm shrink-0 overflow-hidden">
+    <div className="h-screen flex overflow-hidden bg-[#f8fafc] text-slate-900">
+      <aside className="hidden lg:flex flex-col w-[240px] h-full shrink-0">
         {sidebarContent}
       </aside>
 
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <button type="button" className="absolute inset-0 bg-black/40" aria-label="Đóng menu" onClick={() => setMobileNavOpen(false)} />
-          <aside className="relative flex flex-col w-[280px] max-w-[85vw] h-full bg-white shadow-xl">
+          <button type="button" className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" aria-label="Đóng menu" onClick={() => setMobileNavOpen(false)} />
+          <aside className="relative flex flex-col w-[240px] max-w-[85vw] h-full bg-[#f8fafc] shadow-2xl">
             <button
               type="button"
               onClick={() => setMobileNavOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100"
               aria-label="Đóng"
             >
               <X size={20} />
@@ -176,11 +92,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {isDoctor ? (
-          <header className="sticky top-0 z-40 min-h-16 flex items-center gap-3 px-4 lg:px-6 py-3 bg-white border-b border-[#c3c6d6]/40 shadow-sm">
+          <header className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-8 bg-white/75 backdrop-blur-xl border-b border-slate-200/70">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors shrink-0"
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
               aria-label="Mở menu"
             >
               <Menu size={20} />
@@ -191,12 +107,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               {user && <DoctorDashboardHeader user={user} department={doctorDepartment} compact />}
             </div>
 
+            <nav className="hidden lg:flex items-center gap-1 text-sm shrink-0" aria-label="Breadcrumb">
+              <Link
+                to={roleRoot}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 font-medium text-slate-400 hover:text-[#2563eb] hover:bg-slate-100/80 transition-colors"
+              >
+                <Home size={15} />
+                Trang chủ
+              </Link>
+              <ChevronRight size={15} className="text-slate-300" />
+              <span className="rounded-lg bg-[#2563eb]/[0.08] px-2.5 py-1 font-semibold text-[#1e40af]">
+                {breadcrumbLabel}
+              </span>
+            </nav>
+
             <div className="hidden lg:flex flex-1 min-w-0">
               {user ? (
                 <DoctorDashboardHeader user={user} department={doctorDepartment} />
               ) : (
-                <div className="flex flex-1 max-w-xl items-center gap-3 px-4 py-2.5 bg-[#f8f9fb] rounded-xl border border-[#c3c6d6]/50">
-                  <span className="text-sm text-[#737685]">Tìm kiếm bệnh nhân, lịch hẹn...</span>
+                <div className="flex flex-1 max-w-sm ml-auto items-center gap-3 px-3.5 py-2 bg-slate-100/70 rounded-lg border border-transparent">
+                  <span className="text-sm text-slate-400">Tìm kiếm bệnh nhân, lịch hẹn...</span>
                 </div>
               )}
             </div>
@@ -206,11 +136,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             </div>
           </header>
         ) : isReceptionist ? (
-          <header className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-6 bg-white border-b border-[#c3c6d6]/40 shadow-sm">
+          <header className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-8 bg-white/75 backdrop-blur-xl border-b border-slate-200/70">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors shrink-0"
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
               aria-label="Mở menu"
             >
               <Menu size={20} />
@@ -220,32 +150,34 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               <BrandLogo to="/receptionist" variant="dark" compact />
             </div>
 
-            <div className="hidden lg:flex flex-1 max-w-xl items-center gap-2.5 px-4 py-2.5 bg-[#f8f9fb] rounded-xl border border-[#c3c6d6]/50 focus-within:border-[#1a56db]/60 transition-colors">
-              <Search size={16} className="text-[#737685] shrink-0" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm bệnh nhân, mã số..."
-                className="flex-1 bg-transparent text-sm text-[#191c1e] placeholder:text-[#737685] outline-none"
-              />
+            <nav className="hidden lg:flex items-center gap-1 text-sm shrink-0" aria-label="Breadcrumb">
+              <Link
+                to={roleRoot}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 font-medium text-slate-400 hover:text-[#2563eb] hover:bg-slate-100/80 transition-colors"
+              >
+                <Home size={15} />
+                Trang chủ
+              </Link>
+              <ChevronRight size={15} className="text-slate-300" />
+              <span className="rounded-lg bg-[#2563eb]/[0.08] px-2.5 py-1 font-semibold text-[#1e40af]">
+                {breadcrumbLabel}
+              </span>
+            </nav>
+
+            <div className="hidden lg:flex flex-1 justify-center px-6">
+              <div className="flex w-full max-w-sm items-center gap-2.5 px-3.5 py-2 bg-slate-100/70 rounded-lg border border-transparent focus-within:border-[#2563eb]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2563eb]/10 transition-all">
+                <Search size={16} className="text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm bệnh nhân, mã số..."
+                  className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 ml-auto">
-              <button
-                type="button"
-                className="relative p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors"
-                aria-label="Thông báo"
-              >
-                <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
-              </button>
-              <button
-                type="button"
-                className="p-2 text-[#434654] hover:bg-[#f8f9fb] rounded-lg transition-colors"
-                aria-label="Cài đặt"
-              >
-                <Settings size={18} />
-              </button>
-              <div className="h-8 w-px bg-[#c3c6d6]/60 mx-1" />
+            <div className="flex items-center gap-1.5 ml-auto lg:ml-0">
+              <ReceptionistNotificationDropdown />
+              <div className="h-7 w-px bg-slate-200 mx-1" />
               {user && (
                 <DashboardUserMenu
                   user={user}
@@ -256,46 +188,61 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             </div>
           </header>
         ) : (
-          <header
-            className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-6 shadow-[0_2px_16px_rgba(26,86,219,0.15)]"
-            style={{ background: '#1a56db' }}
-          >
+          <header className="sticky top-0 z-40 h-16 flex items-center gap-3 px-4 lg:px-8 bg-white/75 backdrop-blur-xl border-b border-slate-200/70">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden p-2 text-blue-100 hover:bg-white/10 rounded-lg transition-colors"
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
               aria-label="Mở menu"
             >
               <Menu size={20} />
             </button>
 
             <div className="lg:hidden flex-1 min-w-0">
-              <BrandLogo to={isPatient ? '/patient' : `/${role}`} variant="light" compact />
+              <BrandLogo to={isPatient ? '/patient' : `/${role}`} variant="dark" compact />
             </div>
 
-            <div className="hidden lg:block flex-1" />
-
-            <div className="flex items-center gap-2 ml-auto">
+            <nav className="hidden lg:flex items-center gap-1 text-sm shrink-0" aria-label="Breadcrumb">
               <Link
-                to={isPatient ? '/patient/thong-bao' : '#'}
-                className="relative p-2 text-blue-100 hover:bg-white/10 rounded-lg transition-colors"
-                aria-label="Thông báo"
+                to={roleRoot}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 font-medium text-slate-400 hover:text-[#2563eb] hover:bg-slate-100/80 transition-colors"
               >
-                <Bell size={18} />
-                {isPatient && unreadNotificationCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-400 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
-                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-                  </span>
-                )}
+                <Home size={15} />
+                Trang chủ
               </Link>
+              <ChevronRight size={15} className="text-slate-300" />
+              <span className="rounded-lg bg-[#2563eb]/[0.08] px-2.5 py-1 font-semibold text-[#1e40af]">
+                {breadcrumbLabel}
+              </span>
+            </nav>
 
-              {user && <DashboardUserMenu user={user} variant="light" />}
+            <div className="hidden lg:flex flex-1 justify-center px-6">
+              <div className="flex w-full max-w-sm items-center gap-2.5 px-3.5 py-2 bg-slate-100/70 rounded-lg border border-transparent focus-within:border-[#2563eb]/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2563eb]/10 transition-all">
+                <Search size={16} className="text-slate-400 shrink-0" />
+                <input
+                  type="search"
+                  placeholder="Tìm bác sĩ, chuyên khoa, hồ sơ..."
+                  className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                  onFocus={() => isPatient && navigate('/patient/lich-hen')}
+                  readOnly={isPatient}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-auto lg:ml-0">
+              <PatientNotificationDropdown />
+
+              <div className="h-7 w-px bg-slate-200 mx-1" />
+
+              {user && <DashboardUserMenu user={user} variant="dark" />}
             </div>
           </header>
         )}
 
-        <main id="dashboard-main-scroll" className={`flex-1 min-h-0 overflow-y-auto ${isDoctor || isReceptionist ? 'p-4 sm:p-6 lg:p-8 bg-[#f8f9fb]' : 'p-4 sm:p-6 lg:p-8'}`}>
-          <Outlet />
+        <main id="dashboard-main-scroll" className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1400px]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
