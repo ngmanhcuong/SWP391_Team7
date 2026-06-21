@@ -7,16 +7,23 @@ import {
   LucideIcon,
   Plus,
   Search,
+  UserCheck,
   XCircle,
 } from 'lucide-react';
 import { Card, Modal, Spinner } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import {
   useAppointments,
+  useCheckinAppointment,
   useCreateAppointment,
   useUpdateAppointmentStatus,
 } from '../../features/receptionist/hooks';
 import { Appointment, AppointmentStatus } from '../../features/receptionist/types';
+import {
+  CLINIC_DEPARTMENTS,
+  getDoctorsByDepartment,
+  getServicesByDepartment,
+} from '../../features/receptionist/constants';
 
 const STATUS_STYLES: Record<AppointmentStatus, { label: string; className: string }> = {
   pending: { label: 'Chờ xác nhận', className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40' },
@@ -35,8 +42,7 @@ const STATUS_FILTER_OPTIONS: { value: 'all' | AppointmentStatus; label: string }
   { value: 'cancelled', label: 'Đã hủy' },
 ];
 
-const DEPARTMENTS = ['Khoa Nội tổng quát', 'Sản phụ khoa', 'Khoa Nhi', 'Khoa Chấn thương', 'Khoa Tim mạch'];
-const DOCTORS = ['BS. Lê Minh Hoàng', 'BS. Nguyễn Thu Thủy', 'BS. Đặng Quốc Anh', 'BS. Vũ Hà Phương', 'BS. Trần Mỹ Linh'];
+const DEPARTMENTS = CLINIC_DEPARTMENTS;
 
 const PAGE_SIZE = 5;
 
@@ -52,8 +58,9 @@ const formatDate = (iso?: string) => {
 interface NewAppointmentForm {
   name: string;
   phone: string;
-  doctor: string;
   department: string;
+  doctor: string;
+  service: string;
   date: string;
   time: string;
 }
@@ -61,22 +68,24 @@ interface NewAppointmentForm {
 const EMPTY_NEW_FORM: NewAppointmentForm = {
   name: '',
   phone: '',
-  doctor: DOCTORS[0],
   department: DEPARTMENTS[0],
+  doctor: getDoctorsByDepartment(DEPARTMENTS[0])[0],
+  service: getServicesByDepartment(DEPARTMENTS[0])[0],
   date: todayISO(),
   time: '08:00',
 };
 
 const TIMELINE = [
-  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', detail: 'Khám tổng quát nhi • BS. Hà Phương', state: 'done' as const, note: 'ĐÃ HOÀN THÀNH' },
-  { code: '#LH-9799', name: 'Lê Hoàng Nam', detail: 'Chụp X-Quang • BS. Quốc Anh', state: 'active' as const, note: 'Đang khám...' },
-  { code: '#LH-9802', name: 'Trần Văn Tú', detail: 'Tiếp nhận hồ sơ • Chờ BS. Minh Hoàng', state: 'upcoming' as const, note: 'Sắp tới (08:30)' },
+  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', detail: 'Khám nhi tổng quát • BS. Vũ Hà Phương', state: 'done' as const, note: 'ĐÃ HOÀN THÀNH' },
+  { code: '#LH-9799', name: 'Lê Hoàng Nam', detail: 'Khám chấn thương • BS. Đặng Quốc Anh', state: 'active' as const, note: 'Đang khám...' },
+  { code: '#LH-9802', name: 'Trần Văn Tú', detail: 'Khám nội tổng quát • Chờ BS. Lê Minh Hoàng', state: 'upcoming' as const, note: 'Sắp tới (08:30)' },
 ];
 
 const ReceptionistAppointmentManagement: React.FC = () => {
   const { data: appointments = [], isLoading, isError } = useAppointments();
   const createAppointment = useCreateAppointment();
   const updateStatus = useUpdateAppointmentStatus();
+  const checkin = useCheckinAppointment();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all');
@@ -144,6 +153,20 @@ const ReceptionistAppointmentManagement: React.FC = () => {
     );
   };
 
+  // Check-in trực tiếp lịch hẹn đã xác nhận: tạo số thứ tự và đưa vào hàng chờ.
+  const handleCheckin = (appt: Appointment) => {
+    checkin.mutate(appt.id, {
+      onSuccess: ({ ticket }) =>
+        setToast(`Đã check-in ${appt.patientName} • Số thứ tự #${String(ticket).padStart(3, '0')}.`),
+      onError: (err: unknown) => {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          || 'Không thể check-in. Vui lòng thử lại.';
+        setToast(message);
+      },
+    });
+  };
+
   const handleCreate = () => {
     const errors: Partial<Record<keyof NewAppointmentForm, string>> = {};
     if (!newForm.name.trim()) errors.name = 'Vui lòng nhập tên bệnh nhân.';
@@ -159,6 +182,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         phone: newForm.phone.trim(),
         doctor: newForm.doctor,
         department: newForm.department,
+        service: newForm.service,
         date: newForm.date,
         time: newForm.time,
       },
@@ -445,13 +469,22 @@ const ReceptionistAppointmentManagement: React.FC = () => {
                 </>
               )}
               {detail.status === 'confirmed' && (
-                <Button
-                  variant="danger"
-                  loading={updateStatus.isPending}
-                  onClick={() => changeStatus(detail.id, 'cancelled', `Đã hủy lịch hẹn ${detail.code}.`)}
-                >
-                  Hủy lịch
-                </Button>
+                <>
+                  <Button
+                    variant="danger"
+                    loading={updateStatus.isPending}
+                    onClick={() => changeStatus(detail.id, 'cancelled', `Đã hủy lịch hẹn ${detail.code}.`)}
+                  >
+                    Hủy lịch
+                  </Button>
+                  <Button
+                    loading={checkin.isPending}
+                    onClick={() => handleCheckin(detail)}
+                    leftIcon={<UserCheck size={16} />}
+                  >
+                    Check-in
+                  </Button>
+                </>
               )}
             </>
           )
@@ -543,26 +576,46 @@ const ReceptionistAppointmentManagement: React.FC = () => {
             {newErrors.phone && <span className="mt-1 block text-xs text-red-500">{newErrors.phone}</span>}
           </label>
           <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Khoa khám</span>
+            <select
+              value={newForm.department}
+              onChange={(e) => {
+                const department = e.target.value;
+                setNewForm((f) => ({
+                  ...f,
+                  department,
+                  doctor: getDoctorsByDepartment(department)[0] ?? '',
+                  service: getServicesByDepartment(department)[0] ?? '',
+                }));
+              }}
+              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
+            >
+              {DEPARTMENTS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Bác sĩ</span>
             <select
               value={newForm.doctor}
               onChange={(e) => setNewForm((f) => ({ ...f, doctor: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              {DOCTORS.map((d) => (
+              {getDoctorsByDepartment(newForm.department).map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Khoa khám</span>
+          <label className="block sm:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Dịch vụ khám</span>
             <select
-              value={newForm.department}
-              onChange={(e) => setNewForm((f) => ({ ...f, department: e.target.value }))}
+              value={newForm.service}
+              onChange={(e) => setNewForm((f) => ({ ...f, service: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>{d}</option>
+              {getServicesByDepartment(newForm.department).map((s) => (
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </label>

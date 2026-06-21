@@ -4,9 +4,9 @@ import {
   Calendar,
   CheckCircle2,
   ChevronRight,
+  Clock,
   LucideIcon,
   Megaphone,
-  Receipt,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -14,7 +14,8 @@ import { Avatar, Card, Spinner } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import { Modal } from '../../components/ui';
 import { useReceptionistOverview, useUpdateQueueTicket } from '../../features/receptionist/hooks';
-import { QueueTicket } from '../../features/receptionist/types';
+import { QueueTicket, RoomKey } from '../../features/receptionist/types';
+import { CLINIC_ROOMS } from '../../features/receptionist/constants';
 
 const PATHS = {
   reception: '/receptionist/tiep-nhan',
@@ -31,11 +32,28 @@ interface Room {
   progress: number;
 }
 
-const ROOMS: Room[] = [
-  { name: 'Phòng 101', specialty: 'Khám Nội Tổng Quát', doctor: 'BS. Nguyễn Hữu Hoàng - Đang khám', busy: true, progress: 65 },
-  { name: 'Phòng 102', specialty: 'Khám Sản Phụ Khoa', doctor: 'Đang trống', busy: false, progress: 0 },
-  { name: 'Phòng 103', specialty: 'Khám Nhi', doctor: 'BS. Trần Mỹ Linh - Đang khám', busy: true, progress: 45 },
-];
+// Trạng thái hoạt động của từng phòng (phòng/khoa/bác sĩ lấy từ nguồn chung CLINIC_ROOMS).
+const ROOM_ACTIVITY: Record<RoomKey, { busy: boolean; progress: number }> = {
+  P101: { busy: true, progress: 65 },
+  P102: { busy: false, progress: 0 },
+  P201: { busy: true, progress: 40 },
+  P202: { busy: true, progress: 80 },
+  P301: { busy: true, progress: 30 },
+  P302: { busy: false, progress: 0 },
+  P401: { busy: true, progress: 50 },
+  P402: { busy: false, progress: 0 },
+};
+
+const ROOMS: Room[] = CLINIC_ROOMS.map((room) => {
+  const activity = ROOM_ACTIVITY[room.key];
+  return {
+    name: room.label,
+    specialty: room.department,
+    doctor: activity.busy ? `${room.doctor} - Đang khám` : 'Đang trống',
+    busy: activity.busy,
+    progress: activity.progress,
+  };
+});
 
 const NOTICES = [
   { title: 'Họp giao ban định kỳ', body: '14:00 chiều nay tại phòng hội trường tầng 5.' },
@@ -66,8 +84,8 @@ const ReceptionistDashboardPage: React.FC = () => {
   const statCards: { label: string; value: string; icon: LucideIcon; tone: string; to: string }[] = [
     { label: 'Bệnh nhân chờ khám', value: String(stats?.waitingCount ?? 0), icon: Users, tone: 'bg-blue-50 text-[#2563eb]', to: PATHS.queue },
     { label: 'Lịch hẹn hôm nay', value: String(stats?.appointmentsToday ?? 0), icon: Calendar, tone: 'bg-emerald-50 text-emerald-600', to: PATHS.appointments },
-    { label: 'Đã check-in', value: String(stats?.checkedInToday ?? 0), icon: CheckCircle2, tone: 'bg-cyan-50 text-cyan-600', to: PATHS.queue },
-    { label: 'Hóa đơn chưa trả', value: '12', icon: Receipt, tone: 'bg-amber-50 text-amber-600', to: PATHS.invoices },
+    { label: 'Đã check-in', value: String(stats?.checkedInToday ?? 0), icon: CheckCircle2, tone: 'bg-cyan-50 text-cyan-600', to: PATHS.reception },
+    { label: 'Chờ xác nhận', value: String(stats?.pendingToday ?? 0), icon: Clock, tone: 'bg-amber-50 text-amber-600', to: PATHS.appointments },
   ];
 
   const filteredQueue = useMemo(

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const QUEUE_STATUSES = ['waiting', 'in-progress', 'skipped', 'done'];
-const ROOM_KEYS = ['P101', 'P102'];
+const ROOM_KEYS = ['P101', 'P102', 'P201', 'P202', 'P301', 'P302', 'P401', 'P402'];
 
 const queueTicketSchema = new mongoose.Schema({
   ticket: { type: Number, required: true, unique: true },

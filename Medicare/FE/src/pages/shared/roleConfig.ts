@@ -11,6 +11,7 @@ import {
   UserCircle,
   Receipt,
   ListOrdered,
+  UserCheck,
   Stethoscope,
   Building2,
   DoorOpen,
@@ -63,6 +64,7 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   receptionist: [
     { label: 'Tổng quan', path: '/receptionist', icon: LayoutDashboard },
     { label: 'Lịch hẹn', path: '/receptionist/lich-hen', icon: Calendar },
+    { label: 'Tiếp đón & Check-in', path: '/receptionist/tiep-nhan', icon: UserCheck },
     { label: 'Bệnh nhân', path: '/receptionist/benh-nhan', icon: Users },
     { label: 'Hàng chờ', path: '/receptionist/hang-cho', icon: ListOrdered },
     { label: 'Thanh toán', path: '/receptionist/thanh-toan', icon: CreditCard },

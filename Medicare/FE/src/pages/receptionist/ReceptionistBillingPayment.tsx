@@ -19,10 +19,10 @@ interface PendingInvoice {
 }
 
 const PENDING_INVOICES: PendingInvoice[] = [
-  { id: 'HD2024052301', name: 'Trần Văn Hoàng', department: 'Khoa Nội tổng quát', amount: '1,250,000đ', updatedAt: 'Vừa cập nhật 2 phút trước', urgent: true },
+  { id: 'HD2024052301', name: 'Trần Văn Hoàng', department: 'Khoa Nội', amount: '1,250,000đ', updatedAt: 'Vừa cập nhật 2 phút trước', urgent: true },
   { id: 'HD2024052302', name: 'Nguyễn Thị Mai', department: 'Khoa Nhi', amount: '850,000đ', updatedAt: '15 phút trước' },
-  { id: 'HD2024052303', name: 'Lê Minh Quân', department: 'Phòng Cấp cứu', amount: '3,420,000đ', updatedAt: '30 phút trước' },
-  { id: 'HD2024052304', name: 'Phạm Tuyết Nhung', department: 'Khoa Da liễu', amount: '560,000đ', updatedAt: '45 phút trước' },
+  { id: 'HD2024052303', name: 'Lê Minh Quân', department: 'Khoa Ngoại', amount: '3,420,000đ', updatedAt: '30 phút trước' },
+  { id: 'HD2024052304', name: 'Phạm Tuyết Nhung', department: 'Khoa Sản', amount: '560,000đ', updatedAt: '45 phút trước' },
 ];
 
 interface ServiceLine {
