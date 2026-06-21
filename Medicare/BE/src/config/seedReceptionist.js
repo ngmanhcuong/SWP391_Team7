@@ -20,22 +20,23 @@ const PATIENTS = [
 ];
 
 const APPOINTMENTS = [
-  { patientIdx: 0, code: '#LH-9802', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội tổng quát', time: '08:30', service: 'Khám tổng quát', status: 'pending' },
-  { patientIdx: 1, code: '#LH-9801', doctor: 'BS. Nguyễn Thu Thủy', department: 'Sản phụ khoa', time: '09:15', service: 'Siêu âm thai', status: 'confirmed' },
-  { patientIdx: 2, code: '#LH-9799', doctor: 'BS. Đặng Quốc Anh', department: 'Khoa Chấn thương', time: '08:00', service: 'Chụp X-Quang', status: 'pending' },
-  { patientIdx: 3, code: '#LH-9795', doctor: 'BS. Vũ Hà Phương', department: 'Khoa Nhi', time: '07:30', service: 'Khám nhi', status: 'done' },
-  { patientIdx: 4, code: '#LH-9790', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội tổng quát', time: '10:00', service: 'Khám tổng quát', status: 'cancelled' },
-  { patientIdx: 5, code: '#LH-9803', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội tổng quát', time: '09:00', service: 'Khám tổng quát', status: 'confirmed' },
+  { patientIdx: 0, code: '#LH-9802', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội', time: '08:30', service: 'Khám nội tổng quát', status: 'pending' },
+  { patientIdx: 1, code: '#LH-9801', doctor: 'BS. Nguyễn Thu Thủy', department: 'Khoa Sản', time: '09:15', service: 'Siêu âm thai', status: 'confirmed' },
+  { patientIdx: 2, code: '#LH-9799', doctor: 'BS. Đặng Quốc Anh', department: 'Khoa Ngoại', time: '08:00', service: 'Khám chấn thương', status: 'pending' },
+  { patientIdx: 3, code: '#LH-9795', doctor: 'BS. Vũ Hà Phương', department: 'Khoa Nhi', time: '07:30', service: 'Khám nhi tổng quát', status: 'done' },
+  { patientIdx: 4, code: '#LH-9790', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội', time: '10:00', service: 'Khám nội tổng quát', status: 'cancelled' },
+  { patientIdx: 5, code: '#LH-9803', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội', time: '09:00', service: 'Khám nội tổng quát', status: 'confirmed' },
 ];
 
 // Standalone queue tickets representing the current waiting room.
+// 4 khoa (Nội/Ngoại/Sản/Nhi), mỗi khoa 2 phòng → tổng 8 phòng khám.
 const QUEUE = [
-  { ticket: 1024, patientName: 'Lê Hoàng Nam', code: 'BN-2024-0500', doctor: 'BS. Phan Minh Hưng', room: 'P.204', department: 'Nội khoa', roomKey: 'P101', status: 'in-progress', waitMinutes: 0 },
-  { ticket: 1025, patientName: 'Trần Văn Tú', code: 'BN-2024-0582', doctor: 'BS. Nguyễn Lan Anh', room: 'P.205', department: 'Sản khoa', roomKey: 'P101', status: 'waiting', waitMinutes: 22 },
-  { ticket: 1023, patientName: 'Phạm Thúy Hạnh', code: 'BN-2024-0911', doctor: 'BS. Lê Quang', room: 'P.108', department: 'Ngoại khoa', roomKey: 'P102', status: 'in-progress', waitMinutes: 12 },
-  { ticket: 1026, patientName: 'Hoàng Anh Quân', code: 'BN-2024-1102', doctor: 'BS. Phan Minh Hưng', room: 'P.204', department: 'Nội khoa', roomKey: 'P101', status: 'waiting', waitMinutes: 8 },
-  { ticket: 1027, patientName: 'Vũ Thị Mỹ Linh', code: 'BN-2024-1244', doctor: 'BS. Nguyễn Lan Anh', room: 'P.205', department: 'Sản khoa', roomKey: 'P102', status: 'waiting', waitMinutes: 5 },
-  { ticket: 1022, patientName: 'Đỗ Duy Mạnh', code: 'BN-2024-0410', doctor: 'BS. Lê Quang', room: 'P.108', department: 'Ngoại khoa', roomKey: 'P102', status: 'skipped', waitMinutes: 0 },
+  { ticket: 1024, patientName: 'Lê Hoàng Nam', code: 'BN-2024-0500', doctor: 'BS. Phan Minh Hưng', room: 'Phòng 101', department: 'Khoa Nội', roomKey: 'P101', status: 'in-progress', waitMinutes: 0 },
+  { ticket: 1027, patientName: 'Vũ Thị Mỹ Linh', code: 'BN-2024-1244', doctor: 'BS. Lê Minh Hoàng', room: 'Phòng 102', department: 'Khoa Nội', roomKey: 'P102', status: 'waiting', waitMinutes: 5 },
+  { ticket: 1023, patientName: 'Phạm Thúy Hạnh', code: 'BN-2024-0911', doctor: 'BS. Lê Quang', room: 'Phòng 201', department: 'Khoa Ngoại', roomKey: 'P201', status: 'in-progress', waitMinutes: 12 },
+  { ticket: 1022, patientName: 'Đỗ Duy Mạnh', code: 'BN-2024-0410', doctor: 'BS. Đặng Quốc Anh', room: 'Phòng 202', department: 'Khoa Ngoại', roomKey: 'P202', status: 'skipped', waitMinutes: 0 },
+  { ticket: 1025, patientName: 'Trần Văn Tú', code: 'BN-2024-0582', doctor: 'BS. Nguyễn Lan Anh', room: 'Phòng 301', department: 'Khoa Sản', roomKey: 'P301', status: 'waiting', waitMinutes: 22 },
+  { ticket: 1026, patientName: 'Hoàng Anh Quân', code: 'BN-2024-1102', doctor: 'BS. Trần Thu Hà', room: 'Phòng 401', department: 'Khoa Nhi', roomKey: 'P401', status: 'waiting', waitMinutes: 8 },
 ];
 
 const seedReceptionist = async () => {

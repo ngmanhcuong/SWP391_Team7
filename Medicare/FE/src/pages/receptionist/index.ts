@@ -6,7 +6,6 @@ export { default as ReceptionistReceptionPage } from './ReceptionistReceptionPag
 export { default as ReceptionistProfilePage } from './ReceptionistProfilePage';
 export { default as ReceptionistDashboardPage } from './ReceptionistDashboardPage';
 export { default as ReceptionistPatientRegisterPage } from './ReceptionistPatientRegisterPage';
-export { default as ReceptionistCheckInPage } from './ReceptionistCheckInPage';
 export { default as ReceptionistAppointmentsPage } from './ReceptionistAppointmentsPage';
 export { default as ReceptionistQueuePage } from './ReceptionistQueuePage';
 export { default as ReceptionistNotificationsPage } from './ReceptionistNotificationsPage';

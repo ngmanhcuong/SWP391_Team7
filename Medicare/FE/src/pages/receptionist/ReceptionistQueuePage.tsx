@@ -18,18 +18,13 @@ import {
   useUpdateQueueTicket,
 } from '../../features/receptionist/hooks';
 import { QueueStatus, QueueTicket, RoomKey } from '../../features/receptionist/types';
+import { CLINIC_DEPARTMENTS, CLINIC_DOCTORS, CLINIC_ROOMS } from '../../features/receptionist/constants';
 
-const ROOM_FILTERS = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'P101', label: 'Phòng 101' },
-  { key: 'P102', label: 'Phòng 102' },
-] as const;
+const ROOMS = CLINIC_ROOMS;
+const DEPARTMENTS = CLINIC_DEPARTMENTS;
+const ACTIVE_DOCTORS = CLINIC_DOCTORS;
 
-type RoomFilter = (typeof ROOM_FILTERS)[number]['key'];
-
-const ACTIVE_DOCTORS = ['BS. Phan Minh Hưng', 'BS. Nguyễn Lan Anh', 'BS. Lê Quang', 'BS. Trần Thu Hà'];
-
-const ROOM_META: Record<RoomKey, string> = { P101: 'Nội khoa', P102: 'Sản khoa' };
+type RoomFilter = 'all' | RoomKey;
 
 const STATUS_LABEL: Record<QueueStatus, { label: string; variant: 'gray' | 'success' | 'danger' }> = {
   waiting: { label: 'Đang chờ', variant: 'gray' },
@@ -73,18 +68,26 @@ const ReceptionistQueuePage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
+  const sortedTickets = useMemo(
+    () =>
+      [...tickets].sort((a, b) =>
+        sortBy === 'ticket' ? a.ticket - b.ticket : b.waitMinutes - a.waitMinutes,
+      ),
+    [tickets, sortBy],
+  );
+
+  // Bệnh nhân hiển thị trên bảng "ĐANG GHI" — luôn là một bệnh nhân đang khám
+  // và đồng bộ với danh sách: ưu tiên người vừa được gọi, nếu không lấy
+  // bệnh nhân "Đang khám" đầu tiên theo đúng thứ tự đang hiển thị trong danh sách.
   const nowServing = useMemo(() => {
-    const inProgress = tickets.filter((t) => t.status === 'in-progress');
+    const inProgress = sortedTickets.filter((t) => t.status === 'in-progress');
+    if (inProgress.length === 0) return null;
     if (nowServingId) {
       const found = inProgress.find((t) => t.id === nowServingId);
       if (found) return found;
     }
-    return (
-      [...inProgress].sort(
-        (a, b) => new Date(b.calledAt ?? 0).getTime() - new Date(a.calledAt ?? 0).getTime(),
-      )[0] ?? null
-    );
-  }, [tickets, nowServingId]);
+    return inProgress[0];
+  }, [sortedTickets, nowServingId]);
 
   const waitingCount = useMemo(() => tickets.filter((t) => t.status === 'waiting').length, [tickets]);
 
@@ -94,17 +97,9 @@ const ReceptionistQueuePage: React.FC = () => {
     return [...waiting].sort((a, b) => a.ticket - b.ticket)[0];
   }, [tickets]);
 
-  const sorted = useMemo(
-    () =>
-      [...tickets].sort((a, b) =>
-        sortBy === 'ticket' ? a.ticket - b.ticket : b.waitMinutes - a.waitMinutes,
-      ),
-    [tickets, sortBy],
-  );
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedTickets.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const paginated = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginated = sortedTickets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
@@ -172,27 +167,27 @@ const ReceptionistQueuePage: React.FC = () => {
             Quản lý hàng chờ
           </h1>
           <p className="text-gray-500 dark:text-slate-400">
-            Điều phối bệnh nhân tại Khoa Nội Tổng Quát - Tầng 2
+            Điều phối bệnh nhân cho 4 khoa - 8 phòng khám
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-slate-800">
-            {ROOM_FILTERS.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setRoomFilter(key)}
-                className={`px-3.5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                  roomFilter === key
-                    ? 'bg-white dark:bg-slate-700 text-[#1a56db] shadow-sm'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700'
-                }`}
-              >
-                {label}
-              </button>
+          <select
+            value={roomFilter}
+            onChange={(e) => setRoomFilter(e.target.value as RoomFilter)}
+            className="rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3.5 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 outline-none focus:border-[#1a56db]"
+          >
+            <option value="all">Tất cả phòng khám</option>
+            {DEPARTMENTS.map((dept) => (
+              <optgroup key={dept} label={dept}>
+                {ROOMS.filter((r) => r.department === dept).map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.label} ({dept})
+                  </option>
+                ))}
+              </optgroup>
             ))}
-          </div>
+          </select>
           <Button leftIcon={<UserPlus size={16} />} onClick={() => setManualOpen(true)}>
             Thêm thủ công
           </Button>
@@ -320,12 +315,18 @@ const ReceptionistQueuePage: React.FC = () => {
                       const isSelected = patient.ticket === selectedTicket;
                       const isSkipped = patient.status === 'skipped';
                       const isInProgress = patient.status === 'in-progress';
+                      const isNowServing = nowServing?.id === patient.id;
                       return (
                         <tr
                           key={patient.id}
-                          onClick={() => setSelectedTicket(patient.ticket)}
+                          onClick={() => {
+                            setSelectedTicket(patient.ticket);
+                            if (patient.status === 'in-progress') setNowServingId(patient.id);
+                          }}
                           className={`cursor-pointer transition-colors ${
-                            isInProgress
+                            isNowServing
+                              ? 'bg-emerald-100 dark:bg-emerald-950/40 ring-2 ring-inset ring-emerald-500/60'
+                              : isInProgress
                               ? 'bg-emerald-50/80 dark:bg-emerald-950/20'
                               : isSelected
                               ? 'bg-blue-50/60 dark:bg-blue-950/20'
@@ -360,8 +361,12 @@ const ReceptionistQueuePage: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-3 py-4 align-top">
-                            {isInProgress ? (
-                              <span className="inline-flex items-center rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white">
+                            {isNowServing ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-semibold text-white">
+                                <Megaphone size={12} /> ĐANG GHI
+                              </span>
+                            ) : isInProgress ? (
+                              <span className="inline-flex items-center rounded-full bg-emerald-500/80 px-2.5 py-1 text-xs font-medium text-white">
                                 Đang khám
                               </span>
                             ) : (
@@ -409,7 +414,7 @@ const ReceptionistQueuePage: React.FC = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
             <p className="text-xs text-gray-400">
-              Hiển thị {paginated.length} của {sorted.length} bệnh nhân
+              Hiển thị {paginated.length} của {sortedTickets.length} bệnh nhân
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -453,15 +458,15 @@ const ReceptionistQueuePage: React.FC = () => {
       <Card className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2">
-            {ACTIVE_DOCTORS.slice(0, 2).map((doctor) => (
+            {ACTIVE_DOCTORS.slice(0, 3).map((doctor) => (
               <Avatar key={doctor} name={doctor} size="sm" className="ring-2 ring-white dark:ring-slate-800" />
             ))}
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1a56db] text-xs font-semibold text-white ring-2 ring-white dark:ring-slate-800">
-              +4
+              +{ACTIVE_DOCTORS.length - 3}
             </span>
           </div>
           <div>
-            <p className="text-sm font-medium">6 Bác sĩ đang hoạt động</p>
+            <p className="text-sm font-medium">{ACTIVE_DOCTORS.length} Bác sĩ đang hoạt động</p>
             <p className="flex items-center gap-1.5 text-xs text-emerald-600">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{' '}
               {paused ? 'Đã tạm dừng gọi số' : 'Ổn định'}
@@ -535,11 +540,15 @@ const ReceptionistQueuePage: React.FC = () => {
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Bác sĩ</span>
             <select
               value={manualForm.doctor}
-              onChange={(e) => setManualForm((f) => ({ ...f, doctor: e.target.value }))}
+              onChange={(e) => {
+                const doctor = e.target.value;
+                const room = ROOMS.find((r) => r.doctor === doctor);
+                setManualForm((f) => ({ ...f, doctor, roomKey: room ? room.key : f.roomKey }));
+              }}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              {ACTIVE_DOCTORS.map((d) => (
-                <option key={d} value={d}>{d}</option>
+              {ROOMS.map((r) => (
+                <option key={r.doctor} value={r.doctor}>{r.doctor} - {r.department}</option>
               ))}
             </select>
           </label>
@@ -547,11 +556,22 @@ const ReceptionistQueuePage: React.FC = () => {
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Phòng</span>
             <select
               value={manualForm.roomKey}
-              onChange={(e) => setManualForm((f) => ({ ...f, roomKey: e.target.value as RoomKey }))}
+              onChange={(e) => {
+                const roomKey = e.target.value as RoomKey;
+                const room = ROOMS.find((r) => r.key === roomKey);
+                setManualForm((f) => ({ ...f, roomKey, doctor: room ? room.doctor : f.doctor }));
+              }}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              <option value="P101">Phòng 101 ({ROOM_META.P101})</option>
-              <option value="P102">Phòng 102 ({ROOM_META.P102})</option>
+              {DEPARTMENTS.map((dept) => (
+                <optgroup key={dept} label={dept}>
+                  {ROOMS.filter((r) => r.department === dept).map((r) => (
+                    <option key={r.key} value={r.key}>
+                      {r.label} ({dept})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </label>
         </div>

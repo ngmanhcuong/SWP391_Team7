@@ -28,8 +28,28 @@ const endOfToday = () => {
   return d;
 };
 
-const roomKeyFromDepartment = (department = '') =>
-  /sản|phụ/i.test(department) ? 'P102' : 'P101';
+// Bệnh viện có 4 khoa, mỗi khoa 2 phòng khám → tổng 8 phòng.
+// Mirror của FE: features/receptionist/constants.ts (CLINIC_ROOMS).
+const ROOM_DIRECTORY = {
+  P101: { room: 'Phòng 101', department: 'Khoa Nội', doctor: 'BS. Phan Minh Hưng' },
+  P102: { room: 'Phòng 102', department: 'Khoa Nội', doctor: 'BS. Lê Minh Hoàng' },
+  P201: { room: 'Phòng 201', department: 'Khoa Ngoại', doctor: 'BS. Lê Quang' },
+  P202: { room: 'Phòng 202', department: 'Khoa Ngoại', doctor: 'BS. Đặng Quốc Anh' },
+  P301: { room: 'Phòng 301', department: 'Khoa Sản', doctor: 'BS. Nguyễn Lan Anh' },
+  P302: { room: 'Phòng 302', department: 'Khoa Sản', doctor: 'BS. Nguyễn Thu Thủy' },
+  P401: { room: 'Phòng 401', department: 'Khoa Nhi', doctor: 'BS. Trần Thu Hà' },
+  P402: { room: 'Phòng 402', department: 'Khoa Nhi', doctor: 'BS. Vũ Hà Phương' },
+};
+
+const ROOM_KEYS = Object.keys(ROOM_DIRECTORY);
+
+// Map free-text department of an appointment to the first room of the matching khoa.
+const roomKeyFromDepartment = (department = '') => {
+  if (/sản|phụ/i.test(department)) return 'P301';
+  if (/nhi/i.test(department)) return 'P401';
+  if (/ngoại|chấn thương/i.test(department)) return 'P201';
+  return 'P101';
+};
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -180,13 +200,14 @@ const checkinAppointment = async (req, res) => {
 
     const ticketNo = await genTicket();
     const roomKey = roomKeyFromDepartment(appointment.department);
+    const info = ROOM_DIRECTORY[roomKey];
     await QueueTicket.create({
       ticket: ticketNo,
       patientName: appointment.patientName,
       code: appointment.patientCode,
       doctor: appointment.doctor,
-      room: appointment.room || (roomKey === 'P102' ? 'P.205' : 'P.204'),
-      department: appointment.department,
+      room: appointment.room || info.room,
+      department: appointment.department || info.department,
       roomKey,
       status: 'waiting',
       appointment: appointment._id,
@@ -233,15 +254,16 @@ const manualAddQueue = async (req, res) => {
     if (!patientName || !patientName.trim()) {
       return res.status(400).json({ success: false, message: 'Vui lòng nhập tên bệnh nhân.' });
     }
-    const key = ['P101', 'P102'].includes(roomKey) ? roomKey : 'P101';
+    const key = ROOM_KEYS.includes(roomKey) ? roomKey : 'P101';
+    const info = ROOM_DIRECTORY[key];
     const ticketNo = await genTicket();
     const ticket = await QueueTicket.create({
       ticket: ticketNo,
       patientName: patientName.trim(),
       code: code?.trim() || `BN-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      doctor: doctor || '',
-      room: key === 'P102' ? 'P.205' : 'P.204',
-      department: key === 'P102' ? 'Sản khoa' : 'Nội khoa',
+      doctor: doctor || info.doctor,
+      room: info.room,
+      department: info.department,
       roomKey: key,
       status: 'waiting',
     });
@@ -332,9 +354,13 @@ const getOverview = async (req, res) => {
     const [appointmentsToday, checkedInToday, confirmedToday, pendingToday, cancelledToday] =
       await Promise.all([
         Appointment.countDocuments(todayFilter),
-        Appointment.countDocuments({ ...todayFilter, status: 'checked-in' }),
+        // "Đã check-in" tính theo thời điểm check-in thực tế (checkedInAt hôm nay),
+        // không phụ thuộc ngày hẹn → tăng ngay khi lễ tân bấm check-in.
+        Appointment.countDocuments({ checkedInAt: { $gte: from, $lte: to } }),
         Appointment.countDocuments({ ...todayFilter, status: 'confirmed' }),
-        Appointment.countDocuments({ ...todayFilter, status: 'pending' }),
+        // "Chờ xác nhận" là số liệu vận hành hiện tại (mọi lịch đang chờ xác nhận),
+        // giảm ngay khi xác nhận → không lệ thuộc ngày hẹn.
+        Appointment.countDocuments({ status: 'pending' }),
         Appointment.countDocuments({ ...todayFilter, status: 'cancelled' }),
       ]);
 
