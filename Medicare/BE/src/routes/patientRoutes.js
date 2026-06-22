@@ -10,6 +10,7 @@ router.use(restrictTo('patient', 'admin'));
 // Specialties & doctors (danh bạ đặt lịch)
 router.get('/specialties', ctrl.listSpecialties);
 router.get('/doctors', ctrl.listDoctors);
+router.get('/doctor-availability', ctrl.getDoctorAvailability);
 
 // Appointments / booking
 router.get('/appointments', ctrl.listAppointments);

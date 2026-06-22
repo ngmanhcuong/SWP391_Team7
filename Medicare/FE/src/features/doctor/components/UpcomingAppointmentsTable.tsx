@@ -80,6 +80,9 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
           <div className="divide-y divide-slate-100">
             {paginatedAppointments.map((appt) => {
               const recordId = appt.patientId;
+              const recordHref = recordId
+                ? DOCTOR_PATHS.recordAppointment(recordId, appt.id)
+                : undefined;
               const statusStyle = dashboardStatusConfig[appt.status];
               const scheduleStatusStyle = appt.scheduleStatus
                 ? APPOINTMENT_STATUS_CONFIG[appt.scheduleStatus]
@@ -108,9 +111,9 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          {recordId ? (
+                          {recordHref ? (
                             <Link
-                              to={DOCTOR_PATHS.record(recordId)}
+                              to={recordHref}
                               className="text-sm font-semibold text-slate-900 hover:text-[#2563eb] hover:underline"
                             >
                               {appt.patientName}
@@ -147,9 +150,9 @@ const UpcomingAppointmentsTable: React.FC<UpcomingAppointmentsTableProps> = ({
                       >
                         {scheduleStatusStyle?.label ?? statusStyle.label}
                       </span>
-                      {recordId ? (
+                      {recordHref ? (
                         <Link
-                          to={DOCTOR_PATHS.record(recordId)}
+                          to={recordHref}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#2563eb] text-white text-[10px] font-bold uppercase tracking-wide hover:bg-[#1d4ed8] transition-colors"
                         >
                           <Stethoscope size={12} />

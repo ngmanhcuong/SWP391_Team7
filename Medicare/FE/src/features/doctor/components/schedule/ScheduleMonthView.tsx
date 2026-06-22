@@ -170,6 +170,9 @@ const ScheduleMonthView: React.FC<ScheduleMonthViewProps> = ({
               selectedAppointments.map((appt) => {
                 const statusStyle = APPOINTMENT_STATUS_CONFIG[appt.status];
                 const typeStyle = APPOINTMENT_TYPE_CONFIG[appt.type];
+                const recordHref = appt.patientId
+                  ? DOCTOR_PATHS.recordAppointment(appt.patientId, appt.id)
+                  : undefined;
 
                 return (
                   <div key={appt.id} className="px-5 py-3.5">
@@ -184,9 +187,9 @@ const ScheduleMonthView: React.FC<ScheduleMonthViewProps> = ({
                     <span className={`inline-flex mt-2 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${typeStyle.className}`}>
                       {typeStyle.label}
                     </span>
-                    {appt.patientId && appt.status !== 'cancelled' && (
+                    {recordHref && appt.status !== 'cancelled' && (
                       <Link
-                        to={DOCTOR_PATHS.record(appt.patientId)}
+                        to={recordHref}
                         className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-[#003d9b] hover:underline"
                       >
                         <Stethoscope size={12} />

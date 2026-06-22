@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
@@ -10,15 +11,15 @@ import {
   PatientListTable,
 } from '../../features/doctor/components/patients';
 import {
-  buildDoctorPatientsData,
   filterPatients,
   getTotalPages,
   PAGE_SIZE,
   paginatePatients,
 } from '../../features/doctor/utils/buildDoctorPatientsData';
+import { doctorApi } from '../../features/doctor/api/doctorApi';
 import { registerDoctorPatient } from '../../features/doctor/utils/doctorPatientRegistry';
 import { DOCTOR_PATHS } from '../../features/doctor/utils/doctorPaths';
-import { NewPatientFormData, PatientListFilters } from '../../features/doctor/types';
+import { NewPatientFormData, PatientListData, PatientListFilters } from '../../features/doctor/types';
 
 const EMPTY_FILTERS: PatientListFilters = {
   patientCode: '',
@@ -28,8 +29,20 @@ const EMPTY_FILTERS: PatientListFilters = {
 
 export const DoctorPatientsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [patientsData, setPatientsData] = useState(() => buildDoctorPatientsData());
-  const data = patientsData;
+  const { data = {
+    patients: [],
+    totalCount: 0,
+    summary: {
+      totalManaged: 0,
+      totalTrend: 'Theo dữ liệu hiện tại',
+      newThisWeek: 0,
+      weeklyChart: [0, 0, 0, 0, 0, 0, 0],
+      waitingReExam: 0,
+    },
+  } as PatientListData, refetch } = useQuery({
+    queryKey: ['doctor', 'patients'],
+    queryFn: doctorApi.getPatients,
+  });
 
   const [filters, setFilters] = useState<PatientListFilters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<PatientListFilters>(EMPTY_FILTERS);
@@ -72,6 +85,7 @@ export const DoctorPatientsPage: React.FC = () => {
     setFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
     setCurrentPage(1);
+    refetch();
   };
 
   const handleAddPatient = (
@@ -79,7 +93,7 @@ export const DoctorPatientsPage: React.FC = () => {
     options: { openRecord: boolean; addAnother: boolean },
   ) => {
     const patient = registerDoctorPatient(form);
-    setPatientsData(buildDoctorPatientsData());
+    refetch();
     setCurrentPage(1);
     setSuccessMessage(`Đã thêm bệnh nhân ${patient.fullName} (${patient.patientCode}) thành công.`);
 

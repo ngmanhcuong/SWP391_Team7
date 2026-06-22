@@ -19,6 +19,7 @@ const aiRoutes = require('./routes/aiRoutes');
 const receptionistRoutes = require('./routes/receptionistRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const doctorRoutes = require('./routes/doctorRoutes');
 
 const parseAllowedOrigins = () => {
   const origins = new Set([
@@ -94,6 +95,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/receptionist', receptionistRoutes);
 app.use('/api/patient', patientRoutes);
+app.use('/api/doctor', doctorRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check
@@ -123,13 +125,23 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8000;
 
+const shouldAutoSeed = () => {
+  if (process.env.NODE_ENV === 'production') return false;
+  return process.env.AUTO_SEED === 'true';
+};
+
 const startServer = async () => {
   await connectDB();
-  await seedDevUsers();
-  await seedSpecialties();
-  await seedDoctors();
-  await seedReceptionist();
-  await seedPatientData();
+  if (shouldAutoSeed()) {
+    await seedDevUsers();
+    await seedSpecialties();
+    await seedDoctors();
+    await seedReceptionist();
+    await seedPatientData();
+    console.log('🌱 Auto seed completed');
+  } else {
+    console.log('⏭️ Auto seed skipped (set AUTO_SEED=true to enable in development)');
+  }
 
   app.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);

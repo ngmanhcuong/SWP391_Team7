@@ -160,6 +160,7 @@ export type ScheduleViewMode = 'list' | 'week' | 'month';
 export interface TodayAppointment {
   id: string;
   patientId?: string;
+  patientCode?: string;
   time: string;
   patientName: string;
   patientNote?: string;
@@ -277,6 +278,7 @@ export interface DoctorPatientListItem {
   phone: string;
   lastVisit: string;
   healthStatus: PatientHealthStatus;
+  department?: string;
 }
 
 export interface PatientListFilters {

@@ -8,6 +8,7 @@ import {
   Overview,
   Patient,
   QueueAction,
+  ReceptionistCatalog,
   QueueResponse,
 } from '../types';
 
@@ -25,6 +26,13 @@ export const useReceptionistOverview = (): UseQueryResult<Overview> =>
     queryKey: ['receptionist', 'overview'],
     queryFn: receptionistApi.getOverview,
     staleTime: 10_000,
+  });
+
+export const useReceptionistCatalog = (): UseQueryResult<ReceptionistCatalog> =>
+  useQuery<ReceptionistCatalog>({
+    queryKey: ['receptionist', 'catalog'],
+    queryFn: receptionistApi.getCatalog,
+    staleTime: 30_000,
   });
 
 export const usePatients = (q?: string): UseQueryResult<Patient[]> =>

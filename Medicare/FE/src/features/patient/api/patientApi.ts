@@ -1,5 +1,6 @@
 import api from '../../../services/api';
 import {
+  AppointmentScheduleDay,
   AppointmentBookingResult,
   BookingDoctor,
   DepositPaymentMethod,
@@ -40,6 +41,16 @@ export const patientApi = {
     unwrap(await api.get('/patient/specialties')),
   getDoctors: async (specialtyId?: string): Promise<BookingDoctor[]> =>
     unwrap(await api.get('/patient/doctors', { params: { specialtyId } })),
+  getDoctorAvailability: async (
+    doctorId: string,
+    fromDate?: string,
+    daysCount = 14,
+  ): Promise<AppointmentScheduleDay[]> =>
+    unwrap(
+      await api.get('/patient/doctor-availability', {
+        params: { doctorId, fromDate, daysCount },
+      }),
+    ),
 
   // Booking
   getAppointments: async (): Promise<unknown[]> => unwrap(await api.get('/patient/appointments')),

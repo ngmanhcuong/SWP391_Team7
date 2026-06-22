@@ -1,23 +1,18 @@
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { getDefaultMedicalRecordPatientId } from '../../features/doctor/utils/doctorPatientRegistry';
+import { doctorApi } from '../../features/doctor/api/doctorApi';
 import { DOCTOR_PATHS } from '../../features/doctor/utils/doctorPaths';
 
 export const DoctorRecordsIndexPage: React.FC = () => {
-  const navigate = useNavigate();
-  const defaultPatientId = getDefaultMedicalRecordPatientId();
+  const { data } = useQuery({
+    queryKey: ['doctor', 'patients'],
+    queryFn: doctorApi.getPatients,
+  });
 
-  useEffect(() => {
-    if (defaultPatientId) {
-      navigate(DOCTOR_PATHS.record(defaultPatientId), { replace: true });
-    }
-  }, [defaultPatientId, navigate]);
-
-  if (defaultPatientId) {
-    return null;
-  }
+  const hasPatients = (data?.patients?.length ?? 0) > 0;
 
   return (
     <div className="flex items-center justify-center min-h-[420px]">
@@ -27,7 +22,9 @@ export const DoctorRecordsIndexPage: React.FC = () => {
         </div>
         <h1 className="text-lg font-bold text-[#191c1e]">Chưa chọn bệnh nhân</h1>
         <p className="text-sm text-[#737685] mt-2 leading-relaxed">
-          Vui lòng chọn bệnh nhân từ danh sách hoặc lịch hẹn hôm nay để mở hồ sơ bệnh án.
+          {hasPatients
+            ? 'Vui lòng chọn bệnh nhân từ danh sách hoặc từ lịch hẹn hôm nay để mở hồ sơ bệnh án.'
+            : 'Hiện chưa có bệnh nhân thật nào được gán cho bác sĩ này trong hệ thống.'}
         </p>
         <Link to={DOCTOR_PATHS.patients} className="inline-block mt-5">
           <Button className="bg-[#003d9b] border-[#003d9b] hover:bg-[#002d75]">

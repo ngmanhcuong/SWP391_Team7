@@ -2,17 +2,176 @@ import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MIN_SYMPTOM_LENGTH } from '../constants/appointmentBookingSteps';
 import { getDepositAmount } from '../constants/consultationFees';
-import { getSpecialtyById, getSpecialtyByName } from '../constants/medicalSpecialties';
+import { getSpecialtyByName, getSpecialtyPresentation, MEDICAL_SPECIALTIES, MedicalSpecialty } from '../constants/medicalSpecialties';
 import {
   AiSymptomAnalysis,
+  AppointmentScheduleDay,
   AppointmentBookingResult,
   AppointmentBookingStep,
   BookingDoctor,
   DepositPaymentMethod,
 } from '../types';
-import { buildDoctorSchedule } from '../utils/buildDoctorSchedule';
 import { aiApi, AiAnalysisError } from '../api/aiApi';
-import { patientApi } from '../api/patientApi';
+import { patientApi, PatientSpecialty } from '../api/patientApi';
+
+const FALLBACK_DOCTORS: BookingDoctor[] = [
+  {
+    id: 'fallback-doc-1',
+    name: 'BS. Nguyễn Văn An',
+    specialtyId: 'cardiology',
+    departmentLabel: 'Khoa Tim mạch',
+    rating: 4.9,
+    reviewCount: 128,
+    experienceYears: 15,
+    tag: { label: 'Chuyên gia đầu ngành', variant: 'expert' },
+    nextAvailableSlot: 'Hôm nay, 14:30',
+    isAvailable: true,
+    avatarBg: 'rgba(218,226,255,0.3)',
+  },
+  {
+    id: 'fallback-doc-2',
+    name: 'BS. Trần Minh Bách',
+    specialtyId: 'cardiology',
+    departmentLabel: 'Khoa Tim mạch',
+    rating: 4.8,
+    reviewCount: 95,
+    experienceYears: 10,
+    tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
+    nextAvailableSlot: 'Mai, 08:00',
+    isAvailable: true,
+    avatarBg: 'rgba(255,218,210,0.3)',
+  },
+  {
+    id: 'fallback-doc-3',
+    name: 'BS. Lê Hoàng Cường',
+    specialtyId: 'cardiology',
+    departmentLabel: 'Khoa Tim mạch',
+    rating: 5.0,
+    reviewCount: 210,
+    experienceYears: 22,
+    tag: { label: 'Bác sĩ Ưu tú', variant: 'elite' },
+    nextAvailableSlot: null,
+    isAvailable: false,
+    avatarBg: 'rgba(130,249,190,0.3)',
+  },
+  {
+    id: 'fallback-doc-4',
+    name: 'BS. Phạm Thu Dung',
+    specialtyId: 'musculoskeletal',
+    departmentLabel: 'Khoa Cơ xương khớp',
+    rating: 4.7,
+    reviewCount: 52,
+    experienceYears: 8,
+    tag: { label: 'Bác sĩ trẻ tiềm năng', variant: 'potential' },
+    nextAvailableSlot: 'Hôm nay, 16:00',
+    isAvailable: true,
+    avatarBg: 'rgba(218,226,255,0.3)',
+  },
+  {
+    id: 'fallback-doc-5',
+    name: 'BS. Hoàng Văn Đức',
+    specialtyId: 'musculoskeletal',
+    departmentLabel: 'Khoa Cơ xương khớp',
+    rating: 4.9,
+    reviewCount: 143,
+    experienceYears: 18,
+    tag: { label: 'Chuyên gia đầu ngành', variant: 'expert' },
+    nextAvailableSlot: 'Hôm nay, 10:00',
+    isAvailable: true,
+    avatarBg: 'rgba(255,218,210,0.3)',
+  },
+  {
+    id: 'fallback-doc-6',
+    name: 'BS. Trần Thị Phương',
+    specialtyId: 'musculoskeletal',
+    departmentLabel: 'Khoa Cơ xương khớp',
+    rating: 4.6,
+    reviewCount: 67,
+    experienceYears: 12,
+    tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
+    nextAvailableSlot: 'Mai, 15:30',
+    isAvailable: true,
+    avatarBg: 'rgba(130,249,190,0.3)',
+  },
+  {
+    id: 'fallback-doc-7',
+    name: 'BS. Nguyễn Thị Giang',
+    specialtyId: 'obstetrics-pediatrics',
+    departmentLabel: 'Khoa Sản & Nhi',
+    rating: 4.9,
+    reviewCount: 186,
+    experienceYears: 16,
+    tag: { label: 'Chuyên gia đầu ngành', variant: 'expert' },
+    nextAvailableSlot: 'Hôm nay, 09:00',
+    isAvailable: true,
+    avatarBg: 'rgba(255,218,210,0.3)',
+  },
+  {
+    id: 'fallback-doc-8',
+    name: 'BS. Lê Văn Hùng',
+    specialtyId: 'obstetrics-pediatrics',
+    departmentLabel: 'Khoa Sản & Nhi',
+    rating: 4.8,
+    reviewCount: 112,
+    experienceYears: 14,
+    tag: { label: 'Bác sĩ Ưu tú', variant: 'elite' },
+    nextAvailableSlot: 'Mai, 11:00',
+    isAvailable: true,
+    avatarBg: 'rgba(218,226,255,0.3)',
+  },
+  {
+    id: 'fallback-doc-9',
+    name: 'BS. Trần Thị Mai',
+    specialtyId: 'obstetrics-pediatrics',
+    departmentLabel: 'Khoa Sản & Nhi',
+    rating: 4.7,
+    reviewCount: 89,
+    experienceYears: 12,
+    tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
+    nextAvailableSlot: 'Hôm nay, 15:00',
+    isAvailable: true,
+    avatarBg: 'rgba(130,249,190,0.3)',
+  },
+  {
+    id: 'fallback-doc-10',
+    name: 'BS. Phạm Hoàng Long',
+    specialtyId: 'ophthalmology',
+    departmentLabel: 'Khoa Mắt',
+    rating: 5.0,
+    reviewCount: 210,
+    experienceYears: 22,
+    tag: { label: 'Bác sĩ Ưu tú', variant: 'elite' },
+    nextAvailableSlot: null,
+    isAvailable: false,
+    avatarBg: 'rgba(130,249,190,0.3)',
+  },
+  {
+    id: 'fallback-doc-11',
+    name: 'BS. Trần Anh Khoa',
+    specialtyId: 'ophthalmology',
+    departmentLabel: 'Khoa Mắt',
+    rating: 4.7,
+    reviewCount: 78,
+    experienceYears: 11,
+    tag: { label: 'Bác sĩ trẻ tiềm năng', variant: 'potential' },
+    nextAvailableSlot: 'Hôm nay, 16:00',
+    isAvailable: true,
+    avatarBg: 'rgba(218,226,255,0.3)',
+  },
+  {
+    id: 'fallback-doc-12',
+    name: 'BS. Võ Minh Lâm',
+    specialtyId: 'ophthalmology',
+    departmentLabel: 'Khoa Mắt',
+    rating: 4.8,
+    reviewCount: 99,
+    experienceYears: 13,
+    tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
+    nextAvailableSlot: 'Mai, 14:00',
+    isAvailable: true,
+    avatarBg: 'rgba(255,218,210,0.3)',
+  },
+];
 
 export const useAppointmentBooking = () => {
   const queryClient = useQueryClient();
@@ -41,40 +200,94 @@ export const useAppointmentBooking = () => {
     queryFn: () => patientApi.getDoctors(),
     staleTime: 5 * 60_000,
   });
+  const { data: specialties = [] } = useQuery({
+    queryKey: ['patient', 'specialties'],
+    queryFn: () => patientApi.getSpecialties(),
+    staleTime: 5 * 60_000,
+  });
+  const { data: availabilityDays = [] } = useQuery<AppointmentScheduleDay[]>({
+    queryKey: ['patient', 'doctor-availability', selectedDoctorId, scheduleWeekOffset],
+    queryFn: async () => {
+      if (!selectedDoctorId) return [];
+
+      const startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(startDate.getDate() + scheduleWeekOffset * 7);
+
+      const year = startDate.getFullYear();
+      const month = `${startDate.getMonth() + 1}`.padStart(2, '0');
+      const day = `${startDate.getDate()}`.padStart(2, '0');
+
+      return patientApi.getDoctorAvailability(selectedDoctorId, `${year}-${month}-${day}`, 14);
+    },
+    enabled: Boolean(selectedDoctorId),
+    staleTime: 30_000,
+  });
+
+  const effectiveDoctors = useMemo(
+    () => (doctors.length > 0 ? doctors : FALLBACK_DOCTORS),
+    [doctors],
+  );
+
+  const fallbackSpecialties = useMemo<MedicalSpecialty[]>(
+    () =>
+      MEDICAL_SPECIALTIES.map((specialty) => ({
+        ...specialty,
+        doctorCount: FALLBACK_DOCTORS.filter((doctor) => doctor.specialtyId === specialty.id).length,
+      })),
+    [],
+  );
+
+  const specialtyOptions = useMemo<MedicalSpecialty[]>(
+    () => {
+      if (specialties.length === 0) {
+        return fallbackSpecialties;
+      }
+
+      return specialties.map((specialty: PatientSpecialty) => ({
+        id: specialty.id,
+        name: specialty.name,
+        departmentLabel: specialty.departmentLabel,
+        ...getSpecialtyPresentation(specialty.id),
+        consultationFee: specialty.consultationFee,
+        depositAmount: specialty.depositAmount,
+        doctorCount: specialty.doctorCount,
+      }));
+    },
+    [fallbackSpecialties, specialties],
+  );
 
   const selectedSpecialty = useMemo(
-    () => (selectedSpecialtyId ? getSpecialtyById(selectedSpecialtyId) ?? null : null),
-    [selectedSpecialtyId],
+    () => (selectedSpecialtyId ? specialtyOptions.find((item) => item.id === selectedSpecialtyId) ?? null : null),
+    [selectedSpecialtyId, specialtyOptions],
   );
 
   const selectedDoctor = useMemo(
     () =>
       selectedDoctorId
-        ? doctors.find((doc: BookingDoctor) => doc.id === selectedDoctorId) ?? null
+        ? effectiveDoctors.find((doc: BookingDoctor) => doc.id === selectedDoctorId) ?? null
         : null,
-    [selectedDoctorId, doctors],
+    [selectedDoctorId, effectiveDoctors],
   );
 
   const availableDoctors = useMemo(
     () =>
       selectedSpecialtyId
-        ? doctors.filter((doc: BookingDoctor) => doc.specialtyId === selectedSpecialtyId)
+        ? effectiveDoctors.filter((doc: BookingDoctor) => doc.specialtyId === selectedSpecialtyId)
         : [],
-    [selectedSpecialtyId, doctors],
+    [selectedSpecialtyId, effectiveDoctors],
   );
 
   const depositAmount = useMemo(
-    () => getDepositAmount(selectedSpecialtyId),
-    [selectedSpecialtyId],
+    () => selectedSpecialty?.depositAmount ?? getDepositAmount(selectedSpecialtyId),
+    [selectedSpecialty, selectedSpecialtyId],
   );
 
   const selectedTime = useMemo(() => {
-    if (!selectedDoctor || !selectedDate || !selectedSlotId) return null;
-    const day = buildDoctorSchedule(selectedDoctor.id, scheduleWeekOffset).find(
-      (item) => item.date === selectedDate,
-    );
-    return day?.slots.find((slot) => slot.id === selectedSlotId)?.time ?? null;
-  }, [selectedDoctor, selectedDate, selectedSlotId, scheduleWeekOffset]);
+    if (!selectedDate || !selectedSlotId) return null;
+    const day = availabilityDays.find((item: AppointmentScheduleDay) => item.date === selectedDate);
+    return day?.slots.find((slot: AppointmentScheduleDay['slots'][number]) => slot.id === selectedSlotId)?.time ?? null;
+  }, [availabilityDays, selectedDate, selectedSlotId]);
 
   const isBookingDataComplete = useMemo(
     () =>
@@ -130,7 +343,9 @@ export const useAppointmentBooking = () => {
       const analysis = await aiApi.analyzeSymptoms(symptoms.trim());
       setAiAnalysis(analysis);
 
-      const suggested = getSpecialtyByName(analysis.suggestedSpecialty);
+      const suggested =
+        specialtyOptions.find((item) => item.name === analysis.suggestedSpecialty)
+        ?? getSpecialtyByName(analysis.suggestedSpecialty);
       if (suggested) {
         setSelectedSpecialtyId(suggested.id);
       }
@@ -144,7 +359,7 @@ export const useAppointmentBooking = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [canAnalyze, symptoms]);
+  }, [canAnalyze, specialtyOptions, symptoms]);
 
   const goToNextStep = useCallback(() => {
     if (!canContinue || currentStep >= 5) return;
@@ -305,6 +520,8 @@ export const useAppointmentBooking = () => {
     selectedDoctor,
     doctorSearchQuery,
     availableDoctors,
+    specialtyOptions,
+    availabilityDays,
     scheduleWeekOffset,
     selectedDate,
     selectedSlotId,

@@ -25,6 +25,11 @@ const AppointmentRow: React.FC<{ appointment: TodayAppointment }> = ({ appointme
   const statusStyle = APPOINTMENT_STATUS_CONFIG[appt.status];
   const isCancelled = appt.status === 'cancelled';
   const isCompleted = appt.status === 'completed';
+  const recordHref = appt.patientId
+    ? appt.id
+      ? DOCTOR_PATHS.recordAppointment(appt.patientId, appt.id)
+      : DOCTOR_PATHS.record(appt.patientId)
+    : undefined;
 
   return (
     <tr
@@ -42,9 +47,9 @@ const AppointmentRow: React.FC<{ appointment: TodayAppointment }> = ({ appointme
         <div className="flex items-start gap-3 min-w-[220px]">
           <Avatar name={appt.patientName} size="sm" />
           <div className="min-w-0">
-            {appt.patientId ? (
+            {recordHref ? (
               <Link
-                to={DOCTOR_PATHS.record(appt.patientId)}
+                to={recordHref}
                 className="text-sm font-semibold text-[#191c1e] hover:text-[#003d9b] hover:underline"
               >
                 {appt.patientName}
@@ -74,17 +79,17 @@ const AppointmentRow: React.FC<{ appointment: TodayAppointment }> = ({ appointme
         </span>
       </td>
       <td className="px-4 py-4 align-top">
-        {appt.patientId && !isCancelled ? (
+        {recordHref && !isCancelled ? (
           <div className="flex items-center gap-2">
             <Link
-              to={DOCTOR_PATHS.record(appt.patientId)}
+              to={recordHref}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#003d9b] text-white text-xs font-bold uppercase tracking-wide hover:bg-[#002d75] transition-colors"
             >
               <Stethoscope size={14} />
               Khám
             </Link>
             <Link
-              to={DOCTOR_PATHS.record(appt.patientId)}
+              to={recordHref}
               className="p-1.5 rounded-lg text-[#737685] hover:bg-gray-100 hover:text-[#003d9b] transition-colors"
               aria-label={`Xem hồ sơ ${appt.patientName}`}
             >

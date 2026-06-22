@@ -77,6 +77,7 @@ export const AdminDoctorsPage: React.FC = () => {
     setSpecialty,
     statusFilter,
     setStatusFilter,
+    syncDoctorAccounts,
     deleteDoctor,
     addDoctor,
     updateDoctor,
@@ -171,6 +172,9 @@ export const AdminDoctorsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => syncDoctorAccounts()}>
+            Đồng bộ tài khoản
+          </Button>
           <Button variant="secondary" leftIcon={<ClipboardList size={16} />} onClick={openAssign}>
             Phân công khoa
           </Button>

@@ -60,6 +60,7 @@ export const AdminUsersPage: React.FC = () => {
     setRoleFilter,
     statusFilter,
     setStatusFilter,
+    syncAllAccounts,
     setUserStatus,
     updateUserRole,
     deleteUser,
@@ -106,9 +107,14 @@ export const AdminUsersPage: React.FC = () => {
             Thêm, sửa, phân quyền tài khoản trong hệ thống.
           </p>
         </div>
-        <Button leftIcon={<UserPlus size={16} />} onClick={openCreate}>
-          Thêm người dùng
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => syncAllAccounts()}>
+            Đồng bộ database
+          </Button>
+          <Button leftIcon={<UserPlus size={16} />} onClick={openCreate}>
+            Thêm người dùng
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

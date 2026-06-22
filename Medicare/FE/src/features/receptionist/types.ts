@@ -83,6 +83,18 @@ export interface Overview {
   upcoming: Appointment[];
 }
 
+export interface ReceptionistDepartmentCatalog {
+  id: string;
+  name: string;
+  specialtyName: string;
+  doctors: string[];
+  services: string[];
+}
+
+export interface ReceptionistCatalog {
+  departments: ReceptionistDepartmentCatalog[];
+}
+
 export interface QueueResponse {
   tickets: QueueTicket[];
   completedCount: number;

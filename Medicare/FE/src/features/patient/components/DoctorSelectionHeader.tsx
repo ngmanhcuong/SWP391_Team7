@@ -23,7 +23,7 @@ const DoctorSelectionHeader: React.FC<DoctorSelectionHeaderProps> = ({
       </div>
       <h2 className="text-base font-medium text-[#191c1e]">Đội ngũ Bác sĩ chuyên khoa</h2>
       <p className="text-base text-[#434654] max-w-xl">
-        Vui lòng chọn bác sĩ bạn muốn đặt lịch khám. Tất cả bác sĩ đều có trên 10 năm kinh nghiệm.
+        Vui lòng chọn bác sĩ phù hợp để tiếp tục đặt lịch khám.
       </p>
     </div>
 

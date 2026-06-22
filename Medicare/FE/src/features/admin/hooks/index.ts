@@ -151,6 +151,13 @@ export const useAdminUsers = () => {
   const [statusFilter, setStatusFilter] = useState<AdminUserStatusFilter>('all');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+  const syncMutation = useMutation({
+    mutationFn: adminApi.syncAllAccounts,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'doctors'] });
+    },
+  });
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: AdminUserStatus }) =>
       adminApi.updateUserStatus(id, status),
@@ -182,6 +189,7 @@ export const useAdminUsers = () => {
   const updateUserRole = (id: string, role: string) => roleMutation.mutate({ id, role });
   const deleteUser = (id: string) => deleteMutation.mutate(id);
   const addUser = (input: AdminUserInput) => addMutation.mutate(input);
+  const syncAllAccounts = () => syncMutation.mutate();
 
   const counts = useMemo(
     () => ({
@@ -202,6 +210,7 @@ export const useAdminUsers = () => {
     setRoleFilter,
     statusFilter,
     setStatusFilter,
+    syncAllAccounts,
     setUserStatus,
     updateUserRole,
     deleteUser,
@@ -227,6 +236,13 @@ export const useAdminDoctors = () => {
   const [statusFilter, setStatusFilter] = useState<DoctorStatusFilter>('all');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'doctors'] });
+  const syncMutation = useMutation({
+    mutationFn: adminApi.syncDoctorAccounts,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
   const addMutation = useMutation({ mutationFn: adminApi.createDoctor, onSuccess: invalidate });
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: Partial<AdminDoctorInput> }) =>
@@ -262,6 +278,7 @@ export const useAdminDoctors = () => {
   }, [doctors, specialties]);
 
   const deleteDoctor = (id: string) => deleteMutation.mutate(id);
+  const syncDoctorAccounts = () => syncMutation.mutate();
   const addDoctor = (input: AdminDoctorInput) => addMutation.mutate(input);
   const updateDoctor = (id: string, input: AdminDoctorInput) => updateMutation.mutate({ id, input });
   const assignSpecialty = (id: string, nextSpecialty: string) =>
@@ -279,6 +296,7 @@ export const useAdminDoctors = () => {
     setSpecialty,
     statusFilter,
     setStatusFilter,
+    syncDoctorAccounts,
     deleteDoctor,
     addDoctor,
     updateDoctor,

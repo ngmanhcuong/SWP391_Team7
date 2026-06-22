@@ -1,21 +1,13 @@
+import { formatDoctorDepartment } from '../../../constants/clinicSpecialties';
 import { User } from '../../../types';
 import {
-  AppointmentStatus,
   DoctorDashboardData,
+  DoctorPatientListItem,
+  ScheduledAppointment,
   TodayAppointment,
   TodayAppointmentStatus,
 } from '../types';
-import { buildDoctorScheduleData } from './buildDoctorScheduleData';
-import {
-  DOCTOR_PATIENT_REGISTRY,
-  getDefaultMedicalRecordPatientId,
-  getDoctorPatientById,
-  getDoctorPatientTotalCount,
-  getPatientQueueNumber,
-  getPatientsByHealthStatus,
-} from './doctorPatientRegistry';
 import { DOCTOR_PATHS } from './doctorPaths';
-import { formatDoctorDepartment } from '../../../constants/clinicSpecialties';
 import {
   formatShortDateLabel,
   getActiveAppointments,
@@ -23,15 +15,7 @@ import {
   sortAppointmentsByTime,
 } from './scheduleUtils';
 
-const CHART_DATA: DoctorDashboardData['chartData'] = [
-  { day: 'T2', count: 28 },
-  { day: 'T3', count: 35 },
-  { day: 'T4', count: 42 },
-  { day: 'T5', count: 38 },
-  { day: 'T6', count: 45 },
-  { day: 'T7', count: 22 },
-  { day: 'CN', count: 18 },
-];
+const CHART_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] as const;
 
 const getInitials = (name: string): string =>
   name
@@ -42,86 +26,134 @@ const getInitials = (name: string): string =>
     .join('')
     .toUpperCase();
 
-const mapScheduleStatus = (status: TodayAppointmentStatus): AppointmentStatus => {
-  if (status === 'completed') return 'arrived';
-  if (status === 'waiting') return 'waiting';
-  return 'upcoming';
+const mapScheduleStatus = (status: TodayAppointmentStatus) => {
+  if (status === 'completed') return 'arrived' as const;
+  if (status === 'waiting') return 'waiting' as const;
+  return 'upcoming' as const;
 };
 
-const toUpcomingAppointment = (appointment: TodayAppointment, isNext = false) => {
-  const patient = appointment.patientId ? getDoctorPatientById(appointment.patientId) : undefined;
-
-  return {
-    id: appointment.id,
-    patientId: appointment.patientId,
-    patientCode: patient?.patientCode,
-    patientName: appointment.patientName,
-    patientInitials: getInitials(appointment.patientName),
-    time: appointment.time,
-    reason: appointment.patientNote ?? `Khám ${appointment.department}`,
-    status: mapScheduleStatus(appointment.status),
-    scheduleStatus: appointment.status,
-    type: appointment.type,
-    department: appointment.department,
-    isNext,
-  };
-};
-
-export const buildDoctorDashboardData = (user: User): DoctorDashboardData => {
-  const schedule = buildDoctorScheduleData();
-  const department = formatDoctorDepartment(user.occupation);
-  const waitingPatients = getPatientsByHealthStatus('waiting');
-  const progress = getScheduleProgress(schedule.appointments);
-  const remainingCount = progress.pending;
-  const defaultRecordId = getDefaultMedicalRecordPatientId();
-
-  const activeAppointments = sortAppointmentsByTime(getActiveAppointments(schedule.appointments));
-  const nextScheduleAppointment = activeAppointments.find(
-    (appt) => appt.status === 'waiting' || appt.status === 'confirmed',
+const getAppointmentPatient = (
+  appointment: TodayAppointment,
+  patients: DoctorPatientListItem[],
+): DoctorPatientListItem | undefined =>
+  patients.find(
+    (patient) =>
+      patient.id === appointment.patientId ||
+      (!!appointment.patientCode && patient.patientCode === appointment.patientCode) ||
+      patient.fullName === appointment.patientName,
   );
 
-  const pendingAppointments = activeAppointments
-    .filter((appt) => appt.status === 'waiting' || appt.status === 'confirmed')
-    .map((appt) => toUpcomingAppointment(appt, appt.id === nextScheduleAppointment?.id));
+const toUpcomingAppointment = (appointment: TodayAppointment, isNext = false) => ({
+  id: appointment.id,
+  patientId: appointment.patientId,
+  patientCode: appointment.patientCode,
+  patientName: appointment.patientName,
+  patientInitials: getInitials(appointment.patientName),
+  time: appointment.time,
+  reason: appointment.patientNote ?? `Khám ${appointment.department}`,
+  status: mapScheduleStatus(appointment.status),
+  scheduleStatus: appointment.status,
+  type: appointment.type,
+  department: appointment.department,
+  isNext,
+});
 
+const buildChartData = (
+  appointments: ScheduledAppointment[],
+): DoctorDashboardData['chartData'] => {
+  const counts = new Map<string, number>();
+
+  appointments.forEach((appointment) => {
+    const appointmentDate = new Date(appointment.date);
+    const weekdayIndex = (appointmentDate.getDay() + 6) % 7;
+    const weekdayLabel = CHART_LABELS[weekdayIndex];
+    counts.set(weekdayLabel, (counts.get(weekdayLabel) ?? 0) + 1);
+  });
+
+  return CHART_LABELS.map((day) => ({
+    day,
+    count: counts.get(day) ?? 0,
+  }));
+};
+
+export const buildDoctorDashboardData = (
+  user: User,
+  patients: DoctorPatientListItem[],
+  appointments: ScheduledAppointment[],
+): DoctorDashboardData => {
+  const department = formatDoctorDepartment(user.occupation);
+  const sortedAppointments = sortAppointmentsByTime(appointments);
+  const activeAppointments = sortAppointmentsByTime(getActiveAppointments(sortedAppointments));
+  const progress = getScheduleProgress(sortedAppointments);
+  const waitingOrConfirmedAppointments = activeAppointments.filter(
+    (appointment) =>
+      appointment.status === 'waiting' || appointment.status === 'confirmed',
+  );
+
+  const nextScheduleAppointment = waitingOrConfirmedAppointments[0];
   const nextAppointment = nextScheduleAppointment
     ? toUpcomingAppointment(nextScheduleAppointment, true)
     : undefined;
 
-  const waitingQueue = waitingPatients
-    .map((patient) => ({
-      id: patient.id,
-      patientId: patient.id,
-      name: patient.fullName,
-      queueNumber: getPatientQueueNumber(patient.id) ?? 0,
-      lastVisit: patient.lastVisit,
-    }))
-    .sort((a, b) => a.queueNumber - b.queueNumber);
+  const upcomingAppointments = waitingOrConfirmedAppointments.map((appointment) =>
+    toUpcomingAppointment(appointment, appointment.id === nextScheduleAppointment?.id),
+  );
 
-  const newPatients = DOCTOR_PATIENT_REGISTRY.filter(
-    (patient) => patient.lastVisit === 'Hôm nay' || patient.healthStatus === 'waiting',
-  )
+  const waitingQueue = waitingOrConfirmedAppointments.slice(0, 3).map((appointment, index) => {
+    const patient = getAppointmentPatient(appointment, patients);
+
+    return {
+      id: appointment.id,
+      patientId: patient?.id ?? appointment.patientId ?? appointment.id,
+      name: appointment.patientName,
+      queueNumber: index + 1,
+      lastVisit: appointment.status === 'waiting' ? 'Hôm nay' : 'Đã xác nhận',
+    };
+  });
+
+  const newPatients = activeAppointments
+    .filter(
+      (appointment, index, list) =>
+        list.findIndex(
+          (candidate) =>
+            candidate.patientId === appointment.patientId &&
+            candidate.patientName === appointment.patientName,
+        ) === index,
+    )
     .slice(0, 4)
-    .map((patient) => ({
-      id: patient.id,
-      registryId: patient.id,
-      name: patient.fullName,
-      patientId: patient.patientCode,
-      admittedAgo: patient.lastVisit === 'Hôm nay' ? 'Tiếp nhận hôm nay' : patient.lastVisit,
-      department,
-      healthStatus: patient.healthStatus,
-    }));
+    .map((appointment) => {
+      const patient = getAppointmentPatient(appointment, patients);
 
+      return {
+        id: appointment.id,
+        registryId: patient?.id ?? appointment.patientId,
+        name: appointment.patientName,
+        patientId: patient?.patientCode ?? appointment.patientCode ?? 'Chưa có mã BN',
+        admittedAgo:
+          appointment.status === 'completed'
+            ? 'Đã khám hôm nay'
+            : appointment.status === 'waiting'
+              ? 'Đang chờ khám hôm nay'
+              : 'Đã xác nhận hôm nay',
+        department: appointment.department || patient?.department || department,
+        healthStatus: patient?.healthStatus,
+      };
+    });
+
+  const chartData = buildChartData(appointments);
   const chartAverage = `${Math.round(
-    CHART_DATA.reduce((sum, point) => sum + point.count, 0) / CHART_DATA.length,
+    chartData.reduce((sum, point) => sum + point.count, 0) / chartData.length,
   )} ca/ngày`;
 
+  const messageCount = 0;
+  const remainingCount = progress.pending;
   const summaryParts = [
     `${progress.total} lịch hẹn hôm nay`,
     `${progress.completed} ca đã khám (${progress.percent}%)`,
     `${remainingCount} ca còn lại`,
   ];
-  if (waitingQueue.length) {
+
+  if (waitingQueue.length > 0) {
     summaryParts.push(`${waitingQueue.length} bệnh nhân trong hàng chờ khám`);
   }
 
@@ -137,7 +169,7 @@ export const buildDoctorDashboardData = (user: User): DoctorDashboardData => {
         value: String(progress.total),
         icon: 'users',
         iconBg: 'bg-blue-50 text-[#2563eb]',
-        trend: `${getDoctorPatientTotalCount()} hồ sơ`,
+        trend: `${patients.length} hồ sơ`,
         trendType: 'neutral',
         href: DOCTOR_PATHS.schedule,
         hint: 'Xem lịch khám chi tiết',
@@ -159,29 +191,30 @@ export const buildDoctorDashboardData = (user: User): DoctorDashboardData => {
         value: String(remainingCount),
         icon: 'clipboard',
         iconBg: 'bg-amber-50 text-amber-600',
-        trend: waitingQueue.length ? `${waitingQueue.length} trong hàng đợi` : undefined,
+        trend: waitingQueue.length > 0 ? `${waitingQueue.length} trong hàng đợi` : undefined,
         trendType: 'neutral',
-        href: defaultRecordId ? DOCTOR_PATHS.record(defaultRecordId) : DOCTOR_PATHS.records,
+        href: nextAppointment?.patientId
+          ? DOCTOR_PATHS.record(nextAppointment.patientId)
+          : DOCTOR_PATHS.records,
         hint: 'Mở hồ sơ bệnh nhân chờ tiếp theo',
       },
       {
         id: 'messages',
         label: 'Tin nhắn mới',
-        value: '05',
+        value: String(messageCount).padStart(2, '0'),
         icon: 'message',
         iconBg: 'bg-indigo-50 text-indigo-600',
-        href: DOCTOR_PATHS.settings,
-        hint: 'Cài đặt thông báo',
+        hint: 'Chưa có dữ liệu tin nhắn từ hệ thống',
       },
     ],
-    upcomingAppointments: pendingAppointments,
+    upcomingAppointments,
     waitingQueue,
-    chartData: CHART_DATA,
+    chartData,
     chartAverage,
     chartTrend: `Hôm nay: ${progress.completed}/${progress.total} ca`,
     chartTrendType: progress.percent >= 50 ? 'positive' : 'neutral',
     newPatients,
-    newMessageCount: 5,
+    newMessageCount: messageCount,
     nextAppointment,
   };
 };

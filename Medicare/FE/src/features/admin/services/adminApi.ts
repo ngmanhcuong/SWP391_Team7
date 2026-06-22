@@ -55,6 +55,8 @@ export const adminApi = {
 
   // Doctors
   getDoctors: async (): Promise<AdminDoctor[]> => unwrap(await api.get('/admin/doctors')),
+  syncDoctorAccounts: async (): Promise<{ total: number }> =>
+    unwrap(await api.post('/admin/doctors/sync-accounts')),
   createDoctor: async (input: AdminDoctorInput): Promise<AdminDoctor> =>
     unwrap(await api.post('/admin/doctors', input)),
   updateDoctor: async (id: string, input: Partial<AdminDoctorInput>): Promise<AdminDoctor> =>
@@ -84,6 +86,8 @@ export const adminApi = {
 
   // Users
   getUsers: async (): Promise<AdminUser[]> => unwrap(await api.get('/admin/users')),
+  syncAllAccounts: async (): Promise<{ usersSynced: number; doctorAccountsSynced: number; counts: Record<string, number> }> =>
+    unwrap(await api.post('/admin/users/sync-all')),
   createUser: async (input: AdminUserInput): Promise<AdminUser> =>
     unwrap(await api.post('/admin/users', input)),
   updateUserStatus: async (id: string, status: AdminUserStatus): Promise<AdminUser> =>

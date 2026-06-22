@@ -9,7 +9,6 @@ import Input from '../../../components/ui/Input';
 import { Divider } from '../../../components/ui';
 import { useLogin } from '../hooks';
 import { authApi } from '../api';
-import { DEMO_ACCOUNTS } from '../constants/demoAccounts';
 import { loginSchema, LoginSchema } from '../validations';
 import { useAuthStore } from '../../../store/authStore';
 import { getRoleDashboardPath } from '../../../pages/shared/roleConfig';
@@ -39,8 +38,6 @@ const LoginPage: React.FC = () => {
   });
 
   const onSubmit = (data: LoginSchema) => login.mutate(data);
-
-  const showDemoLogin = process.env.NODE_ENV !== 'production';
 
   if (isAuthenticated && user) {
     return <Navigate to={getRoleDashboardPath(user.role)} replace />;
@@ -108,27 +105,6 @@ const LoginPage: React.FC = () => {
             Đăng nhập
           </Button>
         </form>
-
-        {showDemoLogin && (
-          <div className="mt-6 p-4 rounded-xl border border-dashed border-blue-200 bg-blue-50/50">
-            <p className="text-xs font-semibold text-gray-600 mb-2">
-              Đăng nhập nhanh (tài khoản mẫu • mật khẩu: Password123)
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map((account) => (
-                <button
-                  key={account.email}
-                  type="button"
-                  onClick={() => login.mutate({ email: account.email, password: account.password })}
-                  disabled={login.isPending}
-                  className="text-xs font-medium px-3 py-2 rounded-lg border border-blue-200 bg-white text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-60"
-                >
-                  {account.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Chưa có tài khoản?{' '}

@@ -51,7 +51,12 @@ export const DoctorDashboardPage: React.FC = () => {
     );
   }
 
-  const nextRecordId = data.nextAppointment?.patientId;
+  const nextRecordHref =
+    data.nextAppointment?.patientId && data.nextAppointment?.id
+      ? DOCTOR_PATHS.recordAppointment(data.nextAppointment.patientId, data.nextAppointment.id)
+      : data.nextAppointment?.patientId
+        ? DOCTOR_PATHS.record(data.nextAppointment.patientId)
+        : undefined;
 
   return (
     <div className="relative space-y-6 pb-20">
@@ -63,7 +68,7 @@ export const DoctorDashboardPage: React.FC = () => {
           department={data.department}
           nextPatientName={data.nextAppointment?.patientName}
           nextPatientTime={data.nextAppointment?.time}
-          nextPatientHref={nextRecordId ? DOCTOR_PATHS.record(nextRecordId) : undefined}
+          nextPatientHref={nextRecordHref}
         />
       </div>
 

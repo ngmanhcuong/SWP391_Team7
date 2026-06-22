@@ -81,7 +81,7 @@ const resolveSpecialty = async (label) => {
   });
 };
 
-const buildVirtualDoctorEmail = (name = '') => {
+const buildDoctorAccountEmail = (name = '') => {
   const base = String(name)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -91,7 +91,7 @@ const buildVirtualDoctorEmail = (name = '') => {
     .replace(/[^a-z0-9]+/g, '.')
     .replace(/(^\.|\.$)/g, '')
     .replace(/\.{2,}/g, '.');
-  return `${base || 'doctor'}.virtual@medicare.local`;
+  return `${base || 'doctor'}@medicare.local`;
 };
 
 const mapDoctor = (doc) => {
@@ -100,7 +100,7 @@ const mapDoctor = (doc) => {
     id: String(doc._id),
     fullName: doc.name,
     avatar: doc.user && doc.user.avatar ? doc.user.avatar : undefined,
-    email: doc.user && doc.user.email ? doc.user.email : buildVirtualDoctorEmail(doc.name),
+    email: doc.user && doc.user.email ? doc.user.email : buildDoctorAccountEmail(doc.name),
     phone: doc.user && doc.user.phone ? doc.user.phone : '',
     userId: doc.user ? String(doc.user._id) : undefined,
     hasAccount: Boolean(doc.user),
@@ -343,7 +343,7 @@ const updateDoctor = async (req, res, next) => {
     } else if ((typeof email !== 'undefined' && email.trim()) || (typeof phone !== 'undefined' && phone.trim())) {
       const normalizedEmail = (email && email.trim())
         ? email.toLowerCase().trim()
-        : buildVirtualDoctorEmail(fullName || doc.name);
+        : buildDoctorAccountEmail(fullName || doc.name);
       const existingUser = await User.findOne({ email: normalizedEmail });
       if (existingUser) return fail(res, 400, 'Email tài khoản bác sĩ đã tồn tại.');
       const nextSpec = await Specialty.findById(doc.specialty).select('name departmentLabel');
@@ -382,6 +382,61 @@ const deleteDoctor = async (req, res, next) => {
     if (!doc) return fail(res, 404, 'Không tìm thấy bác sĩ.');
     await recountSpecialty(doc.specialty);
     return ok(res, { id });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const syncDoctorAccounts = async (req, res, next) => {
+  try {
+    const doctors = await Doctor.find().populate('specialty', 'name departmentLabel');
+    const items = [];
+
+    for (const doc of doctors) {
+      const targetEmail = buildDoctorAccountEmail(doc.name);
+      let linkedUser = doc.user ? await User.findById(doc.user) : null;
+
+      if (!linkedUser) {
+        linkedUser = await User.findOne({ email: targetEmail });
+      }
+
+      if (!linkedUser) {
+        linkedUser = await User.create({
+          fullName: doc.name,
+          email: targetEmail,
+          phone: '',
+          role: 'doctor',
+          occupation: doc.specialty ? (doc.specialty.departmentLabel || doc.specialty.name) : '',
+          isActive: doc.isAvailable !== false,
+          password: 'Medicare@123',
+          isEmailVerified: true,
+        });
+      } else {
+        linkedUser.fullName = doc.name;
+        linkedUser.role = 'doctor';
+        linkedUser.occupation = doc.specialty ? (doc.specialty.departmentLabel || doc.specialty.name) : linkedUser.occupation;
+        linkedUser.isActive = doc.isAvailable !== false;
+        if (linkedUser.email !== targetEmail) {
+          const conflict = await User.findOne({ email: targetEmail, _id: { $ne: linkedUser._id } });
+          if (!conflict) linkedUser.email = targetEmail;
+        }
+        await linkedUser.save();
+      }
+
+      if (!doc.user || String(doc.user) !== String(linkedUser._id)) {
+        doc.user = linkedUser._id;
+        await doc.save();
+      }
+
+      items.push({
+        doctorId: String(doc._id),
+        doctorName: doc.name,
+        userId: String(linkedUser._id),
+        email: linkedUser.email,
+      });
+    }
+
+    return ok(res, { total: items.length, items });
   } catch (error) {
     return next(error);
   }
@@ -625,12 +680,80 @@ const updateUserRole = async (req, res, next) => {
   }
 };
 
+const syncAllAccounts = async (req, res, next) => {
+  try {
+    const doctors = await Doctor.find().populate('specialty', 'name departmentLabel');
+    let doctorAccountsSynced = 0;
+
+    for (const doc of doctors) {
+      const targetEmail = buildDoctorAccountEmail(doc.name);
+      let linkedUser = doc.user ? await User.findById(doc.user) : null;
+
+      if (!linkedUser) linkedUser = await User.findOne({ email: targetEmail });
+
+      if (!linkedUser) {
+        linkedUser = await User.create({
+          fullName: doc.name,
+          email: targetEmail,
+          phone: '',
+          role: 'doctor',
+          occupation: doc.specialty ? (doc.specialty.departmentLabel || doc.specialty.name) : '',
+          isActive: doc.isAvailable !== false,
+          password: 'Medicare@123',
+          isEmailVerified: true,
+        });
+      } else {
+        linkedUser.fullName = String(linkedUser.fullName || doc.name).trim();
+        linkedUser.email = String(linkedUser.email || targetEmail).trim().toLowerCase();
+        linkedUser.phone = String(linkedUser.phone || '').trim();
+        linkedUser.role = 'doctor';
+        linkedUser.occupation = doc.specialty ? (doc.specialty.departmentLabel || doc.specialty.name) : linkedUser.occupation;
+        linkedUser.isActive = doc.isAvailable !== false;
+        await linkedUser.save();
+      }
+
+      if (!doc.user || String(doc.user) !== String(linkedUser._id)) {
+        doc.user = linkedUser._id;
+        await doc.save();
+      }
+
+      doctorAccountsSynced += 1;
+    }
+
+    const users = await User.find();
+    for (const user of users) {
+      user.fullName = String(user.fullName || '').trim();
+      user.email = String(user.email || '').trim().toLowerCase();
+      user.phone = String(user.phone || '').trim();
+      if (!['patient', 'doctor', 'receptionist', 'admin'].includes(user.role)) {
+        user.role = 'patient';
+      }
+      await user.save();
+    }
+
+    const refreshed = await User.find().select('role');
+    const counts = refreshed.reduce((acc, user) => {
+      acc[user.role] = (acc[user.role] || 0) + 1;
+      return acc;
+    }, {});
+
+    return ok(res, {
+      usersSynced: refreshed.length,
+      doctorAccountsSynced,
+      counts,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   getDashboard,
   listDoctors,
   createDoctor,
   updateDoctor,
   deleteDoctor,
+  syncDoctorAccounts,
   listSpecialties,
   createSpecialty,
   updateSpecialty,
@@ -643,4 +766,5 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
+  syncAllAccounts,
 };

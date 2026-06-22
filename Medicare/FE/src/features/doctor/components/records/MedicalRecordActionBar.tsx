@@ -2,8 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
-  Edit3,
-  Lock,
+  CheckCircle2,
   Play,
   Printer,
   Save,
@@ -16,12 +15,11 @@ type ActionBarPlacement = 'top' | 'bottom';
 interface MedicalRecordActionBarProps {
   placement?: ActionBarPlacement;
   onSave: () => void;
+  onComplete: () => void;
   onSaveAndNext: () => void;
   onPrint?: () => void;
-  onToggleEdit?: () => void;
   isSaving: boolean;
   hasNextPatient: boolean;
-  isEditing?: boolean;
 }
 
 const secondaryButtonClass =
@@ -30,12 +28,11 @@ const secondaryButtonClass =
 const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
   placement = 'bottom',
   onSave,
+  onComplete,
   onSaveAndNext,
   onPrint,
-  onToggleEdit,
   isSaving,
   hasNextPatient,
-  isEditing = false,
 }) => {
   const isTop = placement === 'top';
 
@@ -61,18 +58,6 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
           Quay lại danh sách
         </Button>
       </Link>
-
-      <Button
-        variant="outline"
-        size="sm"
-        leftIcon={isEditing ? <Lock size={15} /> : <Edit3 size={15} />}
-        onClick={onToggleEdit}
-        className={`rounded-xl bg-white border-[#c3c6d6] text-[#434654] hover:bg-[#f8f9fb] ${
-          isEditing ? 'border-[#2563eb] text-[#2563eb] bg-[#e8f0fe]/40 ring-2 ring-[#2563eb]/10' : ''
-        }`}
-      >
-        {isEditing ? 'Khóa chỉnh sửa' : 'Chỉnh sửa'}
-      </Button>
     </>
   );
 
@@ -83,7 +68,6 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
         leftIcon={<Save size={15} />}
         onClick={onSave}
         loading={isSaving}
-        disabled={!isEditing}
         className="bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8] rounded-xl shadow-sm shadow-[#2563eb]/20 disabled:opacity-50"
       >
         Lưu hồ sơ hiện tại
@@ -91,10 +75,20 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
 
       <Button
         size="sm"
+        leftIcon={<CheckCircle2 size={15} />}
+        onClick={onComplete}
+        loading={isSaving}
+        className="bg-amber-500 border-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm shadow-amber-500/20 disabled:opacity-50"
+      >
+        Đã khám xong
+      </Button>
+
+      <Button
+        size="sm"
         leftIcon={<Play size={15} className="fill-current" />}
         onClick={onSaveAndNext}
         loading={isSaving}
-        disabled={!hasNextPatient || !isEditing}
+        disabled={!hasNextPatient}
         className="bg-emerald-600 border-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm shadow-emerald-600/20"
       >
         Lưu &amp; Khám ca tiếp theo
@@ -126,10 +120,18 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
             leftIcon={<Save size={15} />}
             onClick={onSave}
             loading={isSaving}
-            disabled={!isEditing}
             className="bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8] rounded-xl shadow-sm shadow-[#2563eb]/20 sm:ml-auto disabled:opacity-50"
           >
             Lưu hồ sơ hiện tại
+          </Button>
+          <Button
+            size="sm"
+            leftIcon={<CheckCircle2 size={15} />}
+            onClick={onComplete}
+            loading={isSaving}
+            className="bg-amber-500 border-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm shadow-amber-500/20 disabled:opacity-50"
+          >
+            Đã khám xong
           </Button>
         </div>
 
@@ -139,7 +141,7 @@ const MedicalRecordActionBar: React.FC<MedicalRecordActionBarProps> = ({
             leftIcon={<Play size={15} className="fill-current" />}
             onClick={onSaveAndNext}
             loading={isSaving}
-            disabled={!hasNextPatient || !isEditing}
+            disabled={!hasNextPatient}
             className="bg-emerald-600 border-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm shadow-emerald-600/20"
           >
             Lưu &amp; Khám ca tiếp theo

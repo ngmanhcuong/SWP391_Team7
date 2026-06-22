@@ -28,6 +28,8 @@ export const PatientAppointmentsPage: React.FC = () => {
     selectedDoctor,
     doctorSearchQuery,
     availableDoctors,
+    specialtyOptions,
+    availabilityDays,
     scheduleWeekOffset,
     selectedDate,
     selectedSlotId,
@@ -139,6 +141,7 @@ export const PatientAppointmentsPage: React.FC = () => {
           <AiSpecialtySuggestionBanner symptoms={symptoms} analysis={aiAnalysis} />
 
           <SpecialtySelectionSection
+            specialties={specialtyOptions}
             selectedSpecialtyId={selectedSpecialtyId}
             aiAnalysis={aiAnalysis}
             onSelect={selectSpecialty}
@@ -168,6 +171,7 @@ export const PatientAppointmentsPage: React.FC = () => {
         <TimeSelectionSection
           doctor={selectedDoctor}
           specialtyName={selectedSpecialty?.name}
+          scheduleDays={availabilityDays}
           weekOffset={scheduleWeekOffset}
           selectedDate={selectedDate}
           selectedSlotId={selectedSlotId}

@@ -2,6 +2,8 @@ const Counter = require('../models/Counter');
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
 const QueueTicket = require('../models/QueueTicket');
+const Specialty = require('../models/Specialty');
+const Doctor = require('../models/Doctor');
 
 // ─── Helpers ─────────────────────────────────────────────
 const genPatientCode = async () => {
@@ -52,6 +54,35 @@ const roomKeyFromDepartment = (department = '') => {
 };
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const listCatalog = async (req, res) => {
+  try {
+    const [specialties, doctors] = await Promise.all([
+      Specialty.find().sort({ order: 1, name: 1 }),
+      Doctor.find().sort({ name: 1 }),
+    ]);
+
+    const doctorsBySlug = doctors.reduce((map, doctor) => {
+      const key = doctor.specialtySlug || '';
+      if (!key) return map;
+      if (!map[key]) map[key] = [];
+      map[key].push(doctor.name);
+      return map;
+    }, {});
+
+    const departments = specialties.map((specialty) => ({
+      id: specialty.slug,
+      name: specialty.departmentLabel,
+      specialtyName: specialty.name,
+      doctors: doctorsBySlug[specialty.slug] || [],
+      services: [`Khám ${specialty.name}`],
+    }));
+
+    return res.json({ success: true, data: { departments } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // ─── Patients ────────────────────────────────────────────
 const listPatients = async (req, res) => {
@@ -403,6 +434,7 @@ const getOverview = async (req, res) => {
 };
 
 module.exports = {
+  listCatalog,
   listPatients,
   createPatient,
   listAppointments,

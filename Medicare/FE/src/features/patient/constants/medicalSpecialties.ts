@@ -10,6 +10,8 @@ export interface MedicalSpecialty {
   name: string;
   departmentLabel: string;
   doctorCount: number;
+  consultationFee?: number;
+  depositAmount?: number;
   icon: LucideIcon;
   iconColor: string;
   iconBg: string;
@@ -20,25 +22,25 @@ const SPECIALTY_PRESENTATION: Record<
   Pick<MedicalSpecialty, 'icon' | 'iconColor' | 'iconBg' | 'doctorCount'>
 > = {
   cardiology: {
-    doctorCount: 12,
+    doctorCount: 0,
     icon: Heart,
     iconColor: '#ef4444',
     iconBg: '#fef2f2',
   },
   musculoskeletal: {
-    doctorCount: 8,
+    doctorCount: 0,
     icon: Bone,
     iconColor: '#8b5cf6',
     iconBg: '#f5f3ff',
   },
   'obstetrics-pediatrics': {
-    doctorCount: 15,
+    doctorCount: 0,
     icon: Baby,
     iconColor: '#ec4899',
     iconBg: '#fdf2f8',
   },
   ophthalmology: {
-    doctorCount: 6,
+    doctorCount: 0,
     icon: Eye,
     iconColor: '#0ea5e9',
     iconBg: '#f0f9ff',
@@ -66,3 +68,11 @@ export const getSpecialtyById = (id: string): MedicalSpecialty | undefined => {
   if (!base) return undefined;
   return MEDICAL_SPECIALTIES.find((item) => item.id === base.id);
 };
+
+export const getSpecialtyPresentation = (id: string) =>
+  SPECIALTY_PRESENTATION[id] ?? {
+    doctorCount: 0,
+    icon: Heart,
+    iconColor: '#ef4444',
+    iconBg: '#fef2f2',
+  };

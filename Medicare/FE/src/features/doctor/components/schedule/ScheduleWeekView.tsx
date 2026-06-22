@@ -67,6 +67,9 @@ const ScheduleWeekView: React.FC<ScheduleWeekViewProps> = ({
   const renderAppointmentRow = (appt: ScheduledAppointment) => {
     const statusStyle = APPOINTMENT_STATUS_CONFIG[appt.status];
     const isCancelled = appt.status === 'cancelled';
+    const recordHref = appt.patientId
+      ? DOCTOR_PATHS.recordAppointment(appt.patientId, appt.id)
+      : undefined;
 
     return (
       <div
@@ -84,9 +87,9 @@ const ScheduleWeekView: React.FC<ScheduleWeekViewProps> = ({
         <span className={`hidden sm:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${statusStyle.className}`}>
           {statusStyle.label}
         </span>
-        {appt.patientId && !isCancelled ? (
+        {recordHref && !isCancelled ? (
           <Link
-            to={DOCTOR_PATHS.record(appt.patientId)}
+            to={recordHref}
             className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#003d9b] text-white text-[10px] font-bold uppercase hover:bg-[#002d75]"
           >
             <Stethoscope size={11} />

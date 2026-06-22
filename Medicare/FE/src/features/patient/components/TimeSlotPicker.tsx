@@ -29,7 +29,9 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
     return (
       <div className="bg-white border border-[#c3c6d6] rounded-lg shadow-sm p-8 text-center">
         <Clock size={32} className="mx-auto text-[#003d9b] mb-3" />
-        <p className="text-base text-[#434654]">Vui lòng chọn ngày khám để xem khung giờ trống.</p>
+        <p className="text-base text-[#434654]">
+          Vui lòng chọn ngày khám trước, sau đó hệ thống sẽ hiển thị các khung giờ còn trống.
+        </p>
       </div>
     );
   }

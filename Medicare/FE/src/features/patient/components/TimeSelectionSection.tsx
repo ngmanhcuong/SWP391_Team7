@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { BookingDoctor } from '../types';
-import { buildDoctorSchedule } from '../utils/buildDoctorSchedule';
+import { AppointmentScheduleDay, BookingDoctor } from '../types';
 import AppointmentCalendar from './AppointmentCalendar';
 import AppointmentSummaryPanel from './AppointmentSummaryPanel';
 import TimeSlotPicker from './TimeSlotPicker';
@@ -8,6 +7,7 @@ import TimeSlotPicker from './TimeSlotPicker';
 interface TimeSelectionSectionProps {
   doctor: BookingDoctor | null;
   specialtyName?: string;
+  scheduleDays: AppointmentScheduleDay[];
   weekOffset: number;
   selectedDate: string | null;
   selectedSlotId: string | null;
@@ -20,6 +20,7 @@ interface TimeSelectionSectionProps {
 const TimeSelectionSection: React.FC<TimeSelectionSectionProps> = ({
   doctor,
   specialtyName,
+  scheduleDays,
   weekOffset,
   selectedDate,
   selectedSlotId,
@@ -28,11 +29,6 @@ const TimeSelectionSection: React.FC<TimeSelectionSectionProps> = ({
   onSelectSlot,
   onClearSelection,
 }) => {
-  const scheduleDays = useMemo(
-    () => (doctor ? buildDoctorSchedule(doctor.id, weekOffset) : []),
-    [doctor, weekOffset],
-  );
-
   const selectedDaySlots = useMemo(() => {
     if (!selectedDate) return [];
     return scheduleDays.find((day) => day.date === selectedDate)?.slots ?? [];

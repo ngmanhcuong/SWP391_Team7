@@ -14,6 +14,7 @@ import { Card, Modal, Spinner } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import {
   useAppointments,
+  useReceptionistCatalog,
   useCheckinAppointment,
   useCreateAppointment,
   useUpdateAppointmentStatus,
@@ -83,6 +84,7 @@ const TIMELINE = [
 
 const ReceptionistAppointmentManagement: React.FC = () => {
   const { data: appointments = [], isLoading, isError } = useAppointments();
+  const { data: catalog } = useReceptionistCatalog();
   const createAppointment = useCreateAppointment();
   const updateStatus = useUpdateAppointmentStatus();
   const checkin = useCheckinAppointment();
@@ -97,6 +99,70 @@ const ReceptionistAppointmentManagement: React.FC = () => {
   const [newForm, setNewForm] = useState<NewAppointmentForm>(EMPTY_NEW_FORM);
   const [newErrors, setNewErrors] = useState<Partial<Record<keyof NewAppointmentForm, string>>>({});
   const [toast, setToast] = useState<string | null>(null);
+
+  const departmentCatalog = useMemo(() => {
+    if (catalog?.departments?.length) {
+      return catalog.departments.map((department) => ({
+        name: department.name,
+        doctors: department.doctors,
+        services: department.services,
+      }));
+    }
+
+    return DEPARTMENTS.map((department) => ({
+      name: department,
+      doctors: getDoctorsByDepartment(department),
+      services: getServicesByDepartment(department),
+    }));
+  }, [catalog]);
+
+  const departmentOptions = useMemo(
+    () => departmentCatalog.map((department) => department.name),
+    [departmentCatalog],
+  );
+
+  const doctorsByDepartment = useMemo(
+    () =>
+      Object.fromEntries(
+        departmentCatalog.map((department) => [department.name, department.doctors]),
+      ) as Record<string, string[]>,
+    [departmentCatalog],
+  );
+
+  const servicesByDepartment = useMemo(
+    () =>
+      Object.fromEntries(
+        departmentCatalog.map((department) => [department.name, department.services]),
+      ) as Record<string, string[]>,
+    [departmentCatalog],
+  );
+
+  const availableDepartments = useMemo(() => {
+    const fromAppointments = appointments.map((appointment) => appointment.department);
+    return Array.from(new Set([...departmentOptions, ...fromAppointments])).filter(Boolean);
+  }, [appointments, departmentOptions]);
+
+  useEffect(() => {
+    if (departmentOptions.length === 0) return;
+
+    setNewForm((form) => {
+      const department = departmentOptions.includes(form.department) ? form.department : departmentOptions[0];
+      const doctors = doctorsByDepartment[department] ?? [];
+      const services = servicesByDepartment[department] ?? [];
+      const doctor = doctors.includes(form.doctor) ? form.doctor : doctors[0] ?? '';
+      const service = services.includes(form.service) ? form.service : services[0] ?? '';
+
+      if (
+        department === form.department &&
+        doctor === form.doctor &&
+        service === form.service
+      ) {
+        return form;
+      }
+
+      return { ...form, department, doctor, service };
+    });
+  }, [departmentOptions, doctorsByDepartment, servicesByDepartment]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -262,7 +328,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]"
             >
               <option value="all">Tất cả các khoa</option>
-              {DEPARTMENTS.map((dept) => (
+              {availableDepartments.map((dept) => (
                 <option key={dept} value={dept}>
                   {dept}
                 </option>
@@ -581,16 +647,18 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               value={newForm.department}
               onChange={(e) => {
                 const department = e.target.value;
+                const doctors = doctorsByDepartment[department] ?? [];
+                const services = servicesByDepartment[department] ?? [];
                 setNewForm((f) => ({
                   ...f,
                   department,
-                  doctor: getDoctorsByDepartment(department)[0] ?? '',
-                  service: getServicesByDepartment(department)[0] ?? '',
+                  doctor: doctors[0] ?? '',
+                  service: services[0] ?? '',
                 }));
               }}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              {DEPARTMENTS.map((d) => (
+              {departmentOptions.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
@@ -602,7 +670,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               onChange={(e) => setNewForm((f) => ({ ...f, doctor: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              {getDoctorsByDepartment(newForm.department).map((d) => (
+              {(doctorsByDepartment[newForm.department] ?? []).map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
@@ -614,7 +682,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               onChange={(e) => setNewForm((f) => ({ ...f, service: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
             >
-              {getServicesByDepartment(newForm.department).map((s) => (
+              {(servicesByDepartment[newForm.department] ?? []).map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>

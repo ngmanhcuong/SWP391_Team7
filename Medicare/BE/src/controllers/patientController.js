@@ -73,6 +73,11 @@ const genPatientCode = async () => {
 };
 
 // Tìm hoặc tạo bản ghi Patient (cho màn Lễ tân) gắn với tài khoản User
+const normalizePhone = (phone) => {
+  const trimmed = typeof phone === 'string' ? phone.trim() : '';
+  return trimmed || 'Chua cap nhat';
+};
+
 const ensurePatientRecord = async (user) => {
   let patient = null;
   if (user.email) {
@@ -83,10 +88,27 @@ const ensurePatientRecord = async (user) => {
     patient = await Patient.create({
       code,
       fullName: user.fullName,
-      phone: user.phone || '',
+      phone: normalizePhone(user.phone),
       email: user.email ? user.email.toLowerCase() : undefined,
       gender: user.gender,
     });
+  } else {
+    const nextFullName = user.fullName?.trim() || patient.fullName;
+    const nextPhone = patient.phone?.trim() || normalizePhone(user.phone);
+    const nextEmail = user.email ? user.email.toLowerCase() : patient.email;
+    const shouldUpdate =
+      patient.fullName !== nextFullName ||
+      patient.phone !== nextPhone ||
+      patient.email !== nextEmail ||
+      patient.gender !== user.gender;
+
+    if (shouldUpdate) {
+      patient.fullName = nextFullName;
+      patient.phone = nextPhone;
+      patient.email = nextEmail;
+      patient.gender = user.gender;
+      await patient.save();
+    }
   }
   return patient;
 };
@@ -105,6 +127,83 @@ const mapDoctor = (doc) => ({
   isAvailable: doc.isAvailable,
   avatarBg: doc.avatarBg,
 });
+
+const MORNING_SLOTS = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'];
+const AFTERNOON_SLOTS = ['13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+const ACTIVE_BOOKED_STATUSES = ['pending', 'confirmed', 'checked-in', 'done'];
+
+const toDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const startOfDay = (date) => {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+};
+
+const endOfDay = (date) => {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result;
+};
+
+const buildDoctorAvailabilityDays = (appointments, fromDate, daysCount = 14) => {
+  const bookedByDate = new Map();
+
+  appointments.forEach((appointment) => {
+    const dateKey = toDateKey(new Date(appointment.date));
+    if (!bookedByDate.has(dateKey)) {
+      bookedByDate.set(dateKey, new Set());
+    }
+    bookedByDate.get(dateKey).add(appointment.time);
+  });
+
+  const weekdayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const today = startOfToday();
+  const start = startOfDay(fromDate);
+  const days = [];
+
+  for (let index = 0; index < daysCount; index += 1) {
+    const current = new Date(start);
+    current.setDate(start.getDate() + index);
+
+    const dateKey = toDateKey(current);
+    const isPast = current < today;
+    const isSunday = current.getDay() === 0;
+    const bookedSlots = bookedByDate.get(dateKey) || new Set();
+    const slots = isPast || isSunday
+      ? []
+      : [
+          ...MORNING_SLOTS.map((time) => ({
+            id: `${dateKey}-${time}`,
+            time,
+            period: 'morning',
+            available: !bookedSlots.has(time),
+          })),
+          ...AFTERNOON_SLOTS.map((time) => ({
+            id: `${dateKey}-${time}`,
+            time,
+            period: 'afternoon',
+            available: !bookedSlots.has(time),
+          })),
+        ];
+
+    days.push({
+      date: dateKey,
+      dayNumber: current.getDate(),
+      weekdayLabel: weekdayLabels[current.getDay()],
+      isPast,
+      hasAvailableSlots: slots.some((slot) => slot.available),
+      slots,
+    });
+  }
+
+  return days;
+};
 
 const mapInvoice = (doc) => {
   const lineItems = (doc.lineItems || []).map((item, index) => ({
@@ -245,6 +344,41 @@ const listDoctors = async (req, res) => {
   }
 };
 
+const getDoctorAvailability = async (req, res) => {
+  try {
+    const { doctorId, fromDate, daysCount } = req.query;
+
+    if (!doctorId) {
+      return res.status(400).json({ success: false, message: 'Thiếu doctorId.' });
+    }
+
+    const doctor = await Doctor.findById(doctorId).catch(() => null);
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bác sĩ.' });
+    }
+
+    const parsedStart = fromDate ? new Date(fromDate) : new Date();
+    if (Number.isNaN(parsedStart.getTime())) {
+      return res.status(400).json({ success: false, message: 'Ngày bắt đầu không hợp lệ.' });
+    }
+
+    const safeDaysCount = Math.min(Math.max(Number(daysCount) || 14, 1), 31);
+    const rangeStart = startOfDay(parsedStart);
+    const rangeEnd = endOfDay(new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate() + safeDaysCount - 1));
+
+    const appointments = await Appointment.find({
+      doctorRef: doctor._id,
+      date: { $gte: rangeStart, $lte: rangeEnd },
+      status: { $in: ACTIVE_BOOKED_STATUSES },
+    }).select('date time status');
+
+    const data = buildDoctorAvailabilityDays(appointments, rangeStart, safeDaysCount);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // ─── Appointments / Booking ──────────────────────────────
 const listAppointments = async (req, res) => {
   try {
@@ -298,6 +432,29 @@ const createAppointment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin bác sĩ.' });
     }
 
+    if (!doctorRef) {
+      return res.status(400).json({ success: false, message: 'Bác sĩ chưa được liên kết lịch làm việc hợp lệ.' });
+    }
+
+    const appointmentDate = new Date(date);
+    if (Number.isNaN(appointmentDate.getTime())) {
+      return res.status(400).json({ success: false, message: 'Ngày khám không hợp lệ.' });
+    }
+
+    const conflictingAppointment = await Appointment.findOne({
+      doctorRef,
+      date: { $gte: startOfDay(appointmentDate), $lte: endOfDay(appointmentDate) },
+      time,
+      status: { $in: ACTIVE_BOOKED_STATUSES },
+    }).select('_id');
+
+    if (conflictingAppointment) {
+      return res.status(409).json({
+        success: false,
+        message: 'Khung giờ này đã có người đặt. Vui lòng chọn giờ khác.',
+      });
+    }
+
     const consultationFee = specialty.consultationFee;
     const depositAmount = computeDeposit(consultationFee);
     const now = new Date();
@@ -310,12 +467,12 @@ const createAppointment = async (req, res) => {
       patientUser: req.user._id,
       patientName: req.user.fullName,
       patientCode: patientRecord?.code || '',
-      phone: req.user.phone || '',
+      phone: patientRecord?.phone || normalizePhone(req.user.phone),
       doctor: resolvedDoctorName,
       doctorRef,
       department: specialty.departmentLabel,
       specialty: specialty._id,
-      date: new Date(date),
+      date: appointmentDate,
       time,
       service: `Khám ${specialty.name}`,
       symptoms: symptoms?.trim() || '',
@@ -933,6 +1090,7 @@ const getDashboard = async (req, res) => {
 module.exports = {
   listSpecialties,
   listDoctors,
+  getDoctorAvailability,
   listAppointments,
   createAppointment,
   getPayments,

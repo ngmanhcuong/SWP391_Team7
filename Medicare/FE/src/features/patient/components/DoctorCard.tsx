@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, Briefcase, GraduationCap, Sparkles, Star } from 'lucide-react';
+import { Award, GraduationCap, Sparkles, Star } from 'lucide-react';
 import { Avatar } from '../../../components/ui';
 import { BookingDoctor, DoctorTagVariant } from '../types';
 
@@ -27,7 +27,7 @@ const tagStyles: Record<
   },
   potential: {
     className: 'bg-[rgba(130,249,190,0.3)] text-[#00734c]',
-    icon: <Briefcase size={14} />,
+    icon: <Award size={14} />,
   },
 };
 
@@ -73,10 +73,6 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, isSelected, onSelect })
         </div>
 
         <div className="flex flex-col gap-2 pb-8">
-          <span className="inline-flex items-center gap-1.5 w-fit rounded-xl bg-[#edeef0] px-3 py-1.5 text-base text-[#434654]">
-            <Briefcase size={14} />
-            {doctor.experienceYears} năm KN
-          </span>
           <span
             className={`inline-flex items-center gap-1.5 w-fit rounded-xl px-3 py-1.5 text-base ${tagStyle.className}`}
           >
@@ -87,11 +83,11 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, isSelected, onSelect })
 
         <div className="mt-auto border-t border-[#c3c6d6] pt-6 flex items-center justify-between gap-3">
           <div>
-            <p className="text-base text-[#434654]">Lịch trống gần nhất</p>
+            <p className="text-base text-[#434654]">Đề xuất chọn lịch trống gần nhất</p>
             {doctor.isAvailable && doctor.nextAvailableSlot ? (
               <p className="text-base text-[#006c47]">{doctor.nextAvailableSlot}</p>
             ) : (
-              <p className="text-base italic text-[#434654]">Đang bận</p>
+              <p className="text-base italic text-[#434654]">Hiện chưa có lịch phù hợp</p>
             )}
           </div>
           <button

@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import {
@@ -14,23 +15,59 @@ import {
   PrescriptionCard,
   WaitingPatientsWidget,
 } from '../../features/doctor/components/records';
-import { buildDoctorMedicalRecordData } from '../../features/doctor/utils/buildDoctorMedicalRecordData';
 import {
-  getDoctorPatientById,
-  getNextWaitingPatientId,
+  buildDoctorMedicalRecordDataFromPatient,
+} from '../../features/doctor/utils/buildDoctorMedicalRecordData';
+import { doctorApi } from '../../features/doctor/api/doctorApi';
+import {
+  resolveDoctorPatientId,
 } from '../../features/doctor/utils/doctorPatientRegistry';
 import { DOCTOR_PATHS } from '../../features/doctor/utils/doctorPaths';
-import { MedicalRecordExamination, ParaclinicalTest, PrescriptionItem } from '../../features/doctor/types';
+import {
+  DoctorPatientListItem,
+  ExaminationHistoryEntry,
+  MedicalRecordExamination,
+  ParaclinicalTest,
+  PrescriptionItem,
+  ScheduledAppointment,
+} from '../../features/doctor/types';
 import { ClinicalContextInput } from '../../features/doctor/utils/clinicalContext';
 import { scrollDashboardToTopAfterPaint } from '../../utils/scrollDashboardToTop';
 
 export const DoctorRecordsPage: React.FC = () => {
   const { patientId = '' } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const listPatient = getDoctorPatientById(patientId);
+  const queryClient = useQueryClient();
+  const requestedAppointmentId = searchParams.get('appointmentId') ?? undefined;
+  const { data: patientData } = useQuery({
+    queryKey: ['doctor', 'patients'],
+    queryFn: doctorApi.getPatients,
+  });
+  const { data: scheduleAppointments } = useQuery({
+    queryKey: ['doctor', 'appointments'],
+    queryFn: doctorApi.getAppointments,
+  });
+  const dbPatient = useMemo(
+    () => patientData?.patients.find((patient: DoctorPatientListItem) => patient.id === patientId) ?? null,
+    [patientData, patientId],
+  );
+  const allDbPatients = useMemo(
+    () => patientData?.patients ?? [],
+    [patientData],
+  );
+  const { data: patientHistory } = useQuery({
+    queryKey: ['doctor', 'patient-history', patientId],
+    queryFn: () => doctorApi.getPatientHistory(patientId),
+    enabled: Boolean(dbPatient?.id),
+  });
+  const listPatient: DoctorPatientListItem | null = dbPatient;
   const recordData = useMemo(
-    () => (patientId ? buildDoctorMedicalRecordData(patientId) : null),
-    [patientId],
+    () => {
+      if (!dbPatient) return null;
+      return buildDoctorMedicalRecordDataFromPatient(dbPatient, allDbPatients);
+    },
+    [allDbPatients, dbPatient],
   );
 
   const [examination, setExamination] = useState<MedicalRecordExamination | null>(null);
@@ -39,7 +76,7 @@ export const DoctorRecordsPage: React.FC = () => {
   const [aiEnabled, setAiEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
+  const isEditing = true;
 
   useLayoutEffect(() => {
     scrollDashboardToTopAfterPaint();
@@ -52,7 +89,6 @@ export const DoctorRecordsPage: React.FC = () => {
     setPrescriptions(recordData.prescriptions);
     setAiEnabled(true);
     setSaveMessage('');
-    setIsEditing(false);
 
     const timer = window.setTimeout(scrollDashboardToTopAfterPaint, 0);
     return () => window.clearTimeout(timer);
@@ -68,6 +104,90 @@ export const DoctorRecordsPage: React.FC = () => {
     }),
     [examination, recordData],
   );
+
+  const examinationHistory = useMemo<ExaminationHistoryEntry[]>(
+    () => (patientHistory && patientHistory.length > 0 ? patientHistory : recordData?.examinationHistory ?? []),
+    [patientHistory, recordData],
+  );
+
+  const nextPatientId = useMemo(() => {
+    if (!patientId) return undefined;
+
+    const currentResolvedId = resolveDoctorPatientId(patientId, listPatient?.fullName);
+
+    if (scheduleAppointments?.length) {
+      const candidate = scheduleAppointments.find((appointment: ScheduledAppointment) => {
+        const appointmentPatientId = resolveDoctorPatientId(
+          appointment.patientId,
+          appointment.patientName,
+        );
+
+        if (!appointmentPatientId || appointmentPatientId === currentResolvedId) {
+          return false;
+        }
+
+        return appointment.status === 'waiting' || appointment.status === 'confirmed';
+      });
+
+      if (candidate) {
+        return resolveDoctorPatientId(candidate.patientId, candidate.patientName);
+      }
+    }
+
+    if (allDbPatients.length > 0) {
+      return (
+        allDbPatients.find(
+          (patient: DoctorPatientListItem) => patient.id !== patientId && patient.healthStatus === 'waiting',
+        )?.id
+        ?? undefined
+      );
+    }
+    return undefined;
+  }, [allDbPatients, listPatient?.fullName, patientId, scheduleAppointments]);
+
+  const currentAppointmentId = useMemo(() => {
+    if (!scheduleAppointments?.length || !patientId) return undefined;
+
+    if (requestedAppointmentId) {
+      const requestedAppointment = scheduleAppointments.find(
+        (appointment: ScheduledAppointment) =>
+          appointment.id === requestedAppointmentId &&
+          resolveDoctorPatientId(appointment.patientId, appointment.patientName) ===
+            resolveDoctorPatientId(patientId, listPatient?.fullName),
+      );
+
+      if (requestedAppointment) {
+        return requestedAppointment.id;
+      }
+    }
+
+    const currentResolvedId = resolveDoctorPatientId(patientId, listPatient?.fullName);
+    const currentAppointment = scheduleAppointments.find((appointment: ScheduledAppointment) => {
+      const appointmentPatientId = resolveDoctorPatientId(
+        appointment.patientId,
+        appointment.patientName,
+      );
+
+      if (!appointmentPatientId || appointmentPatientId !== currentResolvedId) {
+        return false;
+      }
+
+      return appointment.status === 'waiting' || appointment.status === 'confirmed';
+    });
+
+    return currentAppointment?.id;
+  }, [listPatient?.fullName, patientId, requestedAppointmentId, scheduleAppointments]);
+
+  const completeAppointmentMutation = useMutation({
+    mutationFn: (appointmentId: string) => doctorApi.completeAppointment(appointmentId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['doctor', 'appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['doctor', 'patients'] }),
+        queryClient.invalidateQueries({ queryKey: ['doctor', 'patient-history', patientId] }),
+      ]);
+    },
+  });
 
   if (!patientId || !listPatient || !recordData || !examination) {
     return (
@@ -86,8 +206,6 @@ export const DoctorRecordsPage: React.FC = () => {
       </div>
     );
   }
-
-  const nextPatientId = getNextWaitingPatientId(patientId);
 
   const handleExaminationChange = (field: keyof MedicalRecordExamination, value: string) => {
     if (!isEditing) return;
@@ -140,6 +258,27 @@ export const DoctorRecordsPage: React.FC = () => {
     }, 600);
   };
 
+  const handleComplete = () => {
+    if (!currentAppointmentId) {
+      setSaveMessage('Không tìm thấy ca khám đang hoạt động để cập nhật.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage('');
+    completeAppointmentMutation.mutate(currentAppointmentId, {
+      onSuccess: () => {
+        setIsSaving(false);
+        setExamination((prev) => (prev ? { ...prev, status: 'completed' } : prev));
+        setSaveMessage('Đã đánh dấu ca khám hoàn tất.');
+      },
+      onError: () => {
+        setIsSaving(false);
+        setSaveMessage('Không thể cập nhật trạng thái ca khám lúc này.');
+      },
+    });
+  };
+
   return (
     <div className="relative space-y-5 pb-16">
       <div id="medical-record-top" className="h-0 w-full" aria-hidden />
@@ -152,11 +291,10 @@ export const DoctorRecordsPage: React.FC = () => {
       <MedicalRecordActionBar
         placement="top"
         onSave={handleSave}
+        onComplete={handleComplete}
         onSaveAndNext={handleSaveAndNext}
-        onToggleEdit={() => setIsEditing((prev) => !prev)}
         isSaving={isSaving}
         hasNextPatient={Boolean(nextPatientId)}
-        isEditing={isEditing}
       />
 
       {saveMessage && (
@@ -169,7 +307,7 @@ export const DoctorRecordsPage: React.FC = () => {
         <div className="xl:col-span-3 space-y-5">
           <PatientInfoCard patient={recordData.patient} />
           <ImportantWarningCard patient={recordData.patient} />
-          <ExaminationHistoryCard history={recordData.examinationHistory} />
+          <ExaminationHistoryCard history={examinationHistory} />
           <WaitingPatientsWidget patients={recordData.waitingPatients} />
         </div>
 

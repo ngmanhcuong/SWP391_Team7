@@ -7,6 +7,7 @@ import {
   Overview,
   Patient,
   QueueAction,
+  ReceptionistCatalog,
   QueueResponse,
   QueueTicket,
 } from '../types';
@@ -15,6 +16,7 @@ const unwrap = <T>(res: { data: { data: T } }): T => res.data.data;
 
 export const receptionistApi = {
   getOverview: async (): Promise<Overview> => unwrap(await api.get('/receptionist/overview')),
+  getCatalog: async (): Promise<ReceptionistCatalog> => unwrap(await api.get('/receptionist/catalog')),
 
   // Patients
   listPatients: async (q?: string): Promise<Patient[]> =>

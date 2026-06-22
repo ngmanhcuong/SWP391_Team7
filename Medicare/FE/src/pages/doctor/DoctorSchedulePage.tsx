@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
+import { doctorApi } from '../../features/doctor/api/doctorApi';
 import {
   DailyStatsCard,
   DoctorScheduleFilters,
@@ -11,26 +13,67 @@ import {
   TodayAppointmentsTable,
 } from '../../features/doctor/components/schedule';
 import {
-  getCalendarAppointmentsForMonth,
-  getCalendarAppointmentsForWeek,
 } from '../../features/doctor/utils/buildScheduleCalendarData';
 import {
-  buildDoctorScheduleData,
   filterAppointments,
 } from '../../features/doctor/utils/buildDoctorScheduleData';
 import {
+  buildScheduleStats,
+  buildStatusCounts,
   formatMonthLabel,
   formatWeekRangeLabel,
   getScheduleProgress,
+  getWeekDays,
+  parseTimeToMinutes,
+  toDateKey,
 } from '../../features/doctor/utils/scheduleUtils';
 import {
+  ScheduledAppointment,
   ScheduleTimeFilter,
   ScheduleViewMode,
   TodayAppointmentStatus,
 } from '../../features/doctor/types';
 
 export const DoctorSchedulePage: React.FC = () => {
-  const scheduleData = useMemo(() => buildDoctorScheduleData(), []);
+  const { data: scheduleAppointments = [] } = useQuery({
+    queryKey: ['doctor', 'appointments'],
+    queryFn: doctorApi.getAppointments,
+  });
+
+  const scheduleData = useMemo(() => {
+    const appointments = [...scheduleAppointments].sort(
+      (left, right) => parseTimeToMinutes(left.time) - parseTimeToMinutes(right.time),
+    );
+    const waiting = appointments.filter((appt) => appt.status === 'waiting');
+    const activeWaiting = waiting.slice(0, 3).map((appt) => appt.patientName.split(' ').slice(-1)[0]);
+
+    return {
+      dateLabel: appointments.length > 0
+        ? new Date(appointments[0].date).toLocaleDateString('vi-VN', {
+            weekday: 'long',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('vi-VN', {
+            weekday: 'long',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          }),
+      appointments,
+      stats: {
+        ...buildScheduleStats(appointments),
+        waitingPatientNames: activeWaiting,
+      },
+      alertNote:
+        waiting.length > 0
+          ? `Có ${waiting.length} bệnh nhân đang chờ khám. Ưu tiên hoàn tất hồ sơ trước khi gọi bệnh nhân tiếp theo.`
+          : 'Không có bệnh nhân chờ khám. Bạn có thể xem lại các ca đã hoàn thành trong ngày.',
+      statusCounts: buildStatusCounts(appointments),
+    };
+  }, [scheduleAppointments]);
+
   const progress = useMemo(
     () => getScheduleProgress(scheduleData.appointments),
     [scheduleData.appointments],
@@ -47,20 +90,31 @@ export const DoctorSchedulePage: React.FC = () => {
     [scheduleData.appointments, statusFilter, timeFilter],
   );
 
+  const matchesFilters = (appt: ScheduledAppointment) =>
+    (statusFilter === 'all' ? appt.status !== 'cancelled' : appt.status === statusFilter) &&
+    (timeFilter === 'all' || appt.timeSlot === timeFilter);
+
   const weekAppointments = useMemo(
-    () => getCalendarAppointmentsForWeek(referenceDate, statusFilter, timeFilter),
-    [referenceDate, statusFilter, timeFilter],
+    () => {
+      const weekKeys = new Set(getWeekDays(referenceDate).map(toDateKey));
+      return scheduleAppointments.filter(
+        (appt: ScheduledAppointment) => weekKeys.has(appt.date) && matchesFilters(appt),
+      );
+    },
+    [referenceDate, scheduleAppointments, statusFilter, timeFilter],
   );
 
   const monthAppointments = useMemo(
     () =>
-      getCalendarAppointmentsForMonth(
-        referenceDate.getFullYear(),
-        referenceDate.getMonth(),
-        statusFilter,
-        timeFilter,
-      ),
-    [referenceDate, statusFilter, timeFilter],
+      scheduleAppointments.filter((appt: ScheduledAppointment) => {
+        const date = new Date(appt.date);
+        return (
+          date.getFullYear() === referenceDate.getFullYear() &&
+          date.getMonth() === referenceDate.getMonth() &&
+          matchesFilters(appt)
+        );
+      }),
+    [referenceDate, scheduleAppointments, statusFilter, timeFilter],
   );
 
   const headerDateLabel = useMemo(() => {

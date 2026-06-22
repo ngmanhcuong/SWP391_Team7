@@ -12,6 +12,7 @@ router.get('/dashboard', ctrl.getDashboard);
 
 // Doctors
 router.get('/doctors', ctrl.listDoctors);
+router.post('/doctors/sync-accounts', ctrl.syncDoctorAccounts);
 router.post('/doctors', ctrl.createDoctor);
 router.put('/doctors/:id', ctrl.updateDoctor);
 router.delete('/doctors/:id', ctrl.deleteDoctor);
@@ -29,6 +30,7 @@ router.patch('/appointments/:code/status', ctrl.updateAppointmentStatus);
 
 // Users
 router.get('/users', ctrl.listUsers);
+router.post('/users/sync-all', ctrl.syncAllAccounts);
 router.post('/users', ctrl.createUser);
 router.patch('/users/:id/status', ctrl.updateUserStatus);
 router.patch('/users/:id/role', ctrl.updateUserRole);

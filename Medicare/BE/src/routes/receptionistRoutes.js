@@ -9,6 +9,7 @@ router.use(restrictTo('receptionist', 'admin'));
 
 // Overview / dashboard
 router.get('/overview', ctrl.getOverview);
+router.get('/catalog', ctrl.listCatalog);
 
 // Patients
 router.get('/patients', ctrl.listPatients);

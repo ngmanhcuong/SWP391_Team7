@@ -1,15 +1,17 @@
 import React, { useMemo } from 'react';
-import { MEDICAL_SPECIALTIES } from '../constants/medicalSpecialties';
+import { MedicalSpecialty } from '../constants/medicalSpecialties';
 import { AiSymptomAnalysis } from '../types';
 import SpecialtyCard from './SpecialtyCard';
 
 interface SpecialtySelectionSectionProps {
+  specialties: MedicalSpecialty[];
   selectedSpecialtyId: string | null;
   aiAnalysis: AiSymptomAnalysis | null;
   onSelect: (specialtyId: string) => void;
 }
 
 const SpecialtySelectionSection: React.FC<SpecialtySelectionSectionProps> = ({
+  specialties,
   selectedSpecialtyId,
   aiAnalysis,
   onSelect,
@@ -23,12 +25,12 @@ const SpecialtySelectionSection: React.FC<SpecialtySelectionSectionProps> = ({
 
   const sortedSpecialties = useMemo(
     () =>
-      [...MEDICAL_SPECIALTIES].sort((a, b) => {
+      [...specialties].sort((a, b) => {
         const aRecommended = recommendedNames.has(a.name) ? 0 : 1;
         const bRecommended = recommendedNames.has(b.name) ? 0 : 1;
         return aRecommended - bRecommended;
       }),
-    [recommendedNames],
+    [recommendedNames, specialties],
   );
 
   return (
