@@ -2,6 +2,8 @@ const Counter = require('../models/Counter');
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
 const QueueTicket = require('../models/QueueTicket');
+const Specialty = require('../models/Specialty');
+const Doctor = require('../models/Doctor');
 
 const atToday = (time) => {
   const [h, m] = time.split(':').map(Number);
@@ -11,32 +13,21 @@ const atToday = (time) => {
 };
 
 const PATIENTS = [
-  { fullName: 'Trần Văn Tú', phone: '0901234567', gender: 'male', address: 'Hà Nội', insurance: { code: 'DN4790123', place: 'BV Bạch Mai' } },
-  { fullName: 'Phạm Mỹ Linh', phone: '0982555111', gender: 'female', address: 'Hà Nội' },
-  { fullName: 'Lê Hoàng Nam', phone: '0911333999', gender: 'male', address: 'Hải Phòng' },
-  { fullName: 'Nguyễn Diệu Nhi', phone: '0888123456', gender: 'female', address: 'Hà Nội' },
-  { fullName: 'Hoàng Công Thành', phone: '0977444888', gender: 'male', address: 'Bắc Ninh' },
-  { fullName: 'Vương Quốc Anh', phone: '0901111222', gender: 'male', address: 'Hà Nội', insurance: { code: 'HN1230456', place: 'BV E' } },
+  { fullName: 'Trần Văn Tú', phone: '0901234567', gender: 'male', address: 'Quận Bình Thạnh, TP.HCM', email: 'tran.van.tu@example.com', insurance: { code: 'DN4790123', place: 'BV Bạch Mai' } },
+  { fullName: 'Phạm Mỹ Linh', phone: '0982555111', gender: 'female', address: 'Quận Phú Nhuận, TP.HCM', email: 'pham.my.linh@example.com' },
+  { fullName: 'Lê Hoàng Nam', phone: '0911333999', gender: 'male', address: 'TP. Thủ Đức, TP.HCM', email: 'le.hoang.nam@example.com' },
+  { fullName: 'Nguyễn Diệu Nhi', phone: '0888123456', gender: 'female', address: 'Quận 10, TP.HCM', email: 'nguyen.dieu.nhi@example.com' },
+  { fullName: 'Hoàng Công Thành', phone: '0977444888', gender: 'male', address: 'Quận Gò Vấp, TP.HCM', email: 'hoang.cong.thanh@example.com' },
+  { fullName: 'Vương Quốc Anh', phone: '0901111222', gender: 'male', address: 'Quận 7, TP.HCM', email: 'vuong.quoc.anh@example.com', insurance: { code: 'HN1230456', place: 'BV E' } },
 ];
 
-const APPOINTMENTS = [
-  { patientIdx: 0, code: '#LH-9802', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội', time: '08:30', service: 'Khám nội tổng quát', status: 'pending' },
-  { patientIdx: 1, code: '#LH-9801', doctor: 'BS. Nguyễn Thu Thủy', department: 'Khoa Sản', time: '09:15', service: 'Siêu âm thai', status: 'confirmed' },
-  { patientIdx: 2, code: '#LH-9799', doctor: 'BS. Đặng Quốc Anh', department: 'Khoa Ngoại', time: '08:00', service: 'Khám chấn thương', status: 'pending' },
-  { patientIdx: 3, code: '#LH-9795', doctor: 'BS. Vũ Hà Phương', department: 'Khoa Nhi', time: '07:30', service: 'Khám nhi tổng quát', status: 'done' },
-  { patientIdx: 4, code: '#LH-9790', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội', time: '10:00', service: 'Khám nội tổng quát', status: 'cancelled' },
-  { patientIdx: 5, code: '#LH-9803', doctor: 'BS. Lê Minh Hoàng', department: 'Khoa Nội', time: '09:00', service: 'Khám nội tổng quát', status: 'confirmed' },
-];
-
-// Standalone queue tickets representing the current waiting room.
-// 4 khoa (Nội/Ngoại/Sản/Nhi), mỗi khoa 2 phòng → tổng 8 phòng khám.
 const QUEUE = [
-  { ticket: 1024, patientName: 'Lê Hoàng Nam', code: 'BN-2024-0500', doctor: 'BS. Phan Minh Hưng', room: 'Phòng 101', department: 'Khoa Nội', roomKey: 'P101', status: 'in-progress', waitMinutes: 0 },
-  { ticket: 1027, patientName: 'Vũ Thị Mỹ Linh', code: 'BN-2024-1244', doctor: 'BS. Lê Minh Hoàng', room: 'Phòng 102', department: 'Khoa Nội', roomKey: 'P102', status: 'waiting', waitMinutes: 5 },
-  { ticket: 1023, patientName: 'Phạm Thúy Hạnh', code: 'BN-2024-0911', doctor: 'BS. Lê Quang', room: 'Phòng 201', department: 'Khoa Ngoại', roomKey: 'P201', status: 'in-progress', waitMinutes: 12 },
-  { ticket: 1022, patientName: 'Đỗ Duy Mạnh', code: 'BN-2024-0410', doctor: 'BS. Đặng Quốc Anh', room: 'Phòng 202', department: 'Khoa Ngoại', roomKey: 'P202', status: 'skipped', waitMinutes: 0 },
-  { ticket: 1025, patientName: 'Trần Văn Tú', code: 'BN-2024-0582', doctor: 'BS. Nguyễn Lan Anh', room: 'Phòng 301', department: 'Khoa Sản', roomKey: 'P301', status: 'waiting', waitMinutes: 22 },
-  { ticket: 1026, patientName: 'Hoàng Anh Quân', code: 'BN-2024-1102', doctor: 'BS. Trần Thu Hà', room: 'Phòng 401', department: 'Khoa Nhi', roomKey: 'P401', status: 'waiting', waitMinutes: 8 },
+  { ticket: 1024, patientName: 'Lê Hoàng Nam', code: 'BN-2026-0500', doctor: 'TS.BS. Nguyễn Văn An', room: 'Phòng 101', department: 'Khoa Tim mạch', roomKey: 'P101', status: 'in-progress', waitMinutes: 0 },
+  { ticket: 1027, patientName: 'Phạm Mỹ Linh', code: 'BN-2026-1244', doctor: 'BS. Phạm Thu Dung', room: 'Phòng 102', department: 'Khoa Cơ xương khớp', roomKey: 'P102', status: 'waiting', waitMinutes: 5 },
+  { ticket: 1023, patientName: 'Trần Văn Tú', code: 'BN-2026-0911', doctor: 'BS. Nguyễn Thị Giang', room: 'Phòng 201', department: 'Khoa Sản & Nhi', roomKey: 'P201', status: 'in-progress', waitMinutes: 12 },
+  { ticket: 1022, patientName: 'Đỗ Duy Mạnh', code: 'BN-2026-0410', doctor: 'BS. Trần Anh Khoa', room: 'Phòng 202', department: 'Khoa Mắt', roomKey: 'P202', status: 'skipped', waitMinutes: 0 },
+  { ticket: 1025, patientName: 'Nguyễn Diệu Nhi', code: 'BN-2026-0582', doctor: 'BS. Nguyễn Thị Giang', room: 'Phòng 301', department: 'Khoa Sản & Nhi', roomKey: 'P301', status: 'waiting', waitMinutes: 22 },
+  { ticket: 1026, patientName: 'Hoàng Công Thành', code: 'BN-2026-1102', doctor: 'BS. Trần Anh Khoa', room: 'Phòng 401', department: 'Khoa Mắt', roomKey: 'P401', status: 'waiting', waitMinutes: 8 },
 ];
 
 const seedReceptionist = async () => {
@@ -47,6 +38,19 @@ const seedReceptionist = async () => {
   const existing = await Appointment.countDocuments();
   if (existing > 0) return;
 
+  const [specialties, doctors] = await Promise.all([
+    Specialty.find().sort({ order: 1 }),
+    Doctor.find().sort({ name: 1 }),
+  ]);
+
+  const specialtyBySlug = new Map(specialties.map((item) => [item.slug, item]));
+  const doctorBySlug = new Map();
+  doctors.forEach((doctor) => {
+    const list = doctorBySlug.get(doctor.specialtySlug) || [];
+    list.push(doctor);
+    doctorBySlug.set(doctor.specialtySlug, list);
+  });
+
   // Patients
   const patientDocs = [];
   for (let i = 0; i < PATIENTS.length; i += 1) {
@@ -56,10 +60,20 @@ const seedReceptionist = async () => {
     patientDocs.push(doc);
   }
 
-  // Appointments
+  const appointmentSeeds = [
+    { patientIdx: 0, code: '#LH-9802', specialtySlug: 'cardiology', time: '08:30', service: 'Khám tăng huyết áp định kỳ', status: 'pending' },
+    { patientIdx: 1, code: '#LH-9801', specialtySlug: 'obstetrics-pediatrics', time: '09:15', service: 'Khám thai quý II', status: 'confirmed' },
+    { patientIdx: 2, code: '#LH-9799', specialtySlug: 'musculoskeletal', time: '08:00', service: 'Khám đau vai gáy', status: 'pending' },
+    { patientIdx: 3, code: '#LH-9795', specialtySlug: 'ophthalmology', time: '07:30', service: 'Đo thị lực tổng quát', status: 'done' },
+    { patientIdx: 4, code: '#LH-9790', specialtySlug: 'cardiology', time: '10:00', service: 'Khám tim mạch tổng quát', status: 'cancelled' },
+    { patientIdx: 5, code: '#LH-9803', specialtySlug: 'cardiology', time: '09:00', service: 'Tái khám huyết áp', status: 'confirmed' },
+  ];
+
   let maxApptSeq = 0;
-  for (const a of APPOINTMENTS) {
+  for (const a of appointmentSeeds) {
     const patient = patientDocs[a.patientIdx];
+    const specialty = specialtyBySlug.get(a.specialtySlug);
+    const doctor = (doctorBySlug.get(a.specialtySlug) || [])[0];
     maxApptSeq = Math.max(maxApptSeq, Number(a.code.replace(/\D/g, '')));
     await Appointment.create({
       code: a.code,
@@ -67,13 +81,18 @@ const seedReceptionist = async () => {
       patientName: patient?.fullName || 'Khách',
       patientCode: patient?.code || '',
       phone: patient?.phone || '',
-      doctor: a.doctor,
-      department: a.department,
+      doctor: doctor?.name || 'Bác sĩ phụ trách',
+      doctorRef: doctor?._id || null,
+      department: specialty?.departmentLabel || 'Khoa khám bệnh',
+      specialty: specialty?._id || null,
       date: atToday(a.time),
       time: a.time,
       service: a.service,
       insured: Boolean(patient?.insurance?.code),
       status: a.status,
+      consultationFee: specialty?.consultationFee || 300_000,
+      depositAmount: Math.round(((specialty?.consultationFee || 300_000) * 0.3) / 1000) * 1000,
+      source: 'reception',
     });
   }
 

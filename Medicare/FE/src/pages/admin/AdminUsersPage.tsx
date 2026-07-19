@@ -25,6 +25,8 @@ const EMPTY_USER: AdminUserInput = {
 
 const ROLE_FILTERS: { value: AdminUserRoleFilter; label: string }[] = [
   { value: 'all', label: 'Tất cả' },
+  { value: 'admin', label: ROLE_LABELS.admin },
+  { value: 'doctor', label: ROLE_LABELS.doctor },
   { value: 'patient', label: ROLE_LABELS.patient },
   { value: 'receptionist', label: ROLE_LABELS.receptionist },
 ];
@@ -67,6 +69,7 @@ export const AdminUsersPage: React.FC = () => {
     addUser,
     counts,
   } = useAdminUsers();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<AdminUserInput>(EMPTY_USER);
   const [error, setError] = useState('');
@@ -89,7 +92,7 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
     if (form.role === 'doctor') {
-      setError('Không thể tạo tài khoản bác sĩ tại quản lý người dùng.');
+      setError('Không thể tạo tài khoản bác sĩ tại màn hình quản lý người dùng.');
       return;
     }
     addUser(form);
@@ -100,11 +103,11 @@ export const AdminUsersPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Lexend' }}>
+          <h1 className="mb-1 text-2xl font-bold" style={{ fontFamily: 'Lexend' }}>
             Quản lý người dùng
           </h1>
           <p className="text-gray-500 dark:text-slate-400">
-            Thêm, sửa, phân quyền tài khoản trong hệ thống.
+            Dữ liệu được đồng bộ theo tài khoản thật đang có trong hệ thống.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -126,7 +129,7 @@ export const AdminUsersPage: React.FC = () => {
 
       <Card padding="sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="lg:w-72">
+          <div className="lg:w-80">
             <Input
               placeholder="Tìm theo tên, email, số điện thoại"
               value={search}
@@ -134,6 +137,7 @@ export const AdminUsersPage: React.FC = () => {
               leftIcon={<Search size={16} />}
             />
           </div>
+
           <div className="flex flex-wrap items-center gap-2">
             {ROLE_FILTERS.map((filter) => (
               <button
@@ -143,7 +147,7 @@ export const AdminUsersPage: React.FC = () => {
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   roleFilter === filter.value
                     ? 'bg-[#1a56db] text-white'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-[#1a56db]/40'
+                    : 'border border-gray-200 bg-gray-50 text-gray-600 hover:border-[#1a56db]/40'
                 }`}
               >
                 {filter.label}
@@ -161,7 +165,7 @@ export const AdminUsersPage: React.FC = () => {
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                 statusFilter === filter.value
                   ? 'bg-slate-800 text-white'
-                  : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-slate-400'
+                  : 'border border-gray-200 bg-gray-50 text-gray-500 hover:border-slate-400'
               }`}
             >
               {filter.label}
@@ -174,84 +178,98 @@ export const AdminUsersPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-slate-700 text-left text-gray-500 dark:text-slate-400">
+              <tr className="border-b border-gray-100 text-left text-gray-500 dark:border-slate-700 dark:text-slate-400">
                 <th className="px-5 py-3 font-medium">Người dùng</th>
                 <th className="px-5 py-3 font-medium">Vai trò</th>
                 <th className="px-5 py-3 font-medium">Trạng thái</th>
-                <th className="px-5 py-3 font-medium hidden md:table-cell">Ngày tạo</th>
-                <th className="px-5 py-3 font-medium hidden lg:table-cell">Hoạt động gần nhất</th>
-                <th className="px-5 py-3 font-medium text-right">Thao tác</th>
+                <th className="hidden px-5 py-3 font-medium md:table-cell">Ngày tạo</th>
+                <th className="hidden px-5 py-3 font-medium lg:table-cell">Hoạt động gần nhất</th>
+                <th className="px-5 py-3 text-right font-medium">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar src={user.avatar} name={user.fullName} size="sm" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 dark:text-slate-100 truncate">
-                          {user.fullName}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                          {user.email}
-                        </p>
+              {users.map((user) => {
+                const isAdmin = user.role === 'admin';
+                return (
+                  <tr key={user.id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar src={user.avatar} name={user.fullName} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-gray-800 dark:text-slate-100">
+                            {user.fullName}
+                          </p>
+                          <p className="truncate text-xs text-gray-500 dark:text-slate-400">
+                            {user.email}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <Badge variant={ROLE_BADGE[user.role]}>{ROLE_LABELS[user.role]}</Badge>
-                  </td>
-                  <td className="px-5 py-3">
-                    <Badge variant={STATUS_BADGE[user.status]}>{STATUS_LABELS[user.status]}</Badge>
-                  </td>
-                  <td className="px-5 py-3 hidden md:table-cell text-gray-500 dark:text-slate-400">
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td className="px-5 py-3 hidden lg:table-cell text-gray-500 dark:text-slate-400">
-                    {formatDate(user.lastActiveAt)}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setRoleModal({ id: user.id, name: user.fullName, role: user.role })}
-                        title="Chỉnh sửa vai trò"
-                        className="p-2 rounded-lg text-[#1a56db] hover:bg-blue-50 transition-colors"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      {user.status === 'suspended' ? (
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge variant={ROLE_BADGE[user.role]}>{ROLE_LABELS[user.role]}</Badge>
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge variant={STATUS_BADGE[user.status]}>{STATUS_LABELS[user.status]}</Badge>
+                    </td>
+                    <td className="hidden px-5 py-3 text-gray-500 dark:text-slate-400 md:table-cell">
+                      {formatDate(user.createdAt)}
+                    </td>
+                    <td className="hidden px-5 py-3 text-gray-500 dark:text-slate-400 lg:table-cell">
+                      {formatDate(user.lastActiveAt)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
-                          onClick={() => setUserStatus(user.id, 'active')}
-                          title="Mở khóa"
-                          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          onClick={() => {
+                            if (!isAdmin) {
+                              setRoleModal({ id: user.id, name: user.fullName, role: user.role });
+                            }
+                          }}
+                          title={isAdmin ? 'Tài khoản admin không đổi vai trò tại đây' : 'Chỉnh sửa vai trò'}
+                          disabled={isAdmin}
+                          className={`rounded-lg p-2 transition-colors ${
+                            isAdmin
+                              ? 'cursor-not-allowed text-gray-300'
+                              : 'text-[#1a56db] hover:bg-blue-50'
+                          }`}
                         >
-                          <CheckCircle2 size={16} />
+                          <Pencil size={16} />
                         </button>
-                      ) : (
+
+                        {user.status === 'suspended' ? (
+                          <button
+                            type="button"
+                            onClick={() => setUserStatus(user.id, 'active')}
+                            title="Mở khóa"
+                            className="rounded-lg p-2 text-emerald-600 transition-colors hover:bg-emerald-50"
+                          >
+                            <CheckCircle2 size={16} />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setUserStatus(user.id, 'suspended')}
+                            title="Khóa tài khoản"
+                            className="rounded-lg p-2 text-amber-600 transition-colors hover:bg-amber-50"
+                          >
+                            <Ban size={16} />
+                          </button>
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => setUserStatus(user.id, 'suspended')}
-                          title="Khóa tài khoản"
-                          className="p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                          onClick={() => deleteUser(user.id)}
+                          title="Xóa"
+                          className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50"
                         >
-                          <Ban size={16} />
+                          <Trash2 size={16} />
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => deleteUser(user.id)}
-                        title="Xóa"
-                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -263,7 +281,6 @@ export const AdminUsersPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Modal đổi vai trò */}
       <Modal
         open={!!roleModal}
         onClose={() => setRoleModal(null)}
@@ -295,7 +312,9 @@ export const AdminUsersPage: React.FC = () => {
             <select
               value={roleModal.role}
               onChange={(event) =>
-                setRoleModal((prev) => prev ? { ...prev, role: event.target.value as AdminUserRole } : prev)
+                setRoleModal((prev) => (
+                  prev ? { ...prev, role: event.target.value as AdminUserRole } : prev
+                ))
               }
               className={formInputClass}
             >
@@ -324,7 +343,8 @@ export const AdminUsersPage: React.FC = () => {
         }
       >
         <form id="user-form" onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="p-3 rounded-xl bg-red-50 text-sm text-red-600">{error}</div>}
+          {error && <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+
           <Input
             label="Họ và tên"
             required
@@ -332,12 +352,13 @@ export const AdminUsersPage: React.FC = () => {
             value={form.fullName}
             onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
           />
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Email"
               type="email"
               required
-              placeholder="email@medicare.vn"
+              placeholder="email@medicare.com"
               value={form.email}
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
             />
@@ -348,6 +369,7 @@ export const AdminUsersPage: React.FC = () => {
               onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
             />
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Vai trò</label>
@@ -362,6 +384,7 @@ export const AdminUsersPage: React.FC = () => {
                 <option value="receptionist">{ROLE_LABELS.receptionist}</option>
               </select>
             </div>
+
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Trạng thái</label>
               <select
@@ -390,8 +413,8 @@ const SummaryStat: React.FC<{ label: string; value: number; accent?: string }> =
 }) => (
   <Card padding="sm">
     <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
-    <p className={`text-2xl font-bold mt-1 ${accent}`}>{value}</p>
-  </Card>
+    <p className={`mt-1 text-2xl font-bold ${accent}`}>{value}</p>
+    </Card>
 );
 
 export default AdminUsersPage;

@@ -7,7 +7,10 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "start:prod": "NODE_ENV=production node src/app.js",
-    "seed:admin": "node src/seed/createAdmin.js"
+    "seed:admin": "node src/seed/createAdmin.js",
+    "seed:demo": "node src/seed/seedDemoData.js",
+    "verify:data": "node src/seed/verifyDataIntegrity.js",
+    "repair:data": "node src/seed/repairDataIntegrity.js"
   },
   "keywords": [],
   "author": "",

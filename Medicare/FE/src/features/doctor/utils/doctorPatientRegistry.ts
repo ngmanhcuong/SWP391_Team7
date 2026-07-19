@@ -217,7 +217,7 @@ export const resolveDoctorPatientId = (
   patientId?: string,
   patientName?: string,
 ): string | undefined => {
-  if (patientId && getDoctorPatientById(patientId)) {
+  if (patientId) {
     return patientId;
   }
   if (patientName) {

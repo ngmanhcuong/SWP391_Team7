@@ -2,6 +2,8 @@ const Doctor = require('../models/Doctor');
 const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
 const Visit = require('../models/Visit');
+const LabResult = require('../models/LabResult');
+const MedicalHistory = require('../models/MedicalHistory');
 
 const ok = (res, data) => res.json({ success: true, data });
 
@@ -11,22 +13,24 @@ const calculateAge = (date) => {
   if (Number.isNaN(dob.getTime())) return 0;
   const now = new Date();
   let age = now.getFullYear() - dob.getFullYear();
-  const m = now.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age -= 1;
+  const monthDiff = now.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age -= 1;
   return Math.max(age, 0);
 };
 
 const formatDateVN = (date) =>
   date
-    ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
-        new Date(date),
-      )
+    ? new Intl.DateTimeFormat('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(new Date(date))
     : '';
 
 const mapGender = (gender) => {
   if (gender === 'male') return 'Nam';
-  if (gender === 'female') return 'Nữ';
-  return 'Nữ';
+  if (gender === 'female') return 'Nu';
+  return 'Nu';
 };
 
 const mapHealthStatus = (status) => {
@@ -55,35 +59,72 @@ const mapAppointmentType = (source) => (source === 'patient' ? 'new' : 'followup
 const mapHistoryEntry = (doc, index) => ({
   id: String(doc._id || `history-${index + 1}`),
   date: formatDateVN(doc.date) || '',
-  doctor: doc.doctorName || doc.doctor || 'Chưa cập nhật',
-  diagnosis: doc.diagnosis || doc.service || doc.department || 'Chưa có chẩn đoán',
+  doctor: doc.doctorName || doc.doctor || 'Chua cap nhat',
+  diagnosis: doc.diagnosis || doc.service || doc.department || 'Chua co chan doan',
 });
+
+const normalizeHistoryItems = (items = [], type) =>
+  items
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .map((label) => ({ type, label }));
 
 const listAssignedPatients = async (req, res, next) => {
   try {
     const doctor = await Doctor.findOne({ user: req.user._id });
-    if (!doctor) return ok(res, { patients: [], totalCount: 0, summary: { totalManaged: 0, totalTrend: 'Theo dữ liệu hiện tại', newThisWeek: 0, weeklyChart: [0, 0, 0, 0, 0, 0, 0], waitingReExam: 0 } });
+    if (!doctor) {
+      return ok(res, {
+        patients: [],
+        totalCount: 0,
+        summary: {
+          totalManaged: 0,
+          totalTrend: 'Theo du lieu hien tai',
+          newThisWeek: 0,
+          weeklyChart: [0, 0, 0, 0, 0, 0, 0],
+          waitingReExam: 0,
+        },
+      });
+    }
 
     const appointments = await Appointment.find({ doctorRef: doctor._id })
       .populate('patient', 'code fullName phone dob gender')
+      .populate('patientUser', 'dateOfBirth gender phone')
       .sort({ date: -1, time: -1 });
 
+    const syncPatientBirthData = [];
     const byPatient = new Map();
     for (const appt of appointments) {
       const patientId = appt.patient ? String(appt.patient._id) : `${appt.patientCode || appt.patientName}`;
+      const resolvedDob = appt.patient?.dob || appt.patientUser?.dateOfBirth || null;
+      const resolvedGender = appt.patient?.gender || appt.patientUser?.gender;
+      const resolvedPhone = appt.patient?.phone || appt.patientUser?.phone || appt.phone || '';
+
+      if (appt.patient && resolvedDob && !appt.patient.dob) {
+        syncPatientBirthData.push(
+          Patient.updateOne(
+            { _id: appt.patient._id, $or: [{ dob: { $exists: false } }, { dob: null }] },
+            { $set: { dob: resolvedDob } },
+          ),
+        );
+      }
+
       if (!byPatient.has(patientId)) {
         byPatient.set(patientId, {
           id: patientId,
           patientCode: appt.patient?.code || appt.patientCode || 'BN-CHUA-CAP',
           fullName: appt.patient?.fullName || appt.patientName,
-          gender: mapGender(appt.patient?.gender),
-          age: calculateAge(appt.patient?.dob),
-          phone: appt.patient?.phone || appt.phone || '',
-          lastVisit: formatDateVN(appt.date) || 'Hôm nay',
+          gender: mapGender(resolvedGender),
+          age: calculateAge(resolvedDob),
+          phone: resolvedPhone,
+          lastVisit: formatDateVN(appt.date) || 'Hom nay',
           healthStatus: mapHealthStatus(appt.status),
           department: appt.department || '',
         });
       }
+    }
+
+    if (syncPatientBirthData.length > 0) {
+      await Promise.allSettled(syncPatientBirthData);
     }
 
     const patients = [...byPatient.values()];
@@ -100,15 +141,19 @@ const listAssignedPatients = async (req, res, next) => {
       }
     });
 
-    const summary = {
-      totalManaged: patients.length,
-      totalTrend: 'Theo dữ liệu hiện tại',
-      newThisWeek: appointments.filter((appt) => new Date(appt.createdAt) >= oneWeekAgo).length,
-      weeklyChart,
-      waitingReExam: appointments.filter((appt) => ['pending', 'confirmed', 'checked-in'].includes(appt.status)).length,
-    };
-
-    return ok(res, { patients, totalCount: patients.length, summary });
+    return ok(res, {
+      patients,
+      totalCount: patients.length,
+      summary: {
+        totalManaged: patients.length,
+        totalTrend: 'Theo du lieu hien tai',
+        newThisWeek: appointments.filter((appt) => new Date(appt.createdAt) >= oneWeekAgo).length,
+        weeklyChart,
+        waitingReExam: appointments.filter((appt) =>
+          ['pending', 'confirmed', 'checked-in'].includes(appt.status),
+        ).length,
+      },
+    });
   } catch (error) {
     return next(error);
   }
@@ -123,21 +168,22 @@ const listScheduleAppointments = async (req, res, next) => {
       .populate('patient', 'code fullName')
       .sort({ date: 1, time: 1 });
 
-    const data = appointments.map((appt) => ({
-      id: String(appt._id),
-      patientId: appt.patient ? String(appt.patient._id) : undefined,
-      patientCode: appt.patient?.code || appt.patientCode || '',
-      patientName: appt.patient?.fullName || appt.patientName || 'Chưa rõ bệnh nhân',
-      patientNote: appt.symptoms || appt.service || '',
-      department: appt.department || '',
-      type: mapAppointmentType(appt.source),
-      status: mapScheduleStatus(appt.status),
-      timeSlot: mapTimeSlot(appt.time),
-      date: new Date(appt.date).toISOString().slice(0, 10),
-      time: appt.time,
-    }));
-
-    return ok(res, data);
+    return ok(
+      res,
+      appointments.map((appt) => ({
+        id: String(appt._id),
+        patientId: appt.patient ? String(appt.patient._id) : undefined,
+        patientCode: appt.patient?.code || appt.patientCode || '',
+        patientName: appt.patient?.fullName || appt.patientName || 'Chua ro benh nhan',
+        patientNote: appt.symptoms || appt.service || '',
+        department: appt.department || '',
+        type: mapAppointmentType(appt.source),
+        status: mapScheduleStatus(appt.status),
+        timeSlot: mapTimeSlot(appt.time),
+        date: new Date(appt.date).toISOString().slice(0, 10),
+        time: appt.time,
+      })),
+    );
   } catch (error) {
     return next(error);
   }
@@ -146,7 +192,6 @@ const listScheduleAppointments = async (req, res, next) => {
 const listPatientHistory = async (req, res, next) => {
   try {
     const { patientId } = req.params;
-
     const patientDoc = await Patient.findById(patientId).select('code fullName');
     if (!patientDoc) return ok(res, []);
 
@@ -169,12 +214,10 @@ const listPatientHistory = async (req, res, next) => {
     );
 
     let history = [];
-
     if (patientUserIds.length > 0) {
       const visits = await Visit.find({ patientUser: { $in: patientUserIds } })
         .sort({ date: -1 })
         .limit(10);
-
       history = visits.map(mapHistoryEntry);
     }
 
@@ -202,6 +245,115 @@ const listPatientHistory = async (req, res, next) => {
   }
 };
 
+const saveAppointmentRecord = async (req, res, next) => {
+  try {
+    const doctor = await Doctor.findOne({ user: req.user._id });
+    if (!doctor) return ok(res, null);
+
+    const { appointmentId } = req.params;
+    const appointment = await Appointment.findOne({
+      _id: appointmentId,
+      doctorRef: doctor._id,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Khong tim thay lich hen.' });
+    }
+
+    if (!appointment.patientUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ca kham nay chua gan tai khoan benh nhan nen khong the luu ho so.',
+      });
+    }
+
+    const {
+      examination = {},
+      prescriptions = [],
+      paraclinicalTests = [],
+      allergies = [],
+      medicalHistory = [],
+      complete = false,
+    } = req.body || {};
+
+    const visit = await Visit.findOneAndUpdate(
+      { appointment: appointment._id },
+      {
+        patientUser: appointment.patientUser,
+        appointment: appointment._id,
+        doctorName: appointment.doctor || doctor.fullName || 'Bac si phu trach',
+        specialty: appointment.department || 'Kham tong quat',
+        facility: appointment.room ? `Phong ${appointment.room}` : 'Phong kham Medicare',
+        date: appointment.date || new Date(),
+        diagnosis: String(examination.preliminaryDiagnosis || '').trim(),
+        symptoms: String(examination.clinicalSymptoms || appointment.symptoms || '').trim(),
+        treatment: String(examination.additionalNotes || '').trim(),
+        status: complete ? 'completed' : 'ongoing',
+        prescriptions: prescriptions
+          .map((item) => ({
+            name: String(item.name || '').trim(),
+            dosage: [item.dosage, item.quantity].filter(Boolean).join(' | ').trim(),
+            duration: String(item.instructions || '').trim(),
+            status: complete ? 'completed' : 'active',
+          }))
+          .filter((item) => item.name),
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+
+    await LabResult.deleteMany({ visit: visit._id });
+    const selectedTests = paraclinicalTests.filter((test) => test && test.checked && test.name);
+    if (selectedTests.length > 0) {
+      await LabResult.insertMany(
+        selectedTests.map((test) => ({
+          patientUser: appointment.patientUser,
+          visit: visit._id,
+          name: String(test.name).trim(),
+          date: appointment.date || new Date(),
+          doctorName: appointment.doctor || doctor.fullName || 'Bac si phu trach',
+          status: 'pending',
+          summary: 'Dang cho ket qua tu phong xet nghiem',
+        })),
+      );
+    }
+
+    const historyItems = [
+      ...normalizeHistoryItems(allergies, 'allergy'),
+      ...normalizeHistoryItems(medicalHistory, 'chronic'),
+    ];
+
+    await Promise.all(
+      historyItems.map(async (item) => {
+        const existing = await MedicalHistory.findOne({
+          patientUser: appointment.patientUser,
+          type: item.type,
+          label: item.label,
+        });
+
+        if (!existing) {
+          await MedicalHistory.create({
+            patientUser: appointment.patientUser,
+            type: item.type,
+            label: item.label,
+            detail: '',
+            since: '',
+          });
+        }
+      }),
+    );
+
+    return ok(res, {
+      visitId: String(visit._id),
+      appointmentId: String(appointment._id),
+      status: visit.status,
+      savedLabs: selectedTests.length,
+      savedPrescriptions: visit.prescriptions.length,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const completeAppointment = async (req, res, next) => {
   try {
     const doctor = await Doctor.findOne({ user: req.user._id });
@@ -214,7 +366,7 @@ const completeAppointment = async (req, res, next) => {
     });
 
     if (!appointment) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy lịch hẹn.' });
+      return res.status(404).json({ success: false, message: 'Khong tim thay lich hen.' });
     }
 
     appointment.status = 'done';
@@ -233,5 +385,6 @@ module.exports = {
   listAssignedPatients,
   listScheduleAppointments,
   listPatientHistory,
+  saveAppointmentRecord,
   completeAppointment,
 };

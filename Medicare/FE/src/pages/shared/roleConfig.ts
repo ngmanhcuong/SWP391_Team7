@@ -10,11 +10,8 @@ import {
   Star,
   UserCircle,
   Receipt,
-  ListOrdered,
-  UserCheck,
   Stethoscope,
   Building2,
-  DoorOpen,
   History,
   LucideIcon,
 } from 'lucide-react';
@@ -22,7 +19,6 @@ import { User } from '../../types';
 
 export type AppRole = User['role'];
 
-/** Shared personal profile page for all roles */
 export const PROFILE_PATH = '/ho-so';
 
 export const ROLE_PATHS: Record<AppRole, string> = {
@@ -64,9 +60,7 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
   receptionist: [
     { label: 'Tổng quan', path: '/receptionist', icon: LayoutDashboard },
     { label: 'Lịch hẹn', path: '/receptionist/lich-hen', icon: Calendar },
-    { label: 'Tiếp đón & Check-in', path: '/receptionist/tiep-nhan', icon: UserCheck },
     { label: 'Bệnh nhân', path: '/receptionist/benh-nhan', icon: Users },
-    { label: 'Hàng chờ', path: '/receptionist/hang-cho', icon: ListOrdered },
     { label: 'Thanh toán', path: '/receptionist/thanh-toan', icon: CreditCard },
     { label: 'Hóa đơn', path: '/receptionist/hoa-don', icon: Receipt },
     { label: 'Thông báo', path: '/receptionist/thong-bao', icon: Bell },
@@ -77,8 +71,6 @@ export const ROLE_NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { label: 'Quản lý người dùng', path: '/admin/nguoi-dung', icon: Users },
     { label: 'Quản lý bác sĩ', path: '/admin/bac-si', icon: Stethoscope },
     { label: 'Quản lý khoa', path: '/admin/khoa', icon: Building2 },
-    { label: 'Quản lý phòng', path: '/admin/phong', icon: DoorOpen },
-    { label: 'Quản lý lịch hẹn', path: '/admin/lich-hen', icon: Calendar },
     { label: 'Quản lý đánh giá', path: '/admin/danh-gia', icon: Star },
     { label: 'Báo cáo thống kê', path: '/admin/bao-cao', icon: BarChart3 },
     { label: 'Nhật ký hệ thống', path: '/admin/nhat-ky', icon: History },

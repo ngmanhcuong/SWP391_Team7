@@ -3,8 +3,14 @@ import {
   AdminAppointment,
   AdminDepartment,
   AdminDoctor,
+  AdminReview,
+  AuditLogEntry,
+  PatientTrendPoint,
+  SpecialtyShare,
+  SupplyItem,
   AdminUser,
   AppointmentStatus,
+  ReviewStatus,
   AdminUserStatus,
 } from '../types';
 
@@ -48,10 +54,53 @@ export interface AdminAppointmentsResponse {
   total: number;
 }
 
+export interface AdminReviewsResponse {
+  items: AdminReview[];
+  total: number;
+  departments: string[];
+  stats: {
+    total: number;
+    averageRating: number;
+    hiddenCount: number;
+    monthlyDelta: string;
+  };
+}
+
+export interface AdminReportsResponse {
+  stats: {
+    patients: number;
+    revenue: number;
+    suppliesUsed: number;
+    completionRate: number;
+  };
+  patientTrend: PatientTrendPoint[];
+  specialtyShare: SpecialtyShare[];
+  specialtyTotal: number;
+  supplies: SupplyItem[];
+  suppliesTotal: number;
+  generatedAt: string;
+}
+
+export interface AdminAuditLogsResponse {
+  items: AuditLogEntry[];
+  total: number;
+  actors: string[];
+  summary: {
+    newAccounts: number;
+    bookings: number;
+    payments: number;
+    updates: number;
+  };
+}
+
 export const adminApi = {
   // Dashboard
   getDashboard: async (): Promise<AdminDashboardResponse> =>
     unwrap(await api.get('/admin/dashboard')),
+  getReports: async (): Promise<AdminReportsResponse> =>
+    unwrap(await api.get('/admin/reports')),
+  getAuditLogs: async (): Promise<AdminAuditLogsResponse> =>
+    unwrap(await api.get('/admin/audit-logs')),
 
   // Doctors
   getDoctors: async (): Promise<AdminDoctor[]> => unwrap(await api.get('/admin/doctors')),
@@ -83,6 +132,12 @@ export const adminApi = {
     unwrap(await api.post('/admin/appointments', input)),
   updateAppointmentStatus: async (id: string, status: AppointmentStatus): Promise<AdminAppointment> =>
     unwrap(await api.patch(`/admin/appointments/${encodeURIComponent(id)}/status`, { status })),
+
+  // Reviews
+  getReviews: async (): Promise<AdminReviewsResponse> =>
+    unwrap(await api.get('/admin/reviews')),
+  updateReviewStatus: async (id: string, status: ReviewStatus): Promise<AdminReview> =>
+    unwrap(await api.patch(`/admin/reviews/${id}/status`, { status })),
 
   // Users
   getUsers: async (): Promise<AdminUser[]> => unwrap(await api.get('/admin/users')),

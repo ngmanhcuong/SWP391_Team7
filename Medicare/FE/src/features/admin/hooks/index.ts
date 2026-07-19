@@ -8,14 +8,10 @@ import {
   ADMIN_DASHBOARD_STATS,
   ADMIN_DEPARTMENT_STATS,
   ADMIN_DOCTOR_STATS,
-  ADMIN_MONTHLY_SERIES,
   ADMIN_PATIENT_TREND,
   ADMIN_QUARTERLY_GOAL,
-  ADMIN_REPORT_METRICS,
   ADMIN_REPORT_STATS,
-  ADMIN_REVIEWS,
   ADMIN_REVIEW_STATS,
-  ADMIN_REVIEW_TOTAL,
   ADMIN_ROOMS,
   ADMIN_ROOM_STATS,
   ADMIN_SPECIALTY_SHARE,
@@ -23,13 +19,13 @@ import {
   ADMIN_SUPPLIES,
   ADMIN_SUPPLIES_TOTAL,
   ADMIN_SYSTEM_NOTICES,
-  ADMIN_TOP_SPECIALTIES,
   ADMIN_TOTAL_ROOMS,
   DEFAULT_ADMIN_PROFILE,
   DEFAULT_ADMIN_SETTINGS,
 } from '../constants';
 import {
   AdminAppointment,
+  AuditLogEntry,
   AdminDashboardStat,
   AdminDepartment,
   AdminDoctor,
@@ -53,7 +49,10 @@ import {
 import {
   adminApi,
   AdminAppointmentsResponse,
+  AdminAuditLogsResponse,
   AdminDashboardResponse,
+  AdminReportsResponse,
+  AdminReviewsResponse,
 } from '../services/adminApi';
 
 export type AdminUserRoleFilter = AdminUserRole | 'all';
@@ -122,17 +121,65 @@ export const useAdminDashboard = () => {
   };
 };
 
-export const useAdminReports = () => ({
-  metrics: ADMIN_REPORT_METRICS,
-  monthlySeries: ADMIN_MONTHLY_SERIES,
-  topSpecialties: ADMIN_TOP_SPECIALTIES,
-  stats: ADMIN_REPORT_STATS,
-  patientTrend: ADMIN_PATIENT_TREND,
-  specialtyShare: ADMIN_SPECIALTY_SHARE,
-  specialtyTotal: ADMIN_SPECIALTY_TOTAL,
-  supplies: ADMIN_SUPPLIES,
-  suppliesTotal: ADMIN_SUPPLIES_TOTAL,
-});
+export const useAdminReports = () => {
+  const { data } = useQuery<AdminReportsResponse>({
+    queryKey: ['admin', 'reports'],
+    queryFn: () => adminApi.getReports(),
+  });
+
+  const stats = useMemo(() => {
+    const summary = data?.stats;
+    return ADMIN_REPORT_STATS.map((stat) => {
+      if (stat.id === 'new-patients') {
+        return {
+          ...stat,
+          value: (summary?.patients ?? 0).toLocaleString('vi-VN'),
+          delta: 'Theo dữ liệu hiện tại',
+          trend: 'up' as const,
+          progress: Math.min(100, Math.max(0, (summary?.patients ?? 0) * 5)),
+        };
+      }
+      if (stat.id === 'revenue') {
+        return {
+          ...stat,
+          value: `${(summary?.revenue ?? 0).toLocaleString('vi-VN')} VND`,
+          delta: 'Theo hóa đơn đã thanh toán',
+          trend: 'up' as const,
+          progress: summary?.revenue ? 100 : 0,
+        };
+      }
+      if (stat.id === 'supplies-used') {
+        return {
+          ...stat,
+          value: (summary?.suppliesUsed ?? 0).toLocaleString('vi-VN'),
+          delta: 'Chưa có dữ liệu kho thực tế',
+          trend: 'down' as const,
+          progress: 0,
+        };
+      }
+      if (stat.id === 'completion-rate') {
+        return {
+          ...stat,
+          value: `${(summary?.completionRate ?? 0).toLocaleString('vi-VN')}%`,
+          delta: 'Tỷ lệ lịch hoàn thành',
+          trend: 'up' as const,
+          progress: summary?.completionRate ?? 0,
+        };
+      }
+      return stat;
+    });
+  }, [data]);
+
+  return {
+    stats,
+    patientTrend: data?.patientTrend ?? ADMIN_PATIENT_TREND.map((item) => ({ ...item, value: 0 })),
+    specialtyShare: data?.specialtyShare ?? ADMIN_SPECIALTY_SHARE,
+    specialtyTotal: (data?.specialtyTotal ?? 0).toLocaleString('vi-VN'),
+    supplies: data?.supplies ?? [],
+    suppliesTotal: data?.suppliesTotal ?? 0,
+    generatedAt: data?.generatedAt,
+  };
+};
 
 // ─── Users ───────────────────────────────────────────────
 export const useAdminUsers = () => {
@@ -141,10 +188,7 @@ export const useAdminUsers = () => {
     queryKey: ['admin', 'users'],
     queryFn: () => adminApi.getUsers(),
   });
-  const users = useMemo<AdminUser[]>(
-    () => (data ?? []).filter((u: AdminUser) => u.role !== 'admin' && u.role !== 'doctor'),
-    [data],
-  );
+  const users = useMemo<AdminUser[]>(() => data ?? [], [data]);
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<AdminUserRoleFilter>('all');
@@ -196,7 +240,10 @@ export const useAdminUsers = () => {
       total: users.length,
       active: users.filter((user) => user.status === 'active').length,
       suspended: users.filter((user) => user.status === 'suspended').length,
+      admins: users.filter((user) => user.role === 'admin').length,
+      doctors: users.filter((user) => user.role === 'doctor').length,
       receptionists: users.filter((user) => user.role === 'receptionist').length,
+      patients: users.filter((user) => user.role === 'patient').length,
     }),
     [users],
   );
@@ -431,28 +478,48 @@ export const useAdminDepartments = () => {
 export type ReviewRatingFilter = number | 'all';
 
 export const useAdminReviews = () => {
-  const [reviews, setReviews] = useState<AdminReview[]>(ADMIN_REVIEWS);
+  const queryClient = useQueryClient();
+  const { data } = useQuery<AdminReviewsResponse>({
+    queryKey: ['admin', 'reviews'],
+    queryFn: () => adminApi.getReviews(),
+  });
+  const reviews = useMemo<AdminReview[]>(() => data?.items ?? [], [data]);
   const [department, setDepartment] = useState<string>('all');
   const [rating, setRating] = useState<ReviewRatingFilter>('all');
   const [date, setDate] = useState('');
 
-  const departments = useMemo(
-    () => Array.from(new Set(ADMIN_REVIEWS.map((review) => review.department))),
-    [],
-  );
+  const departments = useMemo(() => data?.departments ?? [], [data]);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'reviews'] });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: ReviewStatus }) =>
+      adminApi.updateReviewStatus(id, status),
+    onSuccess: invalidate,
+  });
 
   const filteredReviews = useMemo(
     () =>
       reviews.filter((review) => {
         const matchesDept = department === 'all' || review.department === department;
         const matchesRating = rating === 'all' || review.rating === rating;
-        return matchesDept && matchesRating;
+        const matchesDate = !date || review.date === new Date(date).toLocaleDateString('vi-VN');
+        return matchesDept && matchesRating && matchesDate;
       }),
-    [reviews, department, rating],
+    [reviews, department, rating, date],
   );
 
   const setReviewStatus = (id: string, status: ReviewStatus) =>
-    setReviews((prev) => prev.map((review) => (review.id === id ? { ...review, status } : review)));
+    statusMutation.mutate({ id, status });
+
+  const stats = useMemo(() => {
+    const summary = data?.stats;
+    return ADMIN_REVIEW_STATS.map((stat) => {
+      if (stat.id === 'total') return overrideStat(stat, summary?.total ?? 0);
+      if (stat.id === 'avg') return overrideStat(stat, summary?.averageRating ?? 0);
+      if (stat.id === 'flagged') return overrideStat(stat, summary?.hiddenCount ?? 0);
+      if (stat.id === 'month') return overrideStat(stat, summary?.monthlyDelta ?? '0%');
+      return stat;
+    });
+  }, [data]);
 
   const resetFilters = () => {
     setDepartment('all');
@@ -462,8 +529,8 @@ export const useAdminReviews = () => {
 
   return {
     reviews: filteredReviews,
-    stats: ADMIN_REVIEW_STATS,
-    total: ADMIN_REVIEW_TOTAL,
+    stats,
+    total: data?.total ?? reviews.length,
     departments,
     department,
     setDepartment,
@@ -472,6 +539,7 @@ export const useAdminReviews = () => {
     date,
     setDate,
     setReviewStatus,
+    refreshReviews: invalidate,
     resetFilters,
   };
 };
@@ -540,29 +608,57 @@ export const useAdminAppointments = () => {
 export type AuditActionFilter = AuditActionType | 'all';
 
 export const useAdminAuditLog = () => {
+  const { data, refetch } = useQuery<AdminAuditLogsResponse>({
+    queryKey: ['admin', 'audit-logs'],
+    queryFn: () => adminApi.getAuditLogs(),
+  });
   const [actor, setActor] = useState<string>('all');
   const [actionType, setActionType] = useState<AuditActionFilter>('all');
   const [timeframe, setTimeframe] = useState<string>('today');
 
-  const actors = useMemo(
-    () => Array.from(new Set(ADMIN_AUDIT_LOGS.map((log) => log.actorName))),
-    [],
-  );
+  const actors = useMemo(() => data?.actors ?? [], [data]);
+
+  const summary = useMemo(() => {
+    const raw = data?.summary;
+    return ADMIN_AUDIT_SUMMARY.map((item) => {
+      if (item.id === 'new-acc') {
+        return { ...item, value: String(raw?.newAccounts ?? 0), note: 'Theo DB hiện tại' };
+      }
+      if (item.id === 'new-appt') {
+        return { ...item, value: String(raw?.bookings ?? 0), note: 'Theo DB hiện tại' };
+      }
+      if (item.id === 'abnormal') {
+        return { ...item, value: String((raw?.payments ?? 0) + (raw?.updates ?? 0)), note: 'Thanh toán / cập nhật' };
+      }
+      return item;
+    });
+  }, [data]);
 
   const logs = useMemo(
     () =>
-      ADMIN_AUDIT_LOGS.filter((log) => {
+      (data?.items ?? []).filter((log: AuditLogEntry) => {
         const matchesActor = actor === 'all' || log.actorName === actor;
         const matchesAction = actionType === 'all' || log.actionType === actionType;
-        return matchesActor && matchesAction;
+        const timestamp = new Date(log.createdAt ?? 0);
+        const now = new Date('2026-07-19T23:59:59+07:00');
+        const todayStart = new Date('2026-07-19T00:00:00+07:00');
+        const weekStart = new Date('2026-07-13T00:00:00+07:00');
+        const monthStart = new Date('2026-07-01T00:00:00+07:00');
+        const matchesTimeframe =
+          timeframe === 'today'
+            ? timestamp >= todayStart && timestamp <= now
+            : timeframe === 'week'
+              ? timestamp >= weekStart && timestamp <= now
+              : timestamp >= monthStart && timestamp <= now;
+        return matchesActor && matchesAction && matchesTimeframe;
       }),
-    [actor, actionType],
+    [data, actor, actionType, timeframe],
   );
 
   return {
     logs,
-    summary: ADMIN_AUDIT_SUMMARY,
-    total: ADMIN_AUDIT_TOTAL,
+    summary,
+    total: logs.length,
     actors,
     actor,
     setActor,
@@ -570,6 +666,7 @@ export const useAdminAuditLog = () => {
     setActionType,
     timeframe,
     setTimeframe,
+    refreshAuditLogs: refetch,
   };
 };
 

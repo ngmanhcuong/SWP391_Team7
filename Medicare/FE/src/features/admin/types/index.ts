@@ -154,6 +154,7 @@ export interface AuditLogEntry {
   id: string;
   time: string;
   timeAgo: string;
+  createdAt?: string;
   actorName: string;
   actorRole: string;
   actorInitials: string;

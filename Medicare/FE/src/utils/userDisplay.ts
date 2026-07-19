@@ -1,5 +1,13 @@
 const HONORIFIC_PATTERN = /^(bác|sĩ|bs\.?|ts\.?|ths\.?|pgs\.?|gs\.?|dr\.?)$/i;
 
+const toTitleCase = (value: string): string =>
+  value
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
 export const stripHonorifics = (fullName: string): string =>
   fullName
     .trim()
@@ -31,13 +39,9 @@ export const getUserInitials = (fullName: string): string => {
 
 export const getDoctorDisplayName = (fullName: string): string => {
   const trimmed = fullName.trim();
-  if (!trimmed) return 'Bác sĩ';
-
-  if (/^(bác sĩ|bs\.)/i.test(trimmed)) {
-    return trimmed;
-  }
+  if (!trimmed) return 'Bác Sĩ';
 
   const subject = stripHonorifics(trimmed) || trimmed;
   const shortName = subject.split(/\s+/).slice(-1)[0] || subject;
-  return `Bác sĩ ${shortName}`;
+  return toTitleCase(`Bác Sĩ ${shortName}`);
 };
