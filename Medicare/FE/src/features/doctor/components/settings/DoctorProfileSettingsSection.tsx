@@ -13,7 +13,9 @@ interface DoctorProfileSettingsSectionProps {
   profile: DoctorProfileSettings;
   onChange: (field: keyof DoctorProfileSettings, value: string) => void;
   onSave: () => void;
+  onAvatarUpload: (file: File) => void;
   isSaving: boolean;
+  isUploadingAvatar?: boolean;
 }
 
 const fieldClassName =
@@ -24,7 +26,9 @@ const DoctorProfileSettingsSection: React.FC<DoctorProfileSettingsSectionProps> 
   profile,
   onChange,
   onSave,
+  onAvatarUpload,
   isSaving,
+  isUploadingAvatar = false,
 }) => (
   <div className="space-y-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-[#c3c6d6]/60 bg-[#f8f9fb] px-4 py-3">
@@ -32,7 +36,7 @@ const DoctorProfileSettingsSection: React.FC<DoctorProfileSettingsSectionProps> 
         Họ tên, email, số điện thoại và ảnh đại diện được quản lý tại trang hồ sơ cá nhân.
       </p>
       <Link
-        to={getRoleProfilePath()}
+        to={getRoleProfilePath(user.role)}
         state={{ from: '/doctor/cai-dat' }}
         className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#003d9b] px-4 py-2 text-sm text-white hover:bg-[#002d75] transition-colors shrink-0"
       >
@@ -42,7 +46,12 @@ const DoctorProfileSettingsSection: React.FC<DoctorProfileSettingsSectionProps> 
     </div>
 
     <div className="grid gap-5 lg:grid-cols-[minmax(240px,280px)_1fr] lg:items-start">
-      <DoctorProfileSummaryCard user={user} profile={profile} />
+      <DoctorProfileSummaryCard
+        user={user}
+        profile={profile}
+        onAvatarUpload={onAvatarUpload}
+        isUploadingAvatar={isUploadingAvatar}
+      />
 
       <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#003d9b]/5 overflow-hidden">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 sm:px-6 py-4 border-b border-[#c3c6d6]/40">
@@ -65,9 +74,7 @@ const DoctorProfileSettingsSection: React.FC<DoctorProfileSettingsSectionProps> 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Chuyên khoa</label>
             <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-4 py-2.5">
-              <span className="text-sm font-medium text-[#334155]">
-                {getDepartmentLabel(profile.specialty)}
-              </span>
+              <span className="text-sm font-medium text-[#334155]">{getDepartmentLabel(profile.specialty)}</span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#64748b] ring-1 ring-[#e2e8f0]">
                 <Lock size={11} />
                 Do quản trị viên sắp xếp

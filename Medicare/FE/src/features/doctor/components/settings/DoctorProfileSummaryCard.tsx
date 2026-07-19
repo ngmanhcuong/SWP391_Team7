@@ -8,9 +8,16 @@ import { getDepartmentLabel } from '../../../../constants/clinicSpecialties';
 interface DoctorProfileSummaryCardProps {
   user: User;
   profile: DoctorProfileSettings;
+  onAvatarUpload: (file: File) => void;
+  isUploadingAvatar?: boolean;
 }
 
-const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ user, profile }) => {
+const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({
+  user,
+  profile,
+  onAvatarUpload,
+  isUploadingAvatar = false,
+}) => {
   const avatarUrl = getAvatarUrl(user.avatar);
   const [imgError, setImgError] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -20,10 +27,7 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
     setImgError(false);
   }, [avatarUrl]);
 
-  const displayName = profile.fullName.startsWith('BS.')
-    ? profile.fullName
-    : `BS. ${profile.fullName}`;
-
+  const displayName = profile.fullName.startsWith('BS.') ? profile.fullName : `BS. ${profile.fullName}`;
   const currentImage = uploadedImage ?? (avatarUrl && !imgError ? avatarUrl : null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,11 +35,12 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn một tệp ảnh hợp lệ.');
+      window.alert('Vui lòng chọn một tệp ảnh hợp lệ.');
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
-      alert('Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.');
+      window.alert('Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.');
       return;
     }
 
@@ -44,6 +49,7 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
       setUploadedImage(reader.result as string);
     };
     reader.readAsDataURL(file);
+    onAvatarUpload(file);
     event.target.value = '';
   };
 
@@ -56,6 +62,7 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
         onChange={handleFileChange}
         className="hidden"
       />
+
       <div className="relative mx-auto w-full max-w-[220px] aspect-square rounded-2xl overflow-hidden bg-[#eff6ff] mb-5 group">
         {currentImage ? (
           <img
@@ -75,14 +82,16 @@ const DoctorProfileSummaryCard: React.FC<DoctorProfileSummaryCardProps> = ({ use
               .toUpperCase()}
           </div>
         )}
+
         <button
           type="button"
+          disabled={isUploadingAvatar}
           onClick={() => fileInputRef.current?.click()}
-          className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 py-2 bg-black/50 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 py-2 bg-black/50 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed disabled:opacity-100"
           aria-label="Đổi ảnh đại diện"
         >
           <Camera size={14} />
-          Đổi ảnh
+          {isUploadingAvatar ? 'Đang tải ảnh...' : 'Đổi ảnh'}
         </button>
       </div>
 

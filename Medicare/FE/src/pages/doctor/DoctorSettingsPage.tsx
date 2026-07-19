@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { RotateCcw, Save } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
@@ -17,6 +17,7 @@ import {
   DoctorSettingsData,
   DoctorSettingsTab,
 } from '../../features/doctor/types';
+import { useProfile, useUpdateProfile, useUploadAvatar } from '../../features/profile/hooks';
 
 const SETTINGS_TABS: { id: DoctorSettingsTab; label: string }[] = [
   { id: 'professional', label: 'Hồ sơ chuyên môn' },
@@ -33,37 +34,78 @@ const TAB_DESCRIPTIONS: Record<DoctorSettingsTab, string> = {
 
 export const DoctorSettingsPage: React.FC = () => {
   const { user } = useAuthStore();
+  const { data: profileUser } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const uploadAvatar = useUploadAvatar();
   const [activeTab, setActiveTab] = useState<DoctorSettingsTab>('professional');
   const [settings, setSettings] = useState<DoctorSettingsData>(DEFAULT_DOCTOR_SETTINGS);
-  const [profileInitialized, setProfileInitialized] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const effectiveUser = profileUser ?? user ?? null;
+  const derivedProfile = useMemo(
+    () => (effectiveUser ? buildDoctorProfileFromUser(effectiveUser) : DEFAULT_DOCTOR_SETTINGS.profile),
+    [effectiveUser],
+  );
 
   useEffect(() => {
-    if (user && !profileInitialized) {
-      setSettings((prev) => ({
-        ...prev,
-        profile: buildDoctorProfileFromUser(user),
-      }));
-      setProfileInitialized(true);
-    }
-  }, [user, profileInitialized]);
+    setSettings((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        ...derivedProfile,
+      },
+    }));
+  }, [derivedProfile]);
 
-  const handleSave = () => {
-    setIsSaving(true);
+  const handleSave = async () => {
+    if (!effectiveUser) return;
+
+    setErrorMessage('');
     setSaveMessage('');
-    setTimeout(() => {
-      setIsSaving(false);
+
+    try {
+      await updateProfile.mutateAsync({
+        fullName: effectiveUser.fullName,
+        phone: effectiveUser.phone || '',
+        dateOfBirth: effectiveUser.dateOfBirth || '',
+        gender: effectiveUser.gender || '',
+        address: effectiveUser.address || '',
+        nationalId: effectiveUser.nationalId || '',
+        emergencyPhone: effectiveUser.emergencyPhone || '',
+        occupation: effectiveUser.occupation || '',
+        height: effectiveUser.height != null ? String(effectiveUser.height) : '',
+        weight: effectiveUser.weight != null ? String(effectiveUser.weight) : '',
+        bio: settings.profile.biography,
+      });
       setSaveMessage('Đã lưu thay đổi thành công.');
-    }, 600);
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message || 'Không thể lưu thay đổi lúc này.');
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    setErrorMessage('');
+    setSaveMessage('');
+    try {
+      await uploadAvatar.mutateAsync(file);
+      setSaveMessage('Đã cập nhật ảnh đại diện.');
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message || 'Không thể tải ảnh lên lúc này.');
+    }
   };
 
   const handleRestoreDefaults = () => {
     setSettings((prev) => ({
       ...prev,
       notifications: { ...DEFAULT_DOCTOR_SETTINGS.notifications },
+      profile: {
+        ...prev.profile,
+        biography: derivedProfile.biography,
+      },
     }));
     setSaveMessage('');
+    setErrorMessage('');
   };
 
   const handleProfileChange = (field: keyof DoctorProfileSettings, value: string) => {
@@ -98,6 +140,12 @@ export const DoctorSettingsPage: React.FC = () => {
         </p>
       )}
 
+      {errorMessage && (
+        <p className="text-sm font-medium text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5">
+          {errorMessage}
+        </p>
+      )}
+
       <div className="border-b border-[#c3c6d6]/50">
         <nav className="flex gap-1 overflow-x-auto -mb-px" aria-label="Cài đặt">
           {SETTINGS_TABS.map((tab) => (
@@ -117,13 +165,15 @@ export const DoctorSettingsPage: React.FC = () => {
         </nav>
       </div>
 
-      {activeTab === 'professional' && user && (
+      {activeTab === 'professional' && effectiveUser && (
         <DoctorProfileSettingsSection
-          user={user}
+          user={effectiveUser}
           profile={settings.profile}
           onChange={handleProfileChange}
           onSave={handleSave}
-          isSaving={isSaving}
+          onAvatarUpload={handleAvatarUpload}
+          isSaving={updateProfile.isPending}
+          isUploadingAvatar={uploadAvatar.isPending}
         />
       )}
 
@@ -145,8 +195,7 @@ export const DoctorSettingsPage: React.FC = () => {
             </Button>
             <Button
               leftIcon={<Save size={16} />}
-              onClick={handleSave}
-              loading={isSaving}
+              onClick={() => setSaveMessage('Tùy chọn thông báo hiện chỉ lưu cục bộ ở giao diện.')}
               className="bg-[#003d9b] border-[#003d9b] hover:bg-[#002d75]"
             >
               Lưu thay đổi
