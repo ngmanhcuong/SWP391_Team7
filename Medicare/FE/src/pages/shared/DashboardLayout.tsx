@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useLogout } from '../../features/auth/hooks';
 import BrandLogo from '../../components/layout/BrandLogo';
+import AdminNotificationDropdown from '../../components/layout/AdminNotificationDropdown';
 import DashboardUserMenu from '../../components/layout/DashboardUserMenu';
 import DoctorDashboardHeader from '../../components/layout/DoctorDashboardHeader';
 import PatientNotificationDropdown from '../../components/layout/PatientNotificationDropdown';
@@ -233,6 +234,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             </div>
 
             <div className="flex items-center gap-2 ml-auto lg:ml-0">
+              <AdminNotificationDropdown />
+              <div className="h-7 w-px bg-slate-200 mx-1" />
               <span className="text-sm font-semibold text-slate-700">Admin</span>
               <button
                 type="button"
