@@ -15,6 +15,7 @@ const reviewSchema = new mongoose.Schema({
   comment: { type: String, default: '' },
   tags: { type: [String], default: [] },
   isAnonymous: { type: Boolean, default: false },
+  status: { type: String, enum: ['visible', 'hidden'], default: 'visible', index: true },
   submittedAt: { type: Date, default: Date.now },
   isSeed: { type: Boolean, default: false },
 }, {

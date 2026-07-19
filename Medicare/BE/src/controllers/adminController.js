@@ -4,6 +4,7 @@ const Doctor = require('../models/Doctor');
 const Specialty = require('../models/Specialty');
 const Appointment = require('../models/Appointment');
 const Invoice = require('../models/Invoice');
+const Review = require('../models/Review');
 const Counter = require('../models/Counter');
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -140,6 +141,125 @@ const mapUser = (doc) => ({
   status: doc.isActive ? 'active' : 'suspended',
   createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
   lastActiveAt: (doc.lastLogin || doc.updatedAt || doc.createdAt || new Date()),
+});
+
+const actorColorByRole = (role) => {
+  if (role === 'admin') return 'bg-emerald-500';
+  if (role === 'doctor') return 'bg-blue-500';
+  if (role === 'receptionist') return 'bg-violet-500';
+  return 'bg-slate-500';
+};
+
+const actorRoleLabel = (role) => {
+  if (role === 'admin') return 'Quản trị hệ thống';
+  if (role === 'doctor') return 'Bác sĩ';
+  if (role === 'receptionist') return 'Lễ tân';
+  return 'Hệ thống';
+};
+
+const timeAgo = (date) => {
+  const diffMs = Date.now() - new Date(date).getTime();
+  const minutes = Math.max(0, Math.floor(diffMs / 60000));
+  if (minutes < 1) return 'Vừa xong';
+  if (minutes < 60) return `${minutes} phút trước`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  return `${days} ngày trước`;
+};
+
+const formatAuditTime = (date) =>
+  new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(date));
+
+const startOfDay = (date) => {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+};
+
+const startOfWeek = (date) => {
+  const next = startOfDay(date);
+  const day = next.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  next.setDate(next.getDate() - diff);
+  return next;
+};
+
+const startOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+
+const withinTimeframe = (date, timeframe) => {
+  const createdAt = new Date(date);
+  const now = new Date();
+  if (timeframe === 'today') return createdAt >= startOfDay(now);
+  if (timeframe === 'week') return createdAt >= startOfWeek(now);
+  if (timeframe === 'month') return createdAt >= startOfMonth(now);
+  return true;
+};
+
+const buildAuditEntry = ({
+  id,
+  createdAt,
+  actorName,
+  actorRole,
+  action,
+  actionType,
+  target,
+  ip = 'localhost',
+}) => ({
+  id,
+  time: formatAuditTime(createdAt),
+  timeAgo: timeAgo(createdAt),
+  actorName,
+  actorRole,
+  actorInitials: initialsOf(actorName || 'HT'),
+  actorColor: actorColorByRole(
+    actorRole === 'Quản trị hệ thống'
+      ? 'admin'
+      : actorRole === 'Bác sĩ'
+        ? 'doctor'
+        : actorRole === 'Lễ tân'
+          ? 'receptionist'
+          : 'system',
+  ),
+  action,
+  actionType,
+  target,
+  ip,
+  createdAt: new Date(createdAt).toISOString(),
+});
+
+const formatReviewDate = (date) =>
+  date
+    ? new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
+        new Date(date),
+      )
+    : '';
+
+const buildPatientCode = (userId) => {
+  const raw = String(userId || '').replace(/[^a-fA-F0-9]/g, '').slice(-6).toUpperCase();
+  return raw ? `BN-${raw}` : 'BN-UNKNOWN';
+};
+
+const containsModerationWarning = (comment = '') => /\[cảnh báo|vi phạm|không phù hợp/i.test(comment);
+
+const mapReviewAdmin = (doc) => ({
+  id: String(doc._id),
+  patientName: doc.isAnonymous ? 'Ẩn danh' : (doc.patientUser?.fullName || 'Bệnh nhân'),
+  patientCode: buildPatientCode(doc.patientUser?._id || doc.patientUser),
+  anonymous: Boolean(doc.isAnonymous),
+  doctorName: doc.doctorName || 'Chưa cập nhật',
+  department: doc.specialtyName || 'Chưa cập nhật',
+  rating: doc.overallRating || 0,
+  content: doc.comment || 'Không có nội dung đánh giá.',
+  date: formatReviewDate(doc.submittedAt || doc.visitDate || doc.createdAt),
+  flagged: containsModerationWarning(doc.comment || ''),
+  status: doc.status === 'hidden' ? 'hidden' : 'visible',
 });
 
 // ─── Dashboard ───────────────────────────────────────────
@@ -533,6 +653,224 @@ const deleteSpecialty = async (req, res, next) => {
   }
 };
 
+const getReports = async (req, res, next) => {
+  try {
+    const [patients, appointments, invoices] = await Promise.all([
+      User.find({ role: 'patient' }).select('createdAt').lean(),
+      Appointment.find().select('date department status').lean(),
+      Invoice.find().select('depositAmount depositPaidAt estimatedRemaining status').lean(),
+    ]);
+
+    const revenue = invoices.reduce((sum, inv) => {
+      let total = 0;
+      if (inv.depositPaidAt) total += inv.depositAmount || 0;
+      if (inv.status === 'paid') total += inv.estimatedRemaining || 0;
+      return sum + total;
+    }, 0);
+
+    const activeAppointments = appointments.filter((item) => item.status !== 'cancelled');
+    const completedAppointments = appointments.filter((item) => item.status === 'done').length;
+    const completionRate = activeAppointments.length
+      ? Math.round((completedAppointments / activeAppointments.length) * 1000) / 10
+      : 0;
+
+    const now = new Date();
+    const patientTrend = [];
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
+      const count = patients.filter((patient) => {
+        const createdAt = new Date(patient.createdAt);
+        return createdAt >= start && createdAt < end;
+      }).length;
+      patientTrend.push({
+        month: `Th${start.getMonth() + 1}`,
+        value: count,
+      });
+    }
+
+    const departmentCounts = appointments.reduce((acc, appointment) => {
+      const key = appointment.department || 'Khác';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const totalDepartmentAppointments = Object.values(departmentCounts).reduce((sum, count) => sum + count, 0) || 1;
+    const palette = ['#1a56db', '#10b981', '#f59e0b', '#cbd5e1', '#8b5cf6', '#ef4444'];
+    const specialtyShare = Object.entries(departmentCounts).map(([name, count], index) => ({
+      id: `dept-${index + 1}`,
+      name,
+      percent: Math.round((count / totalDepartmentAppointments) * 100),
+      color: palette[index % palette.length],
+    }));
+
+    return ok(res, {
+      stats: {
+        patients: patients.length,
+        revenue,
+        suppliesUsed: 0,
+        completionRate,
+      },
+      patientTrend,
+      specialtyShare,
+      specialtyTotal: appointments.length,
+      supplies: [],
+      suppliesTotal: 0,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getAuditLogs = async (req, res, next) => {
+  try {
+    const [users, appointments, invoices, reviews] = await Promise.all([
+      User.find().select('fullName role createdAt updatedAt').lean(),
+      Appointment.find().select('code patientName doctor department source createdAt updatedAt').lean(),
+      Invoice.find().select('code patientUser doctorName specialtyName status createdAt updatedAt').populate('patientUser', 'fullName role').lean(),
+      Review.find().select('doctorName specialtyName patientUser createdAt updatedAt').populate('patientUser', 'fullName role').lean(),
+    ]);
+
+    const logs = [
+      ...users.map((user) =>
+        buildAuditEntry({
+          id: `user-${user._id}`,
+          createdAt: user.createdAt,
+          actorName: user.fullName,
+          actorRole: actorRoleLabel(user.role),
+          action: 'TẠO TÀI KHOẢN',
+          actionType: 'create',
+          target: `${actorRoleLabel(user.role)}: ${user.fullName}`,
+        }),
+      ),
+      ...appointments.map((appointment) =>
+        buildAuditEntry({
+          id: `appointment-${appointment._id}`,
+          createdAt: appointment.createdAt,
+          actorName: appointment.source === 'patient' ? appointment.patientName : 'Lễ tân hệ thống',
+          actorRole: appointment.source === 'patient' ? 'Bệnh nhân' : 'Lễ tân',
+          action: 'ĐẶT LỊCH KHÁM',
+          actionType: 'booking',
+          target: `${appointment.code} - ${appointment.patientName} / ${appointment.department}`,
+        }),
+      ),
+      ...invoices.map((invoice) =>
+        buildAuditEntry({
+          id: `invoice-${invoice._id}`,
+          createdAt: invoice.createdAt,
+          actorName: invoice.patientUser?.fullName || 'Hệ thống thanh toán',
+          actorRole: invoice.patientUser?.role ? actorRoleLabel(invoice.patientUser.role) : 'Hệ thống',
+          action: 'THANH TOÁN',
+          actionType: 'payment',
+          target: `${invoice.code} - ${invoice.specialtyName}`,
+        }),
+      ),
+      ...reviews.map((review) =>
+        buildAuditEntry({
+          id: `review-${review._id}`,
+          createdAt: review.createdAt,
+          actorName: review.patientUser?.fullName || 'Bệnh nhân',
+          actorRole: review.patientUser?.role ? actorRoleLabel(review.patientUser.role) : 'Bệnh nhân',
+          action: 'CẬP NHẬT THÔNG TIN',
+          actionType: 'update',
+          target: `Đánh giá cho ${review.doctorName} / ${review.specialtyName}`,
+        }),
+      ),
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const summary = {
+      newAccounts: logs.filter((log) => log.actionType === 'create').length,
+      bookings: logs.filter((log) => log.actionType === 'booking').length,
+      payments: logs.filter((log) => log.actionType === 'payment').length,
+      updates: logs.filter((log) => log.actionType === 'update').length,
+    };
+
+    return ok(res, {
+      items: logs,
+      total: logs.length,
+      actors: Array.from(new Set(logs.map((log) => log.actorName))),
+      summary,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// ───────────────── Reviews ─────────────────
+const listReviews = async (req, res, next) => {
+  try {
+    const docs = await Review.find()
+      .populate('patientUser', 'fullName')
+      .sort({ submittedAt: -1, createdAt: -1 });
+
+    const items = docs.map(mapReviewAdmin);
+    const total = items.length;
+    const averageRating =
+      total > 0
+        ? Math.round((items.reduce((sum, item) => sum + item.rating, 0) / total) * 10) / 10
+        : 0;
+    const hiddenCount = items.filter((item) => item.status === 'hidden' || item.flagged).length;
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const thisMonthCount = docs.filter((doc) => {
+      const date = new Date(doc.submittedAt || doc.createdAt);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    }).length;
+
+    const previousMonthDate = new Date();
+    previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
+    const previousMonth = previousMonthDate.getMonth();
+    const previousMonthYear = previousMonthDate.getFullYear();
+    const previousMonthCount = docs.filter((doc) => {
+      const date = new Date(doc.submittedAt || doc.createdAt);
+      return date.getMonth() === previousMonth && date.getFullYear() === previousMonthYear;
+    }).length;
+
+    const monthlyDelta =
+      previousMonthCount === 0
+        ? (thisMonthCount > 0 ? '+100%' : '0%')
+        : `${thisMonthCount >= previousMonthCount ? '+' : ''}${Math.round(
+            ((thisMonthCount - previousMonthCount) / previousMonthCount) * 100,
+          )}%`;
+
+    return ok(res, {
+      items,
+      total,
+      departments: Array.from(new Set(items.map((item) => item.department).filter(Boolean))),
+      stats: {
+        total,
+        averageRating,
+        hiddenCount,
+        monthlyDelta,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateReviewStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!isValidId(id)) return fail(res, 400, 'ID đánh giá không hợp lệ.');
+    if (!['visible', 'hidden'].includes(status)) return fail(res, 400, 'Trạng thái đánh giá không hợp lệ.');
+
+    const doc = await Review.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true },
+    ).populate('patientUser', 'fullName');
+
+    if (!doc) return fail(res, 404, 'Không tìm thấy đánh giá.');
+    return ok(res, mapReviewAdmin(doc));
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // ─── Appointments ────────────────────────────────────────
 const listAppointments = async (req, res, next) => {
   try {
@@ -749,6 +1087,8 @@ const syncAllAccounts = async (req, res, next) => {
 
 module.exports = {
   getDashboard,
+  getReports,
+  getAuditLogs,
   listDoctors,
   createDoctor,
   updateDoctor,
@@ -758,6 +1098,8 @@ module.exports = {
   createSpecialty,
   updateSpecialty,
   deleteSpecialty,
+  listReviews,
+  updateReviewStatus,
   listAppointments,
   updateAppointmentStatus,
   createAppointment,
