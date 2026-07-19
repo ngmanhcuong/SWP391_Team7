@@ -20,6 +20,7 @@ const receptionistRoutes = require('./routes/receptionistRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 
 const parseAllowedOrigins = () => {
   const origins = new Set([
@@ -91,6 +92,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ─── Routes ──────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/public', publicRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/receptionist', receptionistRoutes);
