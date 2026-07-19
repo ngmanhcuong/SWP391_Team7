@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
@@ -15,13 +15,9 @@ import {
   PrescriptionCard,
   WaitingPatientsWidget,
 } from '../../features/doctor/components/records';
-import {
-  buildDoctorMedicalRecordDataFromPatient,
-} from '../../features/doctor/utils/buildDoctorMedicalRecordData';
+import { buildDoctorMedicalRecordDataFromPatient } from '../../features/doctor/utils/buildDoctorMedicalRecordData';
 import { doctorApi } from '../../features/doctor/api/doctorApi';
-import {
-  resolveDoctorPatientId,
-} from '../../features/doctor/utils/doctorPatientRegistry';
+import { resolveDoctorPatientId } from '../../features/doctor/utils/doctorPatientRegistry';
 import { DOCTOR_PATHS } from '../../features/doctor/utils/doctorPaths';
 import {
   DoctorPatientListItem,
@@ -48,27 +44,24 @@ export const DoctorRecordsPage: React.FC = () => {
     queryKey: ['doctor', 'appointments'],
     queryFn: doctorApi.getAppointments,
   });
+
   const dbPatient = useMemo(
     () => patientData?.patients.find((patient: DoctorPatientListItem) => patient.id === patientId) ?? null,
     [patientData, patientId],
   );
-  const allDbPatients = useMemo(
-    () => patientData?.patients ?? [],
-    [patientData],
-  );
+  const allDbPatients = useMemo(() => patientData?.patients ?? [], [patientData]);
+
   const { data: patientHistory } = useQuery({
     queryKey: ['doctor', 'patient-history', patientId],
     queryFn: () => doctorApi.getPatientHistory(patientId),
     enabled: Boolean(dbPatient?.id),
   });
+
   const listPatient: DoctorPatientListItem | null = dbPatient;
-  const recordData = useMemo(
-    () => {
-      if (!dbPatient) return null;
-      return buildDoctorMedicalRecordDataFromPatient(dbPatient, allDbPatients);
-    },
-    [allDbPatients, dbPatient],
-  );
+  const recordData = useMemo(() => {
+    if (!dbPatient) return null;
+    return buildDoctorMedicalRecordDataFromPatient(dbPatient, allDbPatients);
+  }, [allDbPatients, dbPatient]);
 
   const [examination, setExamination] = useState<MedicalRecordExamination | null>(null);
   const [paraclinicalTests, setParaclinicalTests] = useState(recordData?.paraclinicalTests ?? []);
@@ -117,31 +110,22 @@ export const DoctorRecordsPage: React.FC = () => {
 
     if (scheduleAppointments?.length) {
       const candidate = scheduleAppointments.find((appointment: ScheduledAppointment) => {
-        const appointmentPatientId = resolveDoctorPatientId(
-          appointment.patientId,
-          appointment.patientName,
-        );
-
-        if (!appointmentPatientId || appointmentPatientId === currentResolvedId) {
-          return false;
-        }
-
+        const appointmentPatientId = resolveDoctorPatientId(appointment.patientId, appointment.patientName);
+        if (!appointmentPatientId || appointmentPatientId === currentResolvedId) return false;
         return appointment.status === 'waiting' || appointment.status === 'confirmed';
       });
 
-      if (candidate) {
-        return resolveDoctorPatientId(candidate.patientId, candidate.patientName);
-      }
+      if (candidate) return resolveDoctorPatientId(candidate.patientId, candidate.patientName);
     }
 
     if (allDbPatients.length > 0) {
       return (
         allDbPatients.find(
           (patient: DoctorPatientListItem) => patient.id !== patientId && patient.healthStatus === 'waiting',
-        )?.id
-        ?? undefined
+        )?.id ?? undefined
       );
     }
+
     return undefined;
   }, [allDbPatients, listPatient?.fullName, patientId, scheduleAppointments]);
 
@@ -156,22 +140,13 @@ export const DoctorRecordsPage: React.FC = () => {
             resolveDoctorPatientId(patientId, listPatient?.fullName),
       );
 
-      if (requestedAppointment) {
-        return requestedAppointment.id;
-      }
+      if (requestedAppointment) return requestedAppointment.id;
     }
 
     const currentResolvedId = resolveDoctorPatientId(patientId, listPatient?.fullName);
     const currentAppointment = scheduleAppointments.find((appointment: ScheduledAppointment) => {
-      const appointmentPatientId = resolveDoctorPatientId(
-        appointment.patientId,
-        appointment.patientName,
-      );
-
-      if (!appointmentPatientId || appointmentPatientId !== currentResolvedId) {
-        return false;
-      }
-
+      const appointmentPatientId = resolveDoctorPatientId(appointment.patientId, appointment.patientName);
+      if (!appointmentPatientId || appointmentPatientId !== currentResolvedId) return false;
       return appointment.status === 'waiting' || appointment.status === 'confirmed';
     });
 
@@ -189,17 +164,32 @@ export const DoctorRecordsPage: React.FC = () => {
     },
   });
 
+  const buildRecordPayload = useCallback(
+    (complete = false) => {
+      if (!examination || !recordData) return null;
+      return {
+        examination,
+        prescriptions,
+        paraclinicalTests,
+        allergies: recordData.patient.allergies ?? [],
+        medicalHistory: recordData.patient.medicalHistory ?? [],
+        complete,
+      };
+    },
+    [examination, paraclinicalTests, prescriptions, recordData],
+  );
+
   if (!patientId || !listPatient || !recordData || !examination) {
     return (
       <div className="flex items-center justify-center min-h-[420px]">
         <div className="max-w-md text-center bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm p-8">
-          <h1 className="text-lg font-bold text-[#191c1e]">Không tìm thấy hồ sơ bệnh nhân</h1>
+          <h1 className="text-lg font-bold text-[#191c1e]">Khong tim thay ho so benh nhan</h1>
           <p className="text-sm text-[#737685] mt-2">
-            Mã bệnh nhân không hợp lệ hoặc hồ sơ chưa được tạo.
+            Ma benh nhan khong hop le hoac ho so chua duoc tao.
           </p>
           <Link to={DOCTOR_PATHS.patients} className="inline-block mt-5">
             <Button className="bg-[#2563eb] border-[#2563eb] hover:bg-[#1d4ed8]">
-              Quay lại danh sách bệnh nhân
+              Quay lai danh sach benh nhan
             </Button>
           </Link>
         </div>
@@ -215,9 +205,7 @@ export const DoctorRecordsPage: React.FC = () => {
   const handleParaclinicalToggle = (id: string) => {
     if (!isEditing) return;
     setParaclinicalTests((prev) =>
-      prev.map((test) =>
-        test.id === id ? { ...test, checked: !test.checked } : test,
-      ),
+      prev.map((test) => (test.id === id ? { ...test, checked: !test.checked } : test)),
     );
   };
 
@@ -236,57 +224,92 @@ export const DoctorRecordsPage: React.FC = () => {
     setPrescriptions((prev) => [...prev, item]);
   };
 
-  const handleSave = () => {
-    setIsSaving(true);
-    setSaveMessage('');
-    setTimeout(() => {
-      setIsSaving(false);
-      setSaveMessage('Đã lưu hồ sơ bệnh án thành công.');
-    }, 600);
-  };
-
-  const handleSaveAndNext = () => {
-    setIsSaving(true);
-    setSaveMessage('');
-    setTimeout(() => {
-      setIsSaving(false);
-      if (nextPatientId) {
-        navigate(DOCTOR_PATHS.record(nextPatientId));
-      } else {
-        setSaveMessage('Đã lưu hồ sơ. Không còn bệnh nhân chờ khám tiếp theo.');
-      }
-    }, 600);
-  };
-
-  const handleComplete = () => {
+  const handleSave = async () => {
     if (!currentAppointmentId) {
-      setSaveMessage('Không tìm thấy ca khám đang hoạt động để cập nhật.');
+      setSaveMessage('Khong tim thay ca kham dang hoat dong de luu ho so.');
       return;
     }
 
+    const payload = buildRecordPayload(false);
+    if (!payload) return;
+
     setIsSaving(true);
     setSaveMessage('');
-    completeAppointmentMutation.mutate(currentAppointmentId, {
-      onSuccess: () => {
-        setIsSaving(false);
-        setExamination((prev) => (prev ? { ...prev, status: 'completed' } : prev));
-        setSaveMessage('Đã đánh dấu ca khám hoàn tất.');
-      },
-      onError: () => {
-        setIsSaving(false);
-        setSaveMessage('Không thể cập nhật trạng thái ca khám lúc này.');
-      },
-    });
+    try {
+      await doctorApi.saveAppointmentRecord(currentAppointmentId, payload);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['doctor', 'patient-history', patientId] }),
+        queryClient.invalidateQueries({ queryKey: ['patient', 'health-records'] }),
+      ]);
+      setSaveMessage('Da luu ho so benh an thanh cong.');
+    } catch {
+      setSaveMessage('Khong the luu ho so benh an luc nay.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAndNext = async () => {
+    if (!currentAppointmentId) {
+      setSaveMessage('Khong tim thay ca kham dang hoat dong de luu ho so.');
+      return;
+    }
+
+    const payload = buildRecordPayload(false);
+    if (!payload) return;
+
+    setIsSaving(true);
+    setSaveMessage('');
+    try {
+      await doctorApi.saveAppointmentRecord(currentAppointmentId, payload);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['doctor', 'patient-history', patientId] }),
+        queryClient.invalidateQueries({ queryKey: ['patient', 'health-records'] }),
+      ]);
+      if (nextPatientId) {
+        navigate(DOCTOR_PATHS.record(nextPatientId));
+      } else {
+        setSaveMessage('Da luu ho so. Khong con benh nhan cho kham tiep theo.');
+      }
+    } catch {
+      setSaveMessage('Khong the luu ho so benh an luc nay.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!currentAppointmentId) {
+      setSaveMessage('Khong tim thay ca kham dang hoat dong de cap nhat.');
+      return;
+    }
+
+    const payload = buildRecordPayload(true);
+    if (!payload) return;
+
+    setIsSaving(true);
+    setSaveMessage('');
+    try {
+      await doctorApi.saveAppointmentRecord(currentAppointmentId, payload);
+      await completeAppointmentMutation.mutateAsync(currentAppointmentId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['doctor', 'patient-history', patientId] }),
+        queryClient.invalidateQueries({ queryKey: ['patient', 'health-records'] }),
+      ]);
+      setExamination((prev) => (prev ? { ...prev, status: 'completed' } : prev));
+      setSaveMessage('Da danh dau ca kham hoan tat.');
+    } catch {
+      setSaveMessage('Khong the cap nhat trang thai ca kham luc nay.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="relative space-y-5 pb-16">
       <div id="medical-record-top" className="h-0 w-full" aria-hidden />
 
-      <MedicalRecordHeader
-        patientName={recordData.patient.name}
-        patientCode={recordData.patient.id}
-      />
+      <MedicalRecordHeader patientName={recordData.patient.name} patientCode={recordData.patient.id} />
 
       <MedicalRecordActionBar
         placement="top"
@@ -312,11 +335,7 @@ export const DoctorRecordsPage: React.FC = () => {
         </div>
 
         <div className="xl:col-span-5 space-y-5">
-          <CurrentExaminationCard
-            examination={examination}
-            isEditing={isEditing}
-            onChange={handleExaminationChange}
-          />
+          <CurrentExaminationCard examination={examination} isEditing={isEditing} onChange={handleExaminationChange} />
           <ParaclinicalIndicationsCard
             tests={paraclinicalTests}
             clinicalContext={clinicalContext}
@@ -343,7 +362,7 @@ export const DoctorRecordsPage: React.FC = () => {
       <button
         type="button"
         className="group fixed bottom-24 right-6 z-50 w-14 h-14 bg-gradient-to-br from-[#2563eb] to-[#06b6d4] text-white rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center hover:shadow-xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300"
-        aria-label="Nhắn tin"
+        aria-label="Nhan tin"
       >
         <span className="absolute inset-0 rounded-full bg-[#2563eb]/40 animate-ping opacity-75 group-hover:opacity-0" />
         <MessageCircle size={24} className="relative transition-transform duration-300 group-hover:rotate-6" />
