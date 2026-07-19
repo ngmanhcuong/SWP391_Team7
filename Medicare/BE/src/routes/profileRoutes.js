@@ -7,6 +7,8 @@ const { uploadAvatar } = require('../middleware/upload');
 router.use(protect); // all profile routes require auth
 
 router.get('/', profileController.getProfile);
+router.get('/notifications', profileController.getNotifications);
+router.patch('/notifications/read', profileController.markNotificationsRead);
 router.put('/', profileController.updateProfile);
 router.post('/avatar', uploadAvatar, profileController.uploadAvatar);
 router.delete('/avatar', profileController.deleteAvatar);
