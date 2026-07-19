@@ -90,23 +90,31 @@ const ensurePatientRecord = async (user) => {
       fullName: user.fullName,
       phone: normalizePhone(user.phone),
       email: user.email ? user.email.toLowerCase() : undefined,
+      dob: user.dateOfBirth || undefined,
       gender: user.gender,
+      nationalId: user.nationalId || '',
     });
   } else {
     const nextFullName = user.fullName?.trim() || patient.fullName;
     const nextPhone = patient.phone?.trim() || normalizePhone(user.phone);
     const nextEmail = user.email ? user.email.toLowerCase() : patient.email;
+    const nextDob = user.dateOfBirth || patient.dob;
+    const nextNationalId = user.nationalId?.trim() || patient.nationalId || '';
     const shouldUpdate =
       patient.fullName !== nextFullName ||
       patient.phone !== nextPhone ||
       patient.email !== nextEmail ||
-      patient.gender !== user.gender;
+      patient.gender !== user.gender ||
+      String(patient.dob || '') !== String(nextDob || '') ||
+      (patient.nationalId || '') !== nextNationalId;
 
     if (shouldUpdate) {
       patient.fullName = nextFullName;
       patient.phone = nextPhone;
       patient.email = nextEmail;
       patient.gender = user.gender;
+      patient.dob = nextDob;
+      patient.nationalId = nextNationalId;
       await patient.save();
     }
   }
@@ -127,6 +135,69 @@ const mapDoctor = (doc) => ({
   isAvailable: doc.isAvailable,
   avatarBg: doc.avatarBg,
 });
+
+const DOCTOR_TITLE_PREFIXES = [
+  'TS.BS.',
+  'TS.BS',
+  'BSCKII.',
+  'BSCKII',
+  'BSCKI.',
+  'BSCKI',
+  'ThS.BS.',
+  'ThS.BS',
+  'PGS.TS.BS.',
+  'PGS.TS.BS',
+  'GS.TS.BS.',
+  'GS.TS.BS',
+  'BS.',
+  'BS',
+];
+
+const getDoctorCoreName = (name = '') => {
+  let normalized = String(name).trim();
+  for (const prefix of DOCTOR_TITLE_PREFIXES) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.slice(prefix.length).trim();
+      break;
+    }
+  }
+  return normalized.toLowerCase();
+};
+
+const dedupeDoctorsByCoreName = (doctors) => {
+  const uniqueDoctors = new Map();
+
+  doctors.forEach((doctor) => {
+    const key = `${doctor.specialtySlug}::${getDoctorCoreName(doctor.name)}`;
+    const existing = uniqueDoctors.get(key);
+
+    if (!existing) {
+      uniqueDoctors.set(key, doctor);
+      return;
+    }
+
+    const existingHasUser = Boolean(existing.user);
+    const candidateHasUser = Boolean(doctor.user);
+
+    if (candidateHasUser && !existingHasUser) {
+      uniqueDoctors.set(key, doctor);
+      return;
+    }
+
+    if (candidateHasUser === existingHasUser) {
+      if ((doctor.experienceYears || 0) > (existing.experienceYears || 0)) {
+        uniqueDoctors.set(key, doctor);
+        return;
+      }
+
+      if ((doctor.rating || 0) > (existing.rating || 0)) {
+        uniqueDoctors.set(key, doctor);
+      }
+    }
+  });
+
+  return Array.from(uniqueDoctors.values());
+};
 
 const MORNING_SLOTS = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'];
 const AFTERNOON_SLOTS = ['13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
@@ -331,7 +402,8 @@ const listDoctors = async (req, res) => {
     const filter = {};
     if (specialtyId && specialtyId !== 'all') filter.specialtySlug = specialtyId;
     const doctors = await Doctor.find(filter).populate('specialty', 'departmentLabel');
-    const data = doctors.map((doc) =>
+    const dedupedDoctors = dedupeDoctorsByCoreName(doctors);
+    const data = dedupedDoctors.map((doc) =>
       mapDoctor({
         ...doc.toObject(),
         _id: doc._id,
