@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
   FileSpreadsheet,
   FileText,
   ListFilter,
@@ -14,6 +12,7 @@ import { Card } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import { useAdminReports } from '../../features/admin/hooks';
 import { SUPPLY_STATUS_LABELS } from '../../features/admin/constants';
+import type { SpecialtyShare, SupplyItem } from '../../features/admin/types';
 
 const PERIODS = ['Ngày', 'Tuần', 'Tháng', 'Năm'] as const;
 
@@ -22,21 +21,24 @@ const PatientTrendChart: React.FC<{ data: { month: string; value: number }[] }> 
   const height = 230;
   const padX = 36;
   const padY = 20;
-  const maxValue = 5000;
-  const minValue = 1000;
+  const values = data.map((item) => item.value);
+  const maxValue = Math.max(...values, 1);
+  const minValue = 0;
   const innerW = width - padX * 2;
   const innerH = height - padY * 2;
 
   const points = data.map((point, index) => {
-    const x = padX + (innerW * index) / (data.length - 1);
-    const y = padY + innerH * (1 - (point.value - minValue) / (maxValue - minValue));
+    const x = data.length > 1 ? padX + (innerW * index) / (data.length - 1) : width / 2;
+    const y = padY + innerH * (1 - (point.value - minValue) / Math.max(maxValue - minValue, 1));
     return { ...point, x, y };
   });
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaPath = `${linePath} L ${points[points.length - 1].x} ${padY + innerH} L ${points[0].x} ${padY + innerH} Z`;
-  const gridValues = [5000, 4000, 3000, 2000, 1000];
-  const highlight = points[3];
+  const areaPath = points.length
+    ? `${linePath} L ${points[points.length - 1].x} ${padY + innerH} L ${points[0].x} ${padY + innerH} Z`
+    : '';
+  const gridValues = [maxValue, Math.round(maxValue * 0.75), Math.round(maxValue * 0.5), Math.round(maxValue * 0.25), 0];
+  const highlight = points[points.length - 1];
 
   return (
     <svg viewBox={`0 0 ${width} ${height + 24}`} className="w-full" role="img">
@@ -46,8 +48,9 @@ const PatientTrendChart: React.FC<{ data: { month: string; value: number }[] }> 
           <stop offset="100%" stopColor="#1a56db" stopOpacity="0" />
         </linearGradient>
       </defs>
+
       {gridValues.map((value) => {
-        const y = padY + innerH * (1 - (value - minValue) / (maxValue - minValue));
+        const y = padY + innerH * (1 - (value - minValue) / Math.max(maxValue - minValue, 1));
         return (
           <g key={value}>
             <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#e5e7eb" strokeDasharray="4 4" />
@@ -57,14 +60,19 @@ const PatientTrendChart: React.FC<{ data: { month: string; value: number }[] }> 
           </g>
         );
       })}
-      <path d={areaPath} fill="url(#patientArea)" />
-      <path d={linePath} fill="none" stroke="#1a56db" strokeWidth={2.5} strokeLinecap="round" />
-      {points.map((p) => (
-        <text key={p.month} x={p.x} y={height + 4} fontSize="10" fill="#9ca3af" textAnchor="middle">
-          {p.month}
-        </text>
-      ))}
-      <circle cx={highlight.x} cy={highlight.y} r={5} fill="#1a56db" stroke="#fff" strokeWidth={2} />
+
+      {points.length > 0 && (
+        <>
+          <path d={areaPath} fill="url(#patientArea)" />
+          <path d={linePath} fill="none" stroke="#1a56db" strokeWidth={2.5} strokeLinecap="round" />
+          {points.map((p) => (
+            <text key={p.month} x={p.x} y={height + 4} fontSize="10" fill="#9ca3af" textAnchor="middle">
+              {p.month}
+            </text>
+          ))}
+          {highlight && <circle cx={highlight.x} cy={highlight.y} r={5} fill="#1a56db" stroke="#fff" strokeWidth={2} />}
+        </>
+      )}
     </svg>
   );
 };
@@ -76,14 +84,18 @@ const TrendArrow: React.FC<{ trend: 'up' | 'down' | 'flat' }> = ({ trend }) => {
 };
 
 export const AdminReportsPage: React.FC = () => {
-  const { stats, patientTrend, specialtyShare, specialtyTotal, supplies, suppliesTotal } =
+  const { stats, patientTrend, specialtyShare, specialtyTotal, supplies, suppliesTotal, generatedAt } =
     useAdminReports();
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>('Ngày');
 
-  // Tạo conic-gradient cho biểu đồ hình thoi theo tỷ lệ chuyên khoa
+  const reportDate = useMemo(() => {
+    const date = generatedAt ? new Date(generatedAt) : new Date('2026-07-19T00:00:00+07:00');
+    return date.toLocaleDateString('vi-VN');
+  }, [generatedAt]);
+
   let acc = 0;
   const gradientStops = specialtyShare
-    .map((item) => {
+    .map((item: SpecialtyShare) => {
       const start = acc;
       acc += item.percent;
       return `${item.color} ${start}% ${acc}%`;
@@ -92,18 +104,18 @@ export const AdminReportsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <nav className="text-xs text-gray-400 mb-1">
+          <nav className="mb-1 text-xs text-gray-400">
             Báo cáo <span className="mx-1">/</span> Thống kê chuyên sâu
           </nav>
           <h1 className="text-2xl font-bold" style={{ fontFamily: 'Lexend' }}>
             Báo cáo &amp; Thống kê chuyên sâu
           </h1>
         </div>
+
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-lg bg-gray-100 dark:bg-slate-700 p-1">
+          <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-slate-700">
             {PERIODS.map((item) => (
               <button
                 key={item}
@@ -118,9 +130,11 @@ export const AdminReportsPage: React.FC = () => {
               </button>
             ))}
           </div>
+
           <span className="hidden text-sm text-gray-500 dark:text-slate-400 sm:inline">
-            12/10/2023 - 12/11/2023
+            Báo cáo ngày {reportDate}
           </span>
+
           <Button variant="primary" leftIcon={<FileSpreadsheet size={16} />}>
             Xuất Excel
           </Button>
@@ -130,37 +144,31 @@ export const AdminReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
+          const trend = stat.trend ?? 'up';
           return (
             <Card key={stat.id} hover>
               <div className="flex items-start justify-between">
-                <span
-                  className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}
-                >
+                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
                   <Icon size={18} />
                 </span>
                 {stat.delta && (
                   <span
                     className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
-                      stat.trend === 'down' ? 'text-rose-500' : 'text-emerald-600'
+                      trend === 'down' ? 'text-rose-500' : 'text-emerald-600'
                     }`}
                   >
-                    {stat.trend === 'down' ? (
-                      <ArrowDownRight size={14} />
-                    ) : (
-                      <ArrowUpRight size={14} />
-                    )}
+                    {trend === 'down' ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
                     {stat.delta}
                   </span>
                 )}
               </div>
               <p className="mt-3 text-sm text-gray-500 dark:text-slate-400">{stat.label}</p>
-              <p className="text-2xl font-bold mt-0.5">{stat.value}</p>
+              <p className="mt-0.5 text-2xl font-bold">{stat.value}</p>
               {stat.progress !== undefined && (
-                <div className="mt-3 h-1.5 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-slate-700">
                   <div
                     className={`h-full rounded-full ${stat.barColor ?? 'bg-blue-500'}`}
                     style={{ width: `${stat.progress}%` }}
@@ -172,30 +180,27 @@ export const AdminReportsPage: React.FC = () => {
         })}
       </div>
 
-      {/* Charts row */}
       <div className="grid gap-6 xl:grid-cols-3">
-        {/* Patient trend */}
         <Card className="xl:col-span-2">
           <div className="mb-4 flex items-start justify-between">
             <h2 className="font-semibold" style={{ fontFamily: 'Lexend' }}>
               Lượng bệnh nhân theo tháng
             </h2>
-            <span className="rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-1 text-xs text-gray-500 dark:text-slate-300">
-              Năm 2023
+            <span className="rounded-lg border border-gray-200 px-3 py-1 text-xs text-gray-500 dark:border-slate-600 dark:text-slate-300">
+              Năm 2026
             </span>
           </div>
           <PatientTrendChart data={patientTrend} />
         </Card>
 
-        {/* Specialty share */}
         <Card>
-          <h2 className="font-semibold mb-4" style={{ fontFamily: 'Lexend' }}>
+          <h2 className="mb-4 font-semibold" style={{ fontFamily: 'Lexend' }}>
             Tỷ lệ theo chuyên khoa
           </h2>
-          <div className="relative w-40 h-40 mx-auto my-2">
+          <div className="relative mx-auto my-2 h-40 w-40">
             <div
               className="absolute inset-0 rotate-45 rounded-2xl"
-              style={{ background: `conic-gradient(from 0deg, ${gradientStops})` }}
+              style={{ background: `conic-gradient(from 0deg, ${gradientStops || '#cbd5e1 0% 100%'})` }}
             />
             <div className="absolute inset-[14px] rotate-45 rounded-xl bg-white dark:bg-slate-800" />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -204,12 +209,9 @@ export const AdminReportsPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            {specialtyShare.map((item) => (
+            {specialtyShare.map((item: SpecialtyShare) => (
               <div key={item.id} className="flex items-center gap-2 text-sm">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ background: item.color }}
-                />
+                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
                 <span className="text-gray-600 dark:text-slate-300">
                   {item.name} ({item.percent}%)
                 </span>
@@ -219,9 +221,8 @@ export const AdminReportsPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Supplies table */}
       <Card padding="none" className="overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-slate-700">
           <h2 className="font-semibold" style={{ fontFamily: 'Lexend' }}>
             Tình hình sử dụng thuốc &amp; vật tư
           </h2>
@@ -234,77 +235,63 @@ export const AdminReportsPage: React.FC = () => {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700">
-                <th className="px-5 py-3 font-medium">MÃ VẬT TƯ</th>
-                <th className="px-5 py-3 font-medium">TÊN THUỐC / VẬT TƯ</th>
-                <th className="px-5 py-3 font-medium">ĐƠN VỊ</th>
-                <th className="px-5 py-3 font-medium text-right">TỒN KHO</th>
-                <th className="px-5 py-3 font-medium text-right">ĐÃ SỬ DỤNG</th>
-                <th className="px-5 py-3 font-medium text-center">TRẠNG THÁI</th>
-                <th className="px-5 py-3 font-medium text-center">BIẾN ĐỘNG</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-              {supplies.map((item) => {
-                const status = SUPPLY_STATUS_LABELS[item.status];
-                return (
-                  <tr key={item.id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
-                    <td className="px-5 py-3 font-medium text-gray-700 dark:text-slate-200">
-                      {item.code}
-                    </td>
-                    <td className="px-5 py-3 text-gray-600 dark:text-slate-300">{item.name}</td>
-                    <td className="px-5 py-3 text-gray-600 dark:text-slate-300">{item.unit}</td>
-                    <td className="px-5 py-3 text-right text-gray-600 dark:text-slate-300">
-                      {item.stock.toLocaleString('vi-VN')}
-                    </td>
-                    <td className="px-5 py-3 text-right text-gray-600 dark:text-slate-300">
-                      {item.used.toLocaleString('vi-VN')}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
-                      >
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex justify-center">
-                        <TrendArrow trend={item.trend} />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-t border-gray-100 dark:border-slate-700">
+
+        {supplies.length === 0 ? (
+          <div className="px-5 py-12 text-center text-sm text-gray-500 dark:text-slate-400">
+            Chưa có dữ liệu kho vật tư thực tế trong hệ thống, nên phần này đang để trống thay vì hiển thị số liệu mẫu.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                  <th className="px-5 py-3 font-medium">Mã vật tư</th>
+                  <th className="px-5 py-3 font-medium">Tên thuốc / vật tư</th>
+                  <th className="px-5 py-3 font-medium">Đơn vị</th>
+                  <th className="px-5 py-3 text-right font-medium">Tồn kho</th>
+                  <th className="px-5 py-3 text-right font-medium">Đã sử dụng</th>
+                  <th className="px-5 py-3 text-center font-medium">Trạng thái</th>
+                  <th className="px-5 py-3 text-center font-medium">Biến động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
+                {supplies.map((item: SupplyItem) => {
+                  const status = SUPPLY_STATUS_LABELS[item.status];
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
+                      <td className="px-5 py-3 font-medium text-gray-700 dark:text-slate-200">{item.code}</td>
+                      <td className="px-5 py-3 text-gray-600 dark:text-slate-300">{item.name}</td>
+                      <td className="px-5 py-3 text-gray-600 dark:text-slate-300">{item.unit}</td>
+                      <td className="px-5 py-3 text-right text-gray-600 dark:text-slate-300">
+                        {item.stock.toLocaleString('vi-VN')}
+                      </td>
+                      <td className="px-5 py-3 text-right text-gray-600 dark:text-slate-300">
+                        {item.used.toLocaleString('vi-VN')}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
+                        >
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex justify-center">
+                          <TrendArrow trend={item.trend} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="border-t border-gray-100 px-5 py-4 dark:border-slate-700">
           <span className="text-sm text-gray-500 dark:text-slate-400">
             Hiển thị {supplies.length} trên {suppliesTotal.toLocaleString('vi-VN')} vật tư
           </span>
-          <div className="flex items-center gap-1">
-            <button className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700">
-              <ChevronLeft size={16} />
-            </button>
-            {[1, 2, 3].map((page) => (
-              <button
-                key={page}
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium ${
-                  page === 1
-                    ? 'bg-[#1a56db] text-white'
-                    : 'border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700">
-              <ChevronRight size={16} />
-            </button>
-          </div>
         </div>
       </Card>
     </div>
