@@ -5,20 +5,20 @@ const emailService = require('../services/emailService');
 const skipEmailVerification = () =>
   process.env.SKIP_EMAIL_VERIFICATION === 'true' || process.env.NODE_ENV !== 'production';
 
-// Helper: send tokens in response
+const normalizeEmail = (email = '') => String(email).trim().toLowerCase();
+const normalizePhone = (phone = '') => String(phone).trim();
+
 const sendAuthResponse = (res, user, statusCode = 200) => {
   const accessToken = tokenService.generateAccessToken(user._id);
   const refreshToken = tokenService.generateRefreshToken(user._id);
 
-  // Save refresh token to DB
   User.findByIdAndUpdate(user._id, { refreshToken, lastLogin: new Date() }).exec();
 
-  // Set HTTP-only cookie
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
   return res.status(statusCode).json({
@@ -32,26 +32,38 @@ const sendAuthResponse = (res, user, statusCode = 200) => {
   });
 };
 
-// POST /api/auth/register
 const register = async (req, res) => {
   try {
     const { fullName, email, phone, password } = req.body;
+    const normalizedFullName = String(fullName || '').trim();
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhone = normalizePhone(phone);
 
-    if (!fullName || !email || !password) {
+    if (!normalizedFullName || !normalizedEmail || !normalizedPhone || !password) {
       return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin' });
     }
 
-    // Check duplicate email
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    const existingUserByEmail = await User.findOne({ email: normalizedEmail });
+    if (existingUserByEmail) {
+      if (existingUserByEmail.googleId) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email này đã được liên kết với tài khoản Google. Vui lòng đăng nhập bằng Google hoặc dùng quên mật khẩu nếu đã tạo mật khẩu trước đó.',
+        });
+      }
       return res.status(409).json({ success: false, message: 'Email này đã được sử dụng' });
+    }
+
+    const existingUserByPhone = await User.findOne({ phone: normalizedPhone });
+    if (existingUserByPhone) {
+      return res.status(409).json({ success: false, message: 'Số điện thoại này đã được sử dụng' });
     }
 
     const skipVerify = skipEmailVerification();
     const userData = {
-      fullName,
-      email: email.toLowerCase(),
-      phone,
+      fullName: normalizedFullName,
+      email: normalizedEmail,
+      phone: normalizedPhone,
       password,
       isEmailVerified: skipVerify,
     };
@@ -71,6 +83,7 @@ const register = async (req, res) => {
       } catch (emailError) {
         console.error('Email send error:', emailError.message);
       }
+
       return res.status(201).json({
         success: true,
         message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
@@ -84,15 +97,24 @@ const register = async (req, res) => {
     return sendAuthResponse(res, user, 201);
   } catch (error) {
     console.error('Register error:', error);
+
+    if (error && (error.code === 11000 || error.code === 11001)) {
+      const duplicateField = error?.keyPattern ? Object.keys(error.keyPattern)[0] : '';
+      if (duplicateField === 'phone') {
+        return res.status(409).json({ success: false, message: 'Số điện thoại này đã được sử dụng' });
+      }
+      return res.status(409).json({ success: false, message: 'Email này đã được sử dụng' });
+    }
+
     if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
+      const messages = Object.values(error.errors).map((item) => item.message);
       return res.status(400).json({ success: false, message: messages.join(', ') });
     }
+
     return res.status(500).json({ success: false, message: 'Lỗi server, vui lòng thử lại' });
   }
 };
 
-// GET /api/auth/verify-email?token=xxx
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
@@ -114,8 +136,9 @@ const verifyEmail = async (req, res) => {
     user.emailVerifyExpires = undefined;
     await user.save();
 
-    // Send welcome email
-    try { await emailService.sendWelcomeEmail(user); } catch (_) {}
+    try {
+      await emailService.sendWelcomeEmail(user);
+    } catch (_) {}
 
     return res.status(200).json({ success: true, message: 'Xác thực email thành công! Bạn có thể đăng nhập ngay.' });
   } catch (error) {
@@ -124,11 +147,10 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-// POST /api/auth/resend-verification
 const resendVerification = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email: email?.toLowerCase() });
+    const user = await User.findOne({ email: normalizeEmail(email) });
 
     if (!user) return res.status(404).json({ success: false, message: 'Email không tồn tại' });
     if (user.isEmailVerified) return res.status(400).json({ success: false, message: 'Email đã được xác thực' });
@@ -145,7 +167,6 @@ const resendVerification = async (req, res) => {
   }
 };
 
-// POST /api/auth/login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -153,7 +174,7 @@ const login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Vui lòng nhập email và mật khẩu' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: normalizeEmail(email) }).select('+password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Email hoặc mật khẩu không chính xác' });
     }
@@ -196,23 +217,20 @@ const login = async (req, res) => {
   }
 };
 
-// POST /api/auth/forgot-password
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email: email?.toLowerCase() });
+    const user = await User.findOne({ email: normalizeEmail(email) });
 
-    // Don't reveal if email exists
     if (!user) {
       return res.status(200).json({ success: true, message: 'Nếu email tồn tại, mã OTP đã được gửi' });
     }
 
     const otp = tokenService.generateOTP();
     user.passwordResetToken = tokenService.hashToken(otp);
-    user.passwordResetExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 phút
+    user.passwordResetExpires = new Date(Date.now() + 30 * 60 * 1000);
     await user.save();
 
-    // Trả response ngay — gửi email nền (tránh timeout 15s phía client)
     emailService.sendPasswordResetOTP(user, otp).catch((emailError) => {
       console.error('Forgot password email error:', emailError.message);
     });
@@ -228,7 +246,6 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// POST /api/auth/verify-otp
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -238,7 +255,7 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Mã OTP phải gồm đúng 6 chữ số' });
     }
 
-    const user = await User.findOne({ email: email?.toLowerCase() });
+    const user = await User.findOne({ email: normalizeEmail(email) });
 
     if (!user || !user.passwordResetToken || !user.passwordResetExpires) {
       return res.status(400).json({ success: false, message: 'Mã OTP không hợp lệ hoặc đã hết hạn' });
@@ -265,7 +282,6 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-// POST /api/auth/reset-password
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -291,7 +307,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// POST /api/auth/refresh-token
 const refreshToken = async (req, res) => {
   try {
     const token = req.cookies?.refreshToken || req.body.refreshToken;
@@ -311,7 +326,6 @@ const refreshToken = async (req, res) => {
   }
 };
 
-// POST /api/auth/logout
 const logout = async (req, res) => {
   try {
     if (req.user) {
@@ -324,7 +338,6 @@ const logout = async (req, res) => {
   }
 };
 
-// GET /api/auth/me
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -334,4 +347,15 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, verifyEmail, resendVerification, login, forgotPassword, verifyOTP, resetPassword, refreshToken, logout, getMe };
+module.exports = {
+  register,
+  verifyEmail,
+  resendVerification,
+  login,
+  forgotPassword,
+  verifyOTP,
+  resetPassword,
+  refreshToken,
+  logout,
+  getMe,
+};
