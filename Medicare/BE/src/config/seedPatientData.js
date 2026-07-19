@@ -6,6 +6,9 @@ const LabResult = require('../models/LabResult');
 const MedicalHistory = require('../models/MedicalHistory');
 const Review = require('../models/Review');
 const Notification = require('../models/Notification');
+const Patient = require('../models/Patient');
+const Specialty = require('../models/Specialty');
+const Doctor = require('../models/Doctor');
 
 const FACILITY = 'MedCare Clinic - Quận 1';
 
@@ -56,8 +59,39 @@ const seedPatientData = async () => {
     return;
   }
 
-  const user = await User.findOne({ email: 'patient@test.com' });
+  const user = await User.findOne({ email: 'nguyen.minh.khoi@example.com' });
   if (!user) return;
+
+  let patientRecord = await Patient.findOne({ email: user.email.toLowerCase() });
+  if (!patientRecord) {
+    patientRecord = await Patient.create({
+      code: 'BN-2026-9001',
+      fullName: user.fullName,
+      phone: user.phone || '0904112202',
+      nationalId: user.nationalId,
+      dob: user.dateOfBirth,
+      gender: user.gender,
+      address: user.address,
+      email: user.email.toLowerCase(),
+      insurance: {
+        code: 'GD4010123456789',
+        expiry: new Date('2027-12-31'),
+        place: 'Bệnh viện Nhân dân Gia Định',
+      },
+    });
+  }
+
+  const [cardiology, musculoskeletal, obstetrics] = await Promise.all([
+    Specialty.findOne({ slug: 'cardiology' }),
+    Specialty.findOne({ slug: 'musculoskeletal' }),
+    Specialty.findOne({ slug: 'obstetrics-pediatrics' }),
+  ]);
+
+  const [doctorCardiology, doctorMusculoskeletal, doctorObstetrics] = await Promise.all([
+    Doctor.findOne({ name: 'TS.BS. Nguyễn Văn An' }),
+    Doctor.findOne({ name: 'BS. Phạm Thu Dung' }),
+    Doctor.findOne({ name: 'BS. Nguyễn Thị Giang' }),
+  ]);
 
   await clearSeed();
 
@@ -65,6 +99,7 @@ const seedPatientData = async () => {
   const [visitA, visitB, visitC] = await Visit.create([
     {
       patientUser: user._id,
+      appointment: null,
       doctorName: 'BS. Nguyễn Văn An',
       specialty: 'Tim mạch',
       facility: FACILITY,
@@ -181,15 +216,19 @@ const seedPatientData = async () => {
     { code: '#LH-P001' },
     {
       code: '#LH-P001',
+      patient: patientRecord._id,
       patientUser: user._id,
       patientName: user.fullName,
+      patientCode: patientRecord.code,
       phone: user.phone || '',
-      doctor: 'BS. Nguyễn Văn An',
-      department: 'Khoa Tim mạch',
+      doctor: doctorCardiology?.name || 'TS.BS. Nguyễn Văn An',
+      doctorRef: doctorCardiology?._id || null,
+      department: cardiology?.departmentLabel || 'Khoa Tim mạch',
+      specialty: cardiology?._id || null,
       date: todayAt('10:15'),
       time: '10:15',
       service: 'Kiểm tra tim mạch',
-      consultationFee: 350_000,
+      consultationFee: cardiology?.consultationFee || 350_000,
       depositAmount: 105_000,
       status: 'confirmed',
       source: 'patient',
@@ -205,8 +244,8 @@ const seedPatientData = async () => {
       patientUser: user._id,
       appointment: todayAppt._id,
       bookingReferenceCode: todayAppt.code,
-      doctorName: 'BS. Nguyễn Văn An',
-      specialtyName: 'Tim mạch',
+      doctorName: doctorCardiology?.name || 'TS.BS. Nguyễn Văn An',
+      specialtyName: cardiology?.name || 'Tim mạch',
       facility: FACILITY,
       visitDate: todayAt('10:15'),
       lineItems: [{ label: 'Phí khám Tim mạch', amount: 350_000, type: 'charge' }],
