@@ -11,39 +11,58 @@ import { registerSchema, RegisterSchema } from '../validations';
 import { getApiErrorMessage } from '../../../utils/getApiErrorMessage';
 
 const RegisterPage: React.FC = () => {
-  const register2 = useRegister();
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<RegisterSchema>({
+  const registerMutation = useRegister();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
   });
 
   const password = watch('password', '');
+
   const getStrength = (pw: string) => {
-    let s = 0;
-    if (pw.length >= 8) s++;
-    if (/[A-Z]/.test(pw)) s++;
-    if (/[0-9]/.test(pw)) s++;
-    if (/[^A-Za-z0-9]/.test(pw)) s++;
-    return s;
+    let score = 0;
+    if (pw.length >= 8) score += 1;
+    if (/[A-Z]/.test(pw)) score += 1;
+    if (/[0-9]/.test(pw)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+    return score;
   };
+
   const strength = getStrength(password);
   const strengthLabels = ['', 'Yếu', 'Trung bình', 'Mạnh', 'Rất mạnh'];
   const strengthColors = ['', '#ef4444', '#f59e0b', '#10b981', '#059669'];
 
   const onSubmit = (data: RegisterSchema) => {
-    register2.mutate({ fullName: data.fullName, email: data.email, phone: data.phone, password: data.password });
+    registerMutation.mutate({
+      fullName: data.fullName.trim(),
+      email: data.email.trim().toLowerCase(),
+      phone: data.phone.trim(),
+      password: data.password,
+    });
   };
 
   return (
     <AuthLayout>
       <div className="fade-in">
         <div className="mb-7">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Lexend' }}>Tạo Tài Khoản</h1>
-          <p className="text-sm text-gray-500">Tham gia cộng đồng chăm sóc sức khỏe thông minh cùng chúng tôi.</p>
+          <h1 className="mb-1 text-2xl font-bold text-gray-900" style={{ fontFamily: 'Lexend' }}>
+            Tạo Tài Khoản
+          </h1>
+          <p className="text-sm text-gray-500">
+            Tham gia cộng đồng chăm sóc sức khỏe thông minh cùng chúng tôi.
+          </p>
         </div>
 
-        {register2.isError && (
-          <div className="mb-4 p-3.5 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
-            {getApiErrorMessage(register2.error, 'Đăng ký thất bại. Vui lòng kiểm tra thông tin và thử lại.')}
+        {registerMutation.isError && (
+          <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-600">
+            {getApiErrorMessage(
+              registerMutation.error,
+              'Đăng ký thất bại. Vui lòng kiểm tra thông tin và thử lại.',
+            )}
           </div>
         )}
 
@@ -85,13 +104,20 @@ const RegisterPage: React.FC = () => {
             />
             {password && (
               <div className="mt-2">
-                <div className="flex gap-1 mb-1">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-1 flex-1 rounded-full transition-colors duration-300"
-                      style={{ background: i <= strength ? strengthColors[strength] : '#e5e7eb' }} />
+                <div className="mb-1 flex gap-1">
+                  {[1, 2, 3, 4].map((item) => (
+                    <div
+                      key={item}
+                      className="h-1 flex-1 rounded-full transition-colors duration-300"
+                      style={{
+                        background: item <= strength ? strengthColors[strength] : '#e5e7eb',
+                      }}
+                    />
                   ))}
                 </div>
-                <p className="text-xs" style={{ color: strengthColors[strength] }}>{strengthLabels[strength]}</p>
+                <p className="text-xs" style={{ color: strengthColors[strength] }}>
+                  {strengthLabels[strength]}
+                </p>
               </div>
             )}
           </div>
@@ -109,25 +135,32 @@ const RegisterPage: React.FC = () => {
             <input
               type="checkbox"
               id="agreeTerms"
-              className="mt-0.5 w-4 h-4 rounded text-blue-600 accent-blue-600"
+              className="mt-0.5 h-4 w-4 rounded text-blue-600 accent-blue-600"
               {...register('agreeTerms')}
             />
-            <label htmlFor="agreeTerms" className="text-xs text-gray-600 leading-relaxed">
+            <label htmlFor="agreeTerms" className="text-xs leading-relaxed text-gray-600">
               Tôi đồng ý với{' '}
-              <a href="/" className="text-blue-600 hover:underline">Điều khoản dịch vụ</a> và{' '}
-              <a href="/" className="text-blue-600 hover:underline">Chính sách bảo mật</a>
+              <a href="/" className="text-blue-600 hover:underline">
+                Điều khoản dịch vụ
+              </a>{' '}
+              và{' '}
+              <a href="/" className="text-blue-600 hover:underline">
+                Chính sách bảo mật
+              </a>
             </label>
           </div>
           {errors.agreeTerms && <p className="text-xs text-red-500">{errors.agreeTerms.message}</p>}
 
-          <Button type="submit" fullWidth loading={register2.isPending} size="lg">
+          <Button type="submit" fullWidth loading={registerMutation.isPending} size="lg">
             Đăng ký tài khoản
           </Button>
         </form>
 
         <p className="mt-5 text-center text-sm text-gray-500">
           Đã có tài khoản?{' '}
-          <Link to="/dang-nhap" className="text-blue-600 font-semibold hover:text-blue-800">Đăng nhập ngay</Link>
+          <Link to="/dang-nhap" className="font-semibold text-blue-600 hover:text-blue-800">
+            Đăng nhập ngay
+          </Link>
         </p>
       </div>
     </AuthLayout>
