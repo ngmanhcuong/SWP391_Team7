@@ -46,6 +46,103 @@ const endOfToday = () => {
   return d;
 };
 
+const parseReportAnchorDate = (value) => {
+  if (!value) return new Date();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+const startOfReportDay = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const endOfReportDay = (date) => {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+const startOfReportWeek = (date) => {
+  const d = startOfReportDay(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+};
+
+const endOfReportWeek = (date) => {
+  const d = startOfReportWeek(date);
+  d.setDate(d.getDate() + 6);
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+const startOfReportMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+const endOfReportMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+const startOfReportYear = (date) => new Date(date.getFullYear(), 0, 1, 0, 0, 0, 0);
+const endOfReportYear = (date) => new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+const isWithinRange = (value, start, end) => {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return date >= start && date <= end;
+};
+
+const getAppointmentDateTime = (appointment) => {
+  if (!appointment?.date) return null;
+  const date = new Date(appointment.date);
+  if (Number.isNaN(date.getTime())) return null;
+  const timeValue = String(appointment.time || '').trim();
+  const [hoursRaw, minutesRaw] = timeValue.split(':');
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+  if (Number.isFinite(hours)) date.setHours(hours, Number.isFinite(minutes) ? minutes : 0, 0, 0);
+  return date;
+};
+
+const getReportRange = (period, anchorDate) => {
+  if (period === 'week') {
+    const start = startOfReportWeek(anchorDate);
+    const end = endOfReportWeek(anchorDate);
+    return {
+      start,
+      end,
+      rangeLabel: `${formatDateVN(start)} - ${formatDateVN(end)}`,
+    };
+  }
+
+  if (period === 'month') {
+    const start = startOfReportMonth(anchorDate);
+    const end = endOfReportMonth(anchorDate);
+    return {
+      start,
+      end,
+      rangeLabel: `Tháng ${anchorDate.getMonth() + 1}/${anchorDate.getFullYear()}`,
+    };
+  }
+
+  if (period === 'year') {
+    const start = startOfReportYear(anchorDate);
+    const end = endOfReportYear(anchorDate);
+    return {
+      start,
+      end,
+      rangeLabel: `Năm ${anchorDate.getFullYear()}`,
+    };
+  }
+
+  const start = startOfReportDay(anchorDate);
+  const end = endOfReportDay(anchorDate);
+  return {
+    start,
+    end,
+    rangeLabel: formatDateVN(anchorDate),
+  };
+};
+
 const genAppointmentCode = async () => {
   const seq = await Counter.next('appointment');
   return `#LH-${String(seq).padStart(4, '0')}`;
@@ -118,6 +215,25 @@ const mapSpecialty = (doc, doctorCount) => ({
   doctorCount: typeof doctorCount === 'number' ? doctorCount : doc.doctorCount || 0,
   color: doc.color || 'from-blue-500 to-blue-700',
 });
+
+const buildRoomNameFromCode = (roomCode, departmentLabel = '') => {
+  if (!roomCode) return '';
+  return departmentLabel ? `Phòng ${roomCode} - ${departmentLabel}` : `Phòng ${roomCode}`;
+};
+
+const DEFAULT_ROOM_CATALOG = [
+  { id: 'TM001', department: 'Tim mạch' },
+  { id: 'TM002', department: 'Tim mạch' },
+  { id: 'XK001', department: 'Cơ xương khớp' },
+  { id: 'XK002', department: 'Cơ xương khớp' },
+  { id: 'SN001', department: 'Sản & Nhi' },
+  { id: 'SN002', department: 'Sản & Nhi' },
+  { id: 'MT001', department: 'Mắt' },
+  { id: 'MT002', department: 'Mắt' },
+].map((room) => ({
+  ...room,
+  name: buildRoomNameFromCode(room.id, room.department),
+}));
 
 const mapAppointment = (doc) => ({
   id: doc.code,
@@ -287,7 +403,8 @@ const getDashboard = async (req, res, next) => {
     }, 0);
 
     // Phòng khám: số phòng khác nhau xuất hiện trong lịch hẹn
-    const roomValues = await Appointment.distinct('room', { room: { $nin: ['', null] } });
+    const roomValues = await Doctor.distinct('roomCode', { roomCode: { $nin: ['', null] } });
+    const totalRooms = Math.max(roomValues.length, DEFAULT_ROOM_CATALOG.length);
 
     // Xu hướng 6 tháng gần nhất
     const monthsBack = 6;
@@ -349,7 +466,7 @@ const getDashboard = async (req, res, next) => {
         doctors,
         appointments,
         specialties,
-        rooms: roomValues.length,
+      rooms: totalRooms,
         revenue,
         revenueLabel: compactCurrency(revenue),
       },
@@ -655,41 +772,94 @@ const deleteSpecialty = async (req, res, next) => {
 
 const getReports = async (req, res, next) => {
   try {
+    const period = ['day', 'week', 'month', 'year'].includes(req.query.period)
+      ? req.query.period
+      : 'day';
+    const anchorDate = parseReportAnchorDate(req.query.anchorDate);
+    const { start, end, rangeLabel } = getReportRange(period, anchorDate);
+
     const [patients, appointments, invoices] = await Promise.all([
       User.find({ role: 'patient' }).select('createdAt').lean(),
-      Appointment.find().select('date department status').lean(),
-      Invoice.find().select('depositAmount depositPaidAt estimatedRemaining status').lean(),
+      Appointment.find().select('date time department status').lean(),
+      Invoice.find()
+        .select('depositAmount depositPaidAt estimatedRemaining paidAt status createdAt updatedAt')
+        .lean(),
     ]);
 
-    const revenue = invoices.reduce((sum, inv) => {
+    const patientsInRange = patients.filter((patient) => isWithinRange(patient.createdAt, start, end));
+    const appointmentsInRange = appointments.filter((appointment) =>
+      isWithinRange(getAppointmentDateTime(appointment), start, end),
+    );
+    const invoicesInRange = invoices.filter((invoice) =>
+      isWithinRange(
+        invoice.paidAt || invoice.depositPaidAt || invoice.updatedAt || invoice.createdAt,
+        start,
+        end,
+      ),
+    );
+
+    const revenue = invoicesInRange.reduce((sum, inv) => {
       let total = 0;
       if (inv.depositPaidAt) total += inv.depositAmount || 0;
       if (inv.status === 'paid') total += inv.estimatedRemaining || 0;
       return sum + total;
     }, 0);
 
-    const activeAppointments = appointments.filter((item) => item.status !== 'cancelled');
-    const completedAppointments = appointments.filter((item) => item.status === 'done').length;
+    const activeAppointments = appointmentsInRange.filter((item) => item.status !== 'cancelled');
+    const completedAppointments = appointmentsInRange.filter((item) => item.status === 'done').length;
     const completionRate = activeAppointments.length
       ? Math.round((completedAppointments / activeAppointments.length) * 1000) / 10
       : 0;
 
-    const now = new Date();
     const patientTrend = [];
-    for (let offset = 5; offset >= 0; offset -= 1) {
-      const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-      const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
-      const count = patients.filter((patient) => {
-        const createdAt = new Date(patient.createdAt);
-        return createdAt >= start && createdAt < end;
-      }).length;
-      patientTrend.push({
-        month: `Th${start.getMonth() + 1}`,
-        value: count,
-      });
+    if (period === 'day') {
+      for (let hour = 7; hour <= 18; hour += 1) {
+        const pointStart = new Date(start);
+        pointStart.setHours(hour, 0, 0, 0);
+        const pointEnd = new Date(start);
+        pointEnd.setHours(hour, 59, 59, 999);
+        patientTrend.push({
+          month: `${String(hour).padStart(2, '0')}:00`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    } else if (period === 'week') {
+      for (let offset = 0; offset < 7; offset += 1) {
+        const pointStart = new Date(start);
+        pointStart.setDate(start.getDate() + offset);
+        pointStart.setHours(0, 0, 0, 0);
+        const pointEnd = endOfReportDay(pointStart);
+        patientTrend.push({
+          month: `T${offset + 2}`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    } else if (period === 'month') {
+      const daysInMonth = end.getDate();
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const pointStart = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), day, 0, 0, 0, 0);
+        const pointEnd = endOfReportDay(pointStart);
+        patientTrend.push({
+          month: `${day}`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    } else {
+      for (let month = 0; month < 12; month += 1) {
+        const pointStart = new Date(anchorDate.getFullYear(), month, 1, 0, 0, 0, 0);
+        const pointEnd = new Date(anchorDate.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+        patientTrend.push({
+          month: `Th${month + 1}`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
     }
 
-    const departmentCounts = appointments.reduce((acc, appointment) => {
+    const departmentCounts = appointmentsInRange.reduce((acc, appointment) => {
       const key = appointment.department || 'Khác';
       acc[key] = (acc[key] || 0) + 1;
       return acc;
@@ -717,6 +887,210 @@ const getReports = async (req, res, next) => {
       supplies: [],
       suppliesTotal: 0,
       generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getReportsRealtime = async (req, res, next) => {
+  try {
+    const period = ['day', 'week', 'month', 'year'].includes(req.query.period)
+      ? req.query.period
+      : 'day';
+    const anchorDate = parseAnchorDate(req.query.anchorDate);
+    const { start, end, rangeLabel } = getReportRange(period, anchorDate);
+
+    const [patients, appointments, invoices] = await Promise.all([
+      User.find({ role: 'patient' }).select('createdAt').lean(),
+      Appointment.find().select('date time department status').lean(),
+      Invoice.find()
+        .select('depositAmount depositPaidAt estimatedRemaining paidAt status createdAt updatedAt')
+        .lean(),
+    ]);
+
+    const patientsInRange = patients.filter((patient) => isWithinRange(patient.createdAt, start, end));
+    const appointmentsInRange = appointments.filter((appointment) =>
+      isWithinRange(getAppointmentDateTime(appointment), start, end),
+    );
+    const invoicesInRange = invoices.filter((invoice) =>
+      isWithinRange(
+        invoice.paidAt || invoice.depositPaidAt || invoice.updatedAt || invoice.createdAt,
+        start,
+        end,
+      ),
+    );
+
+    const revenue = invoicesInRange.reduce((sum, inv) => {
+      let total = 0;
+      if (inv.depositPaidAt) total += inv.depositAmount || 0;
+      if (inv.status === 'paid') total += inv.estimatedRemaining || 0;
+      return sum + total;
+    }, 0);
+
+    const activeAppointments = appointmentsInRange.filter((item) => item.status !== 'cancelled');
+    const completedAppointments = appointmentsInRange.filter((item) => item.status === 'done').length;
+    const completionRate = activeAppointments.length
+      ? Math.round((completedAppointments / activeAppointments.length) * 1000) / 10
+      : 0;
+
+    const patientTrend = [];
+    if (period === 'day') {
+      for (let hour = 7; hour <= 18; hour += 1) {
+        const pointStart = new Date(start);
+        pointStart.setHours(hour, 0, 0, 0);
+        const pointEnd = new Date(start);
+        pointEnd.setHours(hour, 59, 59, 999);
+        patientTrend.push({
+          month: `${String(hour).padStart(2, '0')}:00`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    } else if (period === 'week') {
+      const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      for (let offset = 0; offset < 7; offset += 1) {
+        const pointStart = new Date(start);
+        pointStart.setDate(start.getDate() + offset);
+        pointStart.setHours(0, 0, 0, 0);
+        const pointEnd = endOfDay(pointStart);
+        patientTrend.push({
+          month: labels[offset],
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    } else if (period === 'month') {
+      const daysInMonth = end.getDate();
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const pointStart = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), day, 0, 0, 0, 0);
+        const pointEnd = endOfDay(pointStart);
+        patientTrend.push({
+          month: `${day}`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    } else {
+      for (let month = 0; month < 12; month += 1) {
+        const pointStart = new Date(anchorDate.getFullYear(), month, 1, 0, 0, 0, 0);
+        const pointEnd = new Date(anchorDate.getFullYear(), month + 1, 0, 23, 59, 59, 999);
+        patientTrend.push({
+          month: `Th${month + 1}`,
+          value: patients.filter((patient) => isWithinRange(patient.createdAt, pointStart, pointEnd))
+            .length,
+        });
+      }
+    }
+
+    const departmentCounts = appointmentsInRange.reduce((acc, appointment) => {
+      const key = appointment.department || 'Khác';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const totalDepartmentAppointments = Object.values(departmentCounts).reduce((sum, count) => sum + count, 0) || 1;
+    const palette = ['#1a56db', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6'];
+    const specialtyShare = Object.entries(departmentCounts).map(([name, count], index) => ({
+      id: `dept-${index + 1}`,
+      name,
+      percent: Math.round((count / totalDepartmentAppointments) * 100),
+      color: palette[index % palette.length],
+    }));
+
+    return ok(res, {
+      period,
+      anchorDate: startOfReportDay(anchorDate).toISOString(),
+      rangeLabel,
+      stats: {
+        patients: patientsInRange.length,
+        revenue,
+        suppliesUsed: 0,
+        completionRate,
+      },
+      patientTrend,
+      specialtyShare,
+      specialtyTotal: appointmentsInRange.length,
+      supplies: [],
+      suppliesTotal: 0,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const listRooms = async (req, res, next) => {
+  try {
+    const [doctors, activeAppointments] = await Promise.all([
+      Doctor.find({ roomCode: { $nin: ['', null] } })
+        .populate('specialty', 'name departmentLabel')
+        .sort({ roomCode: 1, name: 1 }),
+      Appointment.find({
+        room: { $nin: ['', null] },
+        status: { $in: ['pending', 'confirmed', 'checked-in'] },
+      }).select('room'),
+    ]);
+
+    const activeRoomCodes = new Set(
+      activeAppointments
+        .map((appointment) => String(appointment.room || '').trim())
+        .filter(Boolean),
+    );
+
+    const roomMap = new Map(
+      DEFAULT_ROOM_CATALOG.map((room) => [
+        room.id,
+        {
+          id: room.id,
+          name: room.name,
+          department: room.department,
+          status: activeRoomCodes.has(room.id) ? 'in_use' : 'available',
+        },
+      ]),
+    );
+
+    doctors.forEach((doctor) => {
+      const roomCode = String(doctor.roomCode || '').trim();
+      if (!roomCode) return;
+
+      const departmentLabel =
+        doctor.specialty?.departmentLabel || doctor.specialty?.name || doctor.specialtySlug || '';
+      const existing = roomMap.get(roomCode);
+
+      if (!existing) {
+        roomMap.set(roomCode, {
+          id: roomCode,
+          name: doctor.roomName || buildRoomNameFromCode(roomCode, departmentLabel),
+          department: departmentLabel,
+          status: activeRoomCodes.has(roomCode) ? 'in_use' : 'available',
+        });
+        return;
+      }
+
+      if (!existing.department && departmentLabel) {
+        existing.department = departmentLabel;
+      }
+      if (!existing.name && doctor.roomName) {
+        existing.name = doctor.roomName;
+      }
+      if (activeRoomCodes.has(roomCode)) {
+        existing.status = 'in_use';
+      }
+    });
+
+    const items = Array.from(roomMap.values()).sort((a, b) => a.id.localeCompare(b.id, 'vi'));
+
+    return ok(res, {
+      items,
+      total: items.length,
+      stats: {
+        total: items.length,
+        available: items.filter((room) => room.status === 'available').length,
+        inUse: items.filter((room) => room.status === 'in_use').length,
+        maintenance: 0,
+        departments: new Set(items.map((room) => room.department).filter(Boolean)).size,
+      },
     });
   } catch (error) {
     return next(error);
@@ -1087,9 +1461,10 @@ const syncAllAccounts = async (req, res, next) => {
 
 module.exports = {
   getDashboard,
-  getReports,
+  getReports: getReportsRealtime,
   getAuditLogs,
   listDoctors,
+  listRooms,
   createDoctor,
   updateDoctor,
   deleteDoctor,
