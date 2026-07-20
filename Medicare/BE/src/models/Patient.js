@@ -10,6 +10,11 @@ const patientSchema = new mongoose.Schema({
   address: { type: String, trim: true },
   email: { type: String, trim: true, lowercase: true },
   avatar: { type: String, default: null },
+  emergencyPhone: { type: String, trim: true },
+  occupation: { type: String, trim: true },
+  bio: { type: String, trim: true },
+  height: { type: Number, min: 0 },
+  weight: { type: Number, min: 0 },
   insurance: {
     code: { type: String, trim: true, default: '' },
     expiry: { type: Date, default: null },

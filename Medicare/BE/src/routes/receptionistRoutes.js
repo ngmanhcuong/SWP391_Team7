@@ -18,6 +18,7 @@ router.post('/patients', ctrl.createPatient);
 // Appointments
 router.get('/appointments', ctrl.listAppointments);
 router.post('/appointments', ctrl.createAppointment);
+router.post('/appointments/:id/confirm-deposit', ctrl.confirmAppointmentDeposit);
 router.patch('/appointments/:id/status', ctrl.updateAppointmentStatus);
 router.post('/appointments/:id/checkin', ctrl.checkinAppointment);
 
