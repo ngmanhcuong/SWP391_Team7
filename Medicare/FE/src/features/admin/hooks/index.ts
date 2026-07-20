@@ -51,6 +51,8 @@ import {
   AdminAppointmentsResponse,
   AdminAuditLogsResponse,
   AdminDashboardResponse,
+  AdminRoomsResponse,
+  AdminReportsQuery,
   AdminReportsResponse,
   AdminReviewsResponse,
 } from '../services/adminApi';
@@ -121,10 +123,10 @@ export const useAdminDashboard = () => {
   };
 };
 
-export const useAdminReports = () => {
-  const { data } = useQuery<AdminReportsResponse>({
-    queryKey: ['admin', 'reports'],
-    queryFn: () => adminApi.getReports(),
+export const useAdminReports = (params: AdminReportsQuery) => {
+  const { data, isLoading } = useQuery<AdminReportsResponse>({
+    queryKey: ['admin', 'reports', params],
+    queryFn: () => adminApi.getReports(params),
   });
 
   const stats = useMemo(() => {
@@ -178,6 +180,10 @@ export const useAdminReports = () => {
     supplies: data?.supplies ?? [],
     suppliesTotal: data?.suppliesTotal ?? 0,
     generatedAt: data?.generatedAt,
+    period: data?.period ?? params.period,
+    anchorDate: data?.anchorDate ?? params.anchorDate,
+    rangeLabel: data?.rangeLabel ?? '',
+    isLoading,
   };
 };
 
@@ -355,16 +361,12 @@ export const useAdminDoctors = () => {
 export type RoomStatusFilter = RoomStatus | 'all';
 export type AdminRoomInput = Omit<AdminRoom, 'id'>;
 
-const generateRoomId = (existing: AdminRoom[]): string => {
-  const max = existing.reduce((acc, room) => {
-    const match = room.id.match(/(\d+)$/);
-    return Math.max(acc, match ? Number(match[1]) : 0);
-  }, 100);
-  return `P-${max + 1}`;
-};
-
 export const useAdminRooms = () => {
-  const [rooms, setRooms] = useState<AdminRoom[]>(ADMIN_ROOMS);
+  const { data, refetch } = useQuery<AdminRoomsResponse>({
+    queryKey: ['admin', 'rooms'],
+    queryFn: () => adminApi.getRooms(),
+  });
+  const rooms = useMemo<AdminRoom[]>(() => data?.items ?? [], [data]);
   const [department, setDepartment] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<RoomStatusFilter>('all');
 
@@ -383,27 +385,22 @@ export const useAdminRooms = () => {
     [rooms, department, statusFilter],
   );
 
-  const deleteRoom = (id: string) =>
-    setRooms((prev) => prev.filter((room) => room.id !== id));
-
-  const addRoom = (data: AdminRoomInput) =>
-    setRooms((prev) => [{ ...data, id: generateRoomId(prev) }, ...prev]);
-
-  const updateRoom = (id: string, data: AdminRoomInput) =>
-    setRooms((prev) => prev.map((room) => (room.id === id ? { ...room, ...data } : room)));
-
   return {
     rooms: filteredRooms,
-    stats: ADMIN_ROOM_STATS,
+    stats: ADMIN_ROOM_STATS.map((stat) => {
+      if (stat.id === 'total') return overrideStat(stat, data?.stats.total ?? 0);
+      if (stat.id === 'available') return overrideStat(stat, data?.stats.available ?? 0);
+      if (stat.id === 'maintenance') return overrideStat(stat, data?.stats.maintenance ?? 0);
+      if (stat.id === 'departments') return overrideStat(stat, data?.stats.departments ?? 0);
+      return stat;
+    }),
     departments,
-    total: ADMIN_TOTAL_ROOMS - ADMIN_ROOMS.length + rooms.length,
+    total: data?.total ?? rooms.length,
     department,
     setDepartment,
     statusFilter,
     setStatusFilter,
-    deleteRoom,
-    addRoom,
-    updateRoom,
+    refreshRooms: refetch,
   };
 };
 
@@ -416,6 +413,14 @@ export const useAdminDepartments = () => {
   const { data } = useQuery<AdminDepartment[]>({
     queryKey: ['admin', 'specialties'],
     queryFn: () => adminApi.getSpecialties(),
+  });
+  const { data: appointmentsData } = useQuery<AdminAppointmentsResponse>({
+    queryKey: ['admin', 'appointments'],
+    queryFn: () => adminApi.getAppointments(),
+  });
+  const { data: roomsData } = useQuery<AdminRoomsResponse>({
+    queryKey: ['admin', 'rooms'],
+    queryFn: () => adminApi.getRooms(),
   });
   const departments = useMemo<AdminDepartment[]>(() => data ?? [], [data]);
 
@@ -449,12 +454,16 @@ export const useAdminDepartments = () => {
 
   const stats: AdminSectionStat[] = useMemo(() => {
     const totalDoctors = departments.reduce((acc, dept) => acc + dept.doctorCount, 0);
+    const patientsToday = appointmentsData?.stats.today ?? 0;
+    const totalRooms = roomsData?.stats.total ?? roomsData?.total ?? 0;
     return ADMIN_DEPARTMENT_STATS.map((stat) => {
       if (stat.id === 'total') return overrideStat(stat, departments.length);
       if (stat.id === 'doctors') return overrideStat(stat, totalDoctors);
+      if (stat.id === 'patients') return overrideStat(stat, patientsToday);
+      if (stat.id === 'rooms') return overrideStat(stat, totalRooms);
       return stat;
     });
-  }, [departments]);
+  }, [departments, appointmentsData, roomsData]);
 
   const deleteDepartment = (id: string) => deleteMutation.mutate(id);
   const addDepartment = (input: AdminDepartmentInput) => addMutation.mutate(input);
@@ -640,10 +649,14 @@ export const useAdminAuditLog = () => {
         const matchesActor = actor === 'all' || log.actorName === actor;
         const matchesAction = actionType === 'all' || log.actionType === actionType;
         const timestamp = new Date(log.createdAt ?? 0);
-        const now = new Date('2026-07-19T23:59:59+07:00');
-        const todayStart = new Date('2026-07-19T00:00:00+07:00');
-        const weekStart = new Date('2026-07-13T00:00:00+07:00');
-        const monthStart = new Date('2026-07-01T00:00:00+07:00');
+        const now = new Date();
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const weekStart = new Date(todayStart);
+        const dayOfWeek = weekStart.getDay();
+        const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        weekStart.setDate(weekStart.getDate() - diffToMonday);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const matchesTimeframe =
           timeframe === 'today'
             ? timestamp >= todayStart && timestamp <= now

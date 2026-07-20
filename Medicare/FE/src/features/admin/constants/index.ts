@@ -495,10 +495,10 @@ export const ADMIN_PATIENT_TREND: PatientTrendPoint[] = [
 ];
 
 export const ADMIN_SPECIALTY_SHARE: SpecialtyShare[] = [
-  { id: 'ss-1', name: 'Nội khoa', percent: 42, color: '#1a56db' },
-  { id: 'ss-2', name: 'Ngoại khoa', percent: 28, color: '#10b981' },
-  { id: 'ss-3', name: 'Nhi khoa', percent: 15, color: '#f59e0b' },
-  { id: 'ss-4', name: 'Khác', percent: 15, color: '#cbd5e1' },
+  { id: 'ss-1', name: 'Khoa Tim mạch', percent: 32, color: '#e11d48' },
+  { id: 'ss-2', name: 'Khoa Cơ xương khớp', percent: 28, color: '#7c3aed' },
+  { id: 'ss-3', name: 'Khoa Sản & Nhi', percent: 24, color: '#2563eb' },
+  { id: 'ss-4', name: 'Khoa Mắt', percent: 16, color: '#0891b2' },
 ];
 
 export const ADMIN_SPECIALTY_TOTAL = '8.5k';
