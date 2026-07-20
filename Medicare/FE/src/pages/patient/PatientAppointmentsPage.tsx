@@ -57,8 +57,6 @@ export const PatientAppointmentsPage: React.FC = () => {
     selectDoctor,
     selectDate,
     selectSlot,
-    clearScheduleSelection,
-    suggestDoctor,
     payDeposit,
     analyzeSymptoms,
     goToPreviousStep,
@@ -162,7 +160,6 @@ export const PatientAppointmentsPage: React.FC = () => {
             selectedDoctorId={selectedDoctorId}
             searchQuery={doctorSearchQuery}
             onSelect={selectDoctor}
-            onSuggest={suggestDoctor}
           />
         </div>
       )}
@@ -178,7 +175,6 @@ export const PatientAppointmentsPage: React.FC = () => {
           onWeekOffsetChange={setScheduleWeekOffset}
           onSelectDate={selectDate}
           onSelectSlot={selectSlot}
-          onClearSelection={clearScheduleSelection}
         />
       )}
 

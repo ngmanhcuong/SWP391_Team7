@@ -2,7 +2,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MIN_SYMPTOM_LENGTH } from '../constants/appointmentBookingSteps';
 import { getDepositAmount } from '../constants/consultationFees';
-import { getSpecialtyByName, getSpecialtyPresentation, MEDICAL_SPECIALTIES, MedicalSpecialty } from '../constants/medicalSpecialties';
+import {
+  getSpecialtyByName,
+  getSpecialtyPresentation,
+  MEDICAL_SPECIALTIES,
+  MedicalSpecialty,
+} from '../constants/medicalSpecialties';
 import {
   AiSymptomAnalysis,
   AppointmentScheduleDay,
@@ -25,6 +30,8 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     experienceYears: 15,
     tag: { label: 'Chuyên gia đầu ngành', variant: 'expert' },
     nextAvailableSlot: 'Hôm nay, 14:30',
+    roomCode: 'TM001',
+    roomName: 'Phòng TM001 - Khoa Tim mạch',
     isAvailable: true,
     avatarBg: 'rgba(218,226,255,0.3)',
   },
@@ -37,7 +44,9 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     reviewCount: 95,
     experienceYears: 10,
     tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
-    nextAvailableSlot: 'Mai, 08:00',
+    nextAvailableSlot: 'Ngày mai, 08:00',
+    roomCode: 'TM001',
+    roomName: 'Phòng TM001 - Khoa Tim mạch',
     isAvailable: true,
     avatarBg: 'rgba(255,218,210,0.3)',
   },
@@ -49,8 +58,10 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     rating: 5.0,
     reviewCount: 210,
     experienceYears: 22,
-    tag: { label: 'Bác sĩ Ưu tú', variant: 'elite' },
+    tag: { label: 'Bác sĩ ưu tú', variant: 'elite' },
     nextAvailableSlot: null,
+    roomCode: 'TM002',
+    roomName: 'Phòng TM002 - Khoa Tim mạch',
     isAvailable: false,
     avatarBg: 'rgba(130,249,190,0.3)',
   },
@@ -64,6 +75,8 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     experienceYears: 8,
     tag: { label: 'Bác sĩ trẻ tiềm năng', variant: 'potential' },
     nextAvailableSlot: 'Hôm nay, 16:00',
+    roomCode: 'XK001',
+    roomName: 'Phòng XK001 - Khoa Cơ xương khớp',
     isAvailable: true,
     avatarBg: 'rgba(218,226,255,0.3)',
   },
@@ -77,6 +90,8 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     experienceYears: 18,
     tag: { label: 'Chuyên gia đầu ngành', variant: 'expert' },
     nextAvailableSlot: 'Hôm nay, 10:00',
+    roomCode: 'XK001',
+    roomName: 'Phòng XK001 - Khoa Cơ xương khớp',
     isAvailable: true,
     avatarBg: 'rgba(255,218,210,0.3)',
   },
@@ -89,7 +104,9 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     reviewCount: 67,
     experienceYears: 12,
     tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
-    nextAvailableSlot: 'Mai, 15:30',
+    nextAvailableSlot: 'Ngày mai, 15:30',
+    roomCode: 'XK002',
+    roomName: 'Phòng XK002 - Khoa Cơ xương khớp',
     isAvailable: true,
     avatarBg: 'rgba(130,249,190,0.3)',
   },
@@ -103,6 +120,8 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     experienceYears: 16,
     tag: { label: 'Chuyên gia đầu ngành', variant: 'expert' },
     nextAvailableSlot: 'Hôm nay, 09:00',
+    roomCode: 'SN001',
+    roomName: 'Phòng SN001 - Khoa Sản & Nhi',
     isAvailable: true,
     avatarBg: 'rgba(255,218,210,0.3)',
   },
@@ -114,8 +133,10 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     rating: 4.8,
     reviewCount: 112,
     experienceYears: 14,
-    tag: { label: 'Bác sĩ Ưu tú', variant: 'elite' },
-    nextAvailableSlot: 'Mai, 11:00',
+    tag: { label: 'Bác sĩ ưu tú', variant: 'elite' },
+    nextAvailableSlot: 'Ngày mai, 11:00',
+    roomCode: 'SN001',
+    roomName: 'Phòng SN001 - Khoa Sản & Nhi',
     isAvailable: true,
     avatarBg: 'rgba(218,226,255,0.3)',
   },
@@ -129,6 +150,8 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     experienceYears: 12,
     tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
     nextAvailableSlot: 'Hôm nay, 15:00',
+    roomCode: 'SN002',
+    roomName: 'Phòng SN002 - Khoa Sản & Nhi',
     isAvailable: true,
     avatarBg: 'rgba(130,249,190,0.3)',
   },
@@ -140,8 +163,10 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     rating: 5.0,
     reviewCount: 210,
     experienceYears: 22,
-    tag: { label: 'Bác sĩ Ưu tú', variant: 'elite' },
+    tag: { label: 'Bác sĩ ưu tú', variant: 'elite' },
     nextAvailableSlot: null,
+    roomCode: 'MT001',
+    roomName: 'Phòng MT001 - Khoa Mắt',
     isAvailable: false,
     avatarBg: 'rgba(130,249,190,0.3)',
   },
@@ -155,6 +180,8 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     experienceYears: 11,
     tag: { label: 'Bác sĩ trẻ tiềm năng', variant: 'potential' },
     nextAvailableSlot: 'Hôm nay, 16:00',
+    roomCode: 'MT001',
+    roomName: 'Phòng MT001 - Khoa Mắt',
     isAvailable: true,
     avatarBg: 'rgba(218,226,255,0.3)',
   },
@@ -167,11 +194,46 @@ const FALLBACK_DOCTORS: BookingDoctor[] = [
     reviewCount: 99,
     experienceYears: 13,
     tag: { label: 'Tiến sĩ Y khoa', variant: 'phd' },
-    nextAvailableSlot: 'Mai, 14:00',
+    nextAvailableSlot: 'Ngày mai, 14:00',
+    roomCode: 'MT002',
+    roomName: 'Phòng MT002 - Khoa Mắt',
     isAvailable: true,
     avatarBg: 'rgba(255,218,210,0.3)',
   },
 ];
+
+const DOCTOR_TITLE_PREFIXES = [
+  'TS.BS.',
+  'TS.BS',
+  'BSCKII.',
+  'BSCKII',
+  'BSCKI.',
+  'BSCKI',
+  'ThS.BS.',
+  'ThS.BS',
+  'PGS.TS.BS.',
+  'PGS.TS.BS',
+  'GS.TS.BS.',
+  'GS.TS.BS',
+  'BS.',
+  'BS',
+];
+
+const getDoctorCoreName = (name = ''): string => {
+  let normalized = String(name).trim();
+  for (const prefix of DOCTOR_TITLE_PREFIXES) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.slice(prefix.length).trim();
+      break;
+    }
+  }
+  return normalized
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
+};
 
 export const useAppointmentBooking = () => {
   const queryClient = useQueryClient();
@@ -185,7 +247,9 @@ export const useAppointmentBooking = () => {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [depositPaymentMethod, setDepositPaymentMethod] = useState<DepositPaymentMethod | null>(null);
+  const [depositPaymentMethod, setDepositPaymentMethod] = useState<DepositPaymentMethod | null>(
+    null,
+  );
   const [depositPaid, setDepositPaid] = useState(false);
   const [isPayingDeposit, setIsPayingDeposit] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<AiSymptomAnalysis | null>(null);
@@ -221,44 +285,75 @@ export const useAppointmentBooking = () => {
       return patientApi.getDoctorAvailability(selectedDoctorId, `${year}-${month}-${day}`, 14);
     },
     enabled: Boolean(selectedDoctorId),
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: selectedDoctorId ? 15_000 : false,
   });
 
-  const effectiveDoctors = useMemo(
-    () => (doctors.length > 0 ? doctors : FALLBACK_DOCTORS),
-    [doctors],
-  );
+  const effectiveDoctors = useMemo(() => {
+    if (doctors.length === 0) {
+      return FALLBACK_DOCTORS;
+    }
+
+    const fallbackByKey = new Map(
+      FALLBACK_DOCTORS.map((doctor) => [
+        `${doctor.specialtyId}::${getDoctorCoreName(doctor.name)}`,
+        doctor,
+      ]),
+    );
+
+    return doctors.map((doctor: BookingDoctor) => {
+      const fallback = fallbackByKey.get(
+        `${doctor.specialtyId}::${getDoctorCoreName(doctor.name)}`,
+      );
+
+      if (!fallback) {
+        return doctor;
+      }
+
+      return {
+        ...doctor,
+        roomCode: doctor.roomCode ?? fallback.roomCode,
+        roomName: doctor.roomName ?? fallback.roomName,
+        departmentLabel: doctor.departmentLabel || fallback.departmentLabel,
+        nextAvailableSlot: doctor.nextAvailableSlot ?? fallback.nextAvailableSlot,
+        avatarBg: doctor.avatarBg || fallback.avatarBg,
+        tag: doctor.tag?.label ? doctor.tag : fallback.tag,
+      };
+    });
+  }, [doctors]);
 
   const fallbackSpecialties = useMemo<MedicalSpecialty[]>(
     () =>
       MEDICAL_SPECIALTIES.map((specialty) => ({
         ...specialty,
-        doctorCount: FALLBACK_DOCTORS.filter((doctor) => doctor.specialtyId === specialty.id).length,
+        doctorCount: FALLBACK_DOCTORS.filter((doctor) => doctor.specialtyId === specialty.id)
+          .length,
       })),
     [],
   );
 
-  const specialtyOptions = useMemo<MedicalSpecialty[]>(
-    () => {
-      if (specialties.length === 0) {
-        return fallbackSpecialties;
-      }
+  const specialtyOptions = useMemo<MedicalSpecialty[]>(() => {
+    if (specialties.length === 0) {
+      return fallbackSpecialties;
+    }
 
-      return specialties.map((specialty: PatientSpecialty) => ({
-        id: specialty.id,
-        name: specialty.name,
-        departmentLabel: specialty.departmentLabel,
-        ...getSpecialtyPresentation(specialty.id),
-        consultationFee: specialty.consultationFee,
-        depositAmount: specialty.depositAmount,
-        doctorCount: specialty.doctorCount,
-      }));
-    },
-    [fallbackSpecialties, specialties],
-  );
+    return specialties.map((specialty: PatientSpecialty) => ({
+      id: specialty.id,
+      name: specialty.name,
+      departmentLabel: specialty.departmentLabel,
+      ...getSpecialtyPresentation(specialty.id),
+      consultationFee: specialty.consultationFee,
+      depositAmount: specialty.depositAmount,
+      doctorCount: specialty.doctorCount,
+    }));
+  }, [fallbackSpecialties, specialties]);
 
   const selectedSpecialty = useMemo(
-    () => (selectedSpecialtyId ? specialtyOptions.find((item) => item.id === selectedSpecialtyId) ?? null : null),
+    () =>
+      selectedSpecialtyId
+        ? specialtyOptions.find((item) => item.id === selectedSpecialtyId) ?? null
+        : null,
     [selectedSpecialtyId, specialtyOptions],
   );
 
@@ -344,8 +439,8 @@ export const useAppointmentBooking = () => {
       setAiAnalysis(analysis);
 
       const suggested =
-        specialtyOptions.find((item) => item.name === analysis.suggestedSpecialty)
-        ?? getSpecialtyByName(analysis.suggestedSpecialty);
+        specialtyOptions.find((item) => item.name === analysis.suggestedSpecialty) ??
+        getSpecialtyByName(analysis.suggestedSpecialty);
       if (suggested) {
         setSelectedSpecialtyId(suggested.id);
       }
@@ -371,10 +466,13 @@ export const useAppointmentBooking = () => {
     setCurrentStep((step) => (step - 1) as AppointmentBookingStep);
   }, [currentStep]);
 
-  const goToStep = useCallback((step: AppointmentBookingStep) => {
-    if (bookingResult || step >= currentStep) return;
-    setCurrentStep(step);
-  }, [bookingResult, currentStep]);
+  const goToStep = useCallback(
+    (step: AppointmentBookingStep) => {
+      if (bookingResult || step >= currentStep) return;
+      setCurrentStep(step);
+    },
+    [bookingResult, currentStep],
+  );
 
   const handleSymptomsChange = useCallback((value: string) => {
     setSymptoms(value);
@@ -387,19 +485,25 @@ export const useAppointmentBooking = () => {
     setSelectedSlotId(null);
   }, []);
 
-  const selectSpecialty = useCallback((specialtyId: string) => {
-    setSelectedSpecialtyId(specialtyId);
-    setSelectedDoctorId(null);
-    clearScheduleSelection();
-    setDepositPaid(false);
-    setDepositPaymentMethod(null);
-  }, [clearScheduleSelection]);
+  const selectSpecialty = useCallback(
+    (specialtyId: string) => {
+      setSelectedSpecialtyId(specialtyId);
+      setSelectedDoctorId(null);
+      clearScheduleSelection();
+      setDepositPaid(false);
+      setDepositPaymentMethod(null);
+    },
+    [clearScheduleSelection],
+  );
 
-  const selectDoctor = useCallback((doctorId: string) => {
-    setSelectedDoctorId(doctorId);
-    clearScheduleSelection();
-    setScheduleWeekOffset(0);
-  }, [clearScheduleSelection]);
+  const selectDoctor = useCallback(
+    (doctorId: string) => {
+      setSelectedDoctorId(doctorId);
+      clearScheduleSelection();
+      setScheduleWeekOffset(0);
+    },
+    [clearScheduleSelection],
+  );
 
   const selectDate = useCallback((date: string) => {
     setSelectedDate(date);
@@ -461,6 +565,11 @@ export const useAppointmentBooking = () => {
 
       setBookingResult(result);
       queryClient.invalidateQueries({ queryKey: ['patient'] });
+      if (selectedDoctorId) {
+        queryClient.invalidateQueries({
+          queryKey: ['patient', 'doctor-availability', selectedDoctorId],
+        });
+      }
     } catch {
       setSubmitError('Không thể hoàn tất đặt lịch lúc này. Vui lòng thử lại sau ít phút.');
     } finally {

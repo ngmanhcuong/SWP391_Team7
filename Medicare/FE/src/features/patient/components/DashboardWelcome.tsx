@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Avatar } from '../../../components/ui';
+import { useChatStore } from '../../../store/chatStore';
 import { TodayAppointment } from '../types';
 
 interface DashboardWelcomeProps {
@@ -61,7 +62,7 @@ const HealthScoreRing: React.FC<{ score: number }> = ({ score }) => {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-bold text-white leading-none">{score}</span>
+        <span className="text-lg font-bold leading-none text-white">{score}</span>
         <span className="text-[9px] font-medium text-blue-100/70">/ 100</span>
       </div>
     </div>
@@ -75,9 +76,10 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
   healthScore = 0,
 }) => {
   const firstName = userName.split(' ').slice(-1)[0] || userName;
+  const setOpen = useChatStore((state) => state.setOpen);
 
   return (
-    <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1e40af] via-[#2563eb] to-[#06b6d4] p-6 sm:p-8 shadow-soft-lg">
+    <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1e40af] via-[#2563eb] to-[#06b6d4] p-6 shadow-soft-lg sm:p-8">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.12]"
         style={{
@@ -85,34 +87,33 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
           backgroundSize: '24px 24px',
         }}
       />
-      <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/15 blur-3xl animate-soft-float" />
+      <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 animate-soft-float rounded-full bg-white/15 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 left-1/4 h-56 w-56 rounded-full bg-[#06b6d4]/30 blur-3xl" />
 
       <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center">
-        {/* Greeting + CTAs */}
         <div className="space-y-4 lg:col-span-7">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm ring-1 ring-white/20">
             <CalendarDays size={14} className="text-cyan-200" />
             <span className="capitalize">{formatDate()}</span>
           </div>
           <div>
-            <h1 className="text-[26px] sm:text-[34px] font-bold text-white tracking-tight leading-tight">
+            <h1 className="text-[26px] font-bold leading-tight tracking-tight text-white sm:text-[34px]">
               {getGreeting()}, {firstName}
             </h1>
-            <p className="mt-2 text-sm sm:text-[15px] text-blue-50/90 leading-relaxed max-w-xl">{summary}</p>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-blue-50/90 sm:text-[15px]">{summary}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Link
               to="/patient/lich-hen"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#1e40af] hover:bg-blue-50 transition-colors shadow-lg shadow-blue-900/20"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#1e40af] shadow-lg shadow-blue-900/20 transition-colors hover:bg-blue-50"
             >
               <Plus size={16} />
               Đặt lịch khám
             </Link>
             <Link
               to="/patient/ho-so"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
             >
               Hồ sơ bệnh án
               <ArrowRight size={16} />
@@ -120,27 +121,24 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
           </div>
         </div>
 
-        {/* Accent widgets */}
         <div className="space-y-3 lg:col-span-5">
-          {/* Health score */}
-          <div className="flex items-center gap-4 rounded-2xl bg-white/10 backdrop-blur-md p-4 ring-1 ring-white/15">
+          <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md ring-1 ring-white/15">
             <HealthScoreRing score={healthScore} />
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-200">
                 Chỉ số sức khỏe
               </p>
-              <p className="text-sm font-semibold text-white mt-0.5">
+              <p className="mt-0.5 text-sm font-semibold text-white">
                 {healthScore >= 80 ? 'Rất tốt' : healthScore >= 60 ? 'Ổn định' : 'Cần theo dõi'}
               </p>
-              <p className="text-xs text-blue-50/70 mt-0.5 line-clamp-1">
-                Dựa trên hồ sơ &amp; chỉ số gần đây
+              <p className="mt-0.5 line-clamp-1 text-xs text-blue-50/70">
+                Dựa trên hồ sơ và chỉ số gần đây
               </p>
             </div>
           </div>
 
-          {/* Upcoming appointment + AI shortcut */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-stretch">
-            <div className="flex h-full flex-col rounded-2xl bg-white/10 backdrop-blur-md p-4 ring-1 ring-white/15">
+            <div className="flex h-full flex-col rounded-2xl bg-white/10 p-4 backdrop-blur-md ring-1 ring-white/15">
               <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-200">
                 <Clock size={12} />
                 Lịch hẹn sắp tới
@@ -149,8 +147,8 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
                 <div className="mt-auto flex items-center gap-2.5 pt-2">
                   <Avatar name={appointment.doctorName} src={appointment.doctorAvatar} size="sm" />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{appointment.doctorName}</p>
-                    <p className="text-xs text-cyan-200 font-medium">{appointment.time}</p>
+                    <p className="truncate text-sm font-semibold text-white">{appointment.doctorName}</p>
+                    <p className="text-xs font-medium text-cyan-200">{appointment.time}</p>
                   </div>
                 </div>
               ) : (
@@ -158,9 +156,10 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
               )}
             </div>
 
-            <Link
-              to="/patient/lich-hen"
-              className="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white p-4 text-[#1e40af] shadow-lg shadow-blue-900/20 transition-transform hover:-translate-y-0.5"
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white p-4 text-left text-[#1e40af] shadow-lg shadow-blue-900/20 transition-transform hover:-translate-y-0.5"
             >
               <Sparkles size={16} className="text-[#2563eb]" />
               <p className="mt-2 text-sm font-semibold leading-snug">Trợ lý sức khỏe AI</p>
@@ -168,7 +167,7 @@ const DashboardWelcome: React.FC<DashboardWelcomeProps> = ({
                 Hỏi ngay
                 <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
               </span>
-            </Link>
+            </button>
           </div>
         </div>
       </div>
