@@ -27,6 +27,11 @@ export interface Patient {
   address?: string;
   email?: string;
   avatar?: string | null;
+  emergencyPhone?: string;
+  occupation?: string;
+  bio?: string;
+  height?: number;
+  weight?: number;
   insurance?: PatientInsurance;
   createdAt?: string;
 }
@@ -45,6 +50,12 @@ export interface Appointment {
   time: string;
   service?: string;
   insured?: boolean;
+  source?: 'reception' | 'patient';
+  consultationFee?: number;
+  depositAmount?: number;
+  depositPaymentMethod?: '' | 'vnpay' | 'momo' | 'banking';
+  depositPaidAt?: string | null;
+  receptionDepositConfirmed?: boolean;
   status: AppointmentStatus;
   checkedInAt?: string | null;
   queueTicket?: number | null;
@@ -89,6 +100,10 @@ export interface ReceptionistDepartmentCatalog {
   specialtyName: string;
   doctors: string[];
   services: string[];
+  rooms: {
+    code: string;
+    name: string;
+  }[];
 }
 
 export interface ReceptionistCatalog {
@@ -108,6 +123,11 @@ export interface CreatePatientInput {
   gender?: 'male' | 'female' | 'other';
   address?: string;
   email?: string;
+  emergencyPhone?: string;
+  occupation?: string;
+  bio?: string;
+  height?: number;
+  weight?: number;
   insurance?: { code?: string; expiry?: string | null; place?: string };
 }
 
