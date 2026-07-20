@@ -4,8 +4,48 @@ const Patient = require('../models/Patient');
 const Visit = require('../models/Visit');
 const LabResult = require('../models/LabResult');
 const MedicalHistory = require('../models/MedicalHistory');
+const Invoice = require('../models/Invoice');
 
 const ok = (res, data) => res.json({ success: true, data });
+
+const toDateKey = (value) => {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateKey = (value) => {
+  if (typeof value !== 'string') return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const startOfToday = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const endOfToday = () => {
+  const date = new Date();
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
+const startOfDay = (value) => {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const endOfDay = (value) => {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
 
 const calculateAge = (date) => {
   if (!date) return 0;
@@ -164,7 +204,28 @@ const listScheduleAppointments = async (req, res, next) => {
     const doctor = await Doctor.findOne({ user: req.user._id });
     if (!doctor) return ok(res, []);
 
-    const appointments = await Appointment.find({ doctorRef: doctor._id })
+    const parsedFrom = req.query.fromDate ? parseDateKey(req.query.fromDate) : null;
+    const parsedTo = req.query.toDate ? parseDateKey(req.query.toDate) : null;
+    const hasCustomRange =
+      parsedFrom instanceof Date &&
+      !Number.isNaN(parsedFrom.getTime()) &&
+      parsedTo instanceof Date &&
+      !Number.isNaN(parsedTo.getTime());
+
+    const dateFilter = hasCustomRange
+      ? {
+          $gte: startOfDay(parsedFrom),
+          $lte: endOfDay(parsedTo),
+        }
+      : {
+          $gte: startOfToday(),
+          $lte: endOfToday(),
+        };
+
+    const appointments = await Appointment.find({
+      doctorRef: doctor._id,
+      date: dateFilter,
+    })
       .populate('patient', 'code fullName')
       .sort({ date: 1, time: 1 });
 
@@ -180,7 +241,7 @@ const listScheduleAppointments = async (req, res, next) => {
         type: mapAppointmentType(appt.source),
         status: mapScheduleStatus(appt.status),
         timeSlot: mapTimeSlot(appt.time),
-        date: new Date(appt.date).toISOString().slice(0, 10),
+        date: toDateKey(appt.date),
         time: appt.time,
       })),
     );
@@ -371,6 +432,13 @@ const completeAppointment = async (req, res, next) => {
 
     appointment.status = 'done';
     await appointment.save();
+
+    const linkedInvoice = await Invoice.findOne({ appointment: appointment._id });
+    if (linkedInvoice && linkedInvoice.status === 'awaiting_visit') {
+      linkedInvoice.status = 'pending_payment';
+      linkedInvoice.dueDate = linkedInvoice.dueDate || new Date();
+      await linkedInvoice.save();
+    }
 
     return ok(res, {
       id: String(appointment._id),

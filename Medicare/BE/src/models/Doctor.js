@@ -16,6 +16,8 @@ const doctorSchema = new mongoose.Schema({
   },
   isAvailable: { type: Boolean, default: true },
   nextAvailableSlot: { type: String, default: null },
+  roomCode: { type: String, default: null, trim: true },
+  roomName: { type: String, default: null, trim: true },
   avatarBg: { type: String, default: 'rgba(218,226,255,0.3)' },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, {
