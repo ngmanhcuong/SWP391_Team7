@@ -12,19 +12,18 @@ import {
   ScheduleWeekView,
   TodayAppointmentsTable,
 } from '../../features/doctor/components/schedule';
-import {
-} from '../../features/doctor/utils/buildScheduleCalendarData';
-import {
-  filterAppointments,
-} from '../../features/doctor/utils/buildDoctorScheduleData';
+import { filterAppointments } from '../../features/doctor/utils/buildDoctorScheduleData';
 import {
   buildScheduleStats,
   buildStatusCounts,
+  endOfWeekSunday,
   formatMonthLabel,
+  formatVietnameseDate,
   formatWeekRangeLabel,
   getScheduleProgress,
   getWeekDays,
   parseTimeToMinutes,
+  startOfWeekMonday,
   toDateKey,
 } from '../../features/doctor/utils/scheduleUtils';
 import {
@@ -35,9 +34,54 @@ import {
 } from '../../features/doctor/types';
 
 export const DoctorSchedulePage: React.FC = () => {
-  const { data: scheduleAppointments = [] } = useQuery({
-    queryKey: ['doctor', 'appointments'],
-    queryFn: doctorApi.getAppointments,
+  const [viewMode, setViewMode] = useState<ScheduleViewMode>('list');
+  const [referenceDate, setReferenceDate] = useState(() => new Date());
+  const [statusFilter, setStatusFilter] = useState<TodayAppointmentStatus | 'all'>('all');
+  const [timeFilter, setTimeFilter] = useState<ScheduleTimeFilter>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const appointmentQueryParams = useMemo(() => {
+    if (viewMode === 'week') {
+      const start = startOfWeekMonday(referenceDate);
+      const end = endOfWeekSunday(referenceDate);
+      return {
+        fromDate: toDateKey(start),
+        toDate: toDateKey(end),
+      };
+    }
+
+    if (viewMode === 'month') {
+      const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+      const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
+      return {
+        fromDate: toDateKey(start),
+        toDate: toDateKey(end),
+      };
+    }
+
+    const today = new Date();
+    return {
+      fromDate: toDateKey(today),
+      toDate: toDateKey(today),
+    };
+  }, [referenceDate, viewMode]);
+
+  const isTodayRange = useMemo(() => {
+    const todayKey = toDateKey(new Date());
+    return (
+      appointmentQueryParams.fromDate === todayKey &&
+      appointmentQueryParams.toDate === todayKey
+    );
+  }, [appointmentQueryParams.fromDate, appointmentQueryParams.toDate]);
+
+  const { data: scheduleAppointments = [], refetch } = useQuery({
+    queryKey: ['doctor', 'appointments', appointmentQueryParams.fromDate, appointmentQueryParams.toDate],
+    queryFn: () => doctorApi.getAppointments(appointmentQueryParams),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: isTodayRange ? 10_000 : 30_000,
+    refetchIntervalInBackground: true,
   });
 
   const scheduleData = useMemo(() => {
@@ -45,22 +89,11 @@ export const DoctorSchedulePage: React.FC = () => {
       (left, right) => parseTimeToMinutes(left.time) - parseTimeToMinutes(right.time),
     );
     const waiting = appointments.filter((appt) => appt.status === 'waiting');
-    const activeWaiting = waiting.slice(0, 3).map((appt) => appt.patientName.split(' ').slice(-1)[0]);
+    const activeWaiting = waiting
+      .slice(0, 3)
+      .map((appt) => appt.patientName.split(' ').slice(-1)[0]);
 
     return {
-      dateLabel: appointments.length > 0
-        ? new Date(appointments[0].date).toLocaleDateString('vi-VN', {
-            weekday: 'long',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
-        : new Date().toLocaleDateString('vi-VN', {
-            weekday: 'long',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          }),
       appointments,
       stats: {
         ...buildScheduleStats(appointments),
@@ -79,12 +112,6 @@ export const DoctorSchedulePage: React.FC = () => {
     [scheduleData.appointments],
   );
 
-  const [viewMode, setViewMode] = useState<ScheduleViewMode>('list');
-  const [statusFilter, setStatusFilter] = useState<TodayAppointmentStatus | 'all'>('all');
-  const [timeFilter, setTimeFilter] = useState<ScheduleTimeFilter>('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [referenceDate, setReferenceDate] = useState(() => new Date());
-
   const filteredAppointments = useMemo(
     () => filterAppointments(scheduleData.appointments, statusFilter, timeFilter),
     [scheduleData.appointments, statusFilter, timeFilter],
@@ -94,23 +121,20 @@ export const DoctorSchedulePage: React.FC = () => {
     (statusFilter === 'all' ? appt.status !== 'cancelled' : appt.status === statusFilter) &&
     (timeFilter === 'all' || appt.timeSlot === timeFilter);
 
-  const weekAppointments = useMemo(
-    () => {
-      const weekKeys = new Set(getWeekDays(referenceDate).map(toDateKey));
-      return scheduleAppointments.filter(
-        (appt: ScheduledAppointment) => weekKeys.has(appt.date) && matchesFilters(appt),
-      );
-    },
-    [referenceDate, scheduleAppointments, statusFilter, timeFilter],
-  );
+  const weekAppointments = useMemo(() => {
+    const weekKeys = new Set(getWeekDays(referenceDate).map(toDateKey));
+    return scheduleAppointments.filter(
+      (appt: ScheduledAppointment) => weekKeys.has(appt.date) && matchesFilters(appt),
+    );
+  }, [referenceDate, scheduleAppointments, statusFilter, timeFilter]);
 
   const monthAppointments = useMemo(
     () =>
       scheduleAppointments.filter((appt: ScheduledAppointment) => {
-        const date = new Date(appt.date);
+        const [year, month] = appt.date.split('-').map(Number);
         return (
-          date.getFullYear() === referenceDate.getFullYear() &&
-          date.getMonth() === referenceDate.getMonth() &&
+          year === referenceDate.getFullYear() &&
+          month === referenceDate.getMonth() + 1 &&
           matchesFilters(appt)
         );
       }),
@@ -120,19 +144,15 @@ export const DoctorSchedulePage: React.FC = () => {
   const headerDateLabel = useMemo(() => {
     if (viewMode === 'week') return `Tuần ${formatWeekRangeLabel(referenceDate)}`;
     if (viewMode === 'month') return formatMonthLabel(referenceDate);
-    return scheduleData.dateLabel;
-  }, [viewMode, referenceDate, scheduleData.dateLabel]);
+    return formatVietnameseDate(new Date());
+  }, [referenceDate, scheduleAppointments.length, viewMode]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, timeFilter, filteredAppointments.length, viewMode]);
 
   const handleRefresh = () => {
-    setStatusFilter('all');
-    setTimeFilter('all');
-    setCurrentPage(1);
-    setReferenceDate(new Date());
-    setViewMode('list');
+    void refetch();
   };
 
   const handleWeekChange = (direction: -1 | 1) => {
@@ -218,7 +238,7 @@ export const DoctorSchedulePage: React.FC = () => {
 
       <Link
         to="/doctor"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-emerald-500 text-white rounded-full shadow-lg shadow-emerald-500/30 flex items-center justify-center hover:bg-emerald-600 transition-colors"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-600"
         aria-label="Nhắn tin"
       >
         <MessageCircle size={24} />
