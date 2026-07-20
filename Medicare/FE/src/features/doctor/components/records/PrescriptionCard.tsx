@@ -19,6 +19,9 @@ import {
 interface PrescriptionCardProps {
   prescriptions: PrescriptionItem[];
   clinicalContext: ClinicalContextInput;
+  aiSuggestions?: AiMedicationSuggestion[];
+  aiLoading?: boolean;
+  aiError?: string;
   isEditing: boolean;
   aiEnabled: boolean;
   onAiToggle: (enabled: boolean) => void;
@@ -33,9 +36,16 @@ const emptyCustomForm = {
   instructions: '',
 };
 
+const containsHardWarning = (suggestion: AiMedicationSuggestion) =>
+  suggestion.name.toLowerCase().includes('chống chỉ định') ||
+  String(suggestion.warning || '').toLowerCase().includes('chống chỉ định');
+
 const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
   prescriptions,
   clinicalContext,
+  aiSuggestions: remoteAiSuggestions = [],
+  aiLoading = false,
+  aiError = '',
   isEditing,
   aiEnabled,
   onAiToggle,
@@ -57,10 +67,21 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
     [clinicalContext],
   );
 
-  const aiSuggestions = useMemo(
+  const localAiSuggestions = useMemo(
     () => getClinicalMedicationSuggestions(clinicalContext),
     [clinicalContext],
   );
+
+  const aiSuggestions = useMemo(() => {
+    if (remoteAiSuggestions.length === 0) return localAiSuggestions;
+
+    const merged = [...remoteAiSuggestions];
+    localAiSuggestions.forEach((suggestion) => {
+      const exists = merged.some((item) => item.name.toLowerCase() === suggestion.name.toLowerCase());
+      if (!exists) merged.push(suggestion);
+    });
+    return merged;
+  }, [localAiSuggestions, remoteAiSuggestions]);
 
   const recommendedIds = useMemo(
     () => new Set(recommendations.recommended.map((entry) => entry.item.id)),
@@ -89,12 +110,12 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
 
   const categoryMedications = useMemo(() => {
     const items = getMedicationsByCategory(activeCategory);
-    return [...items].sort((a, b) => {
-      const aRank = contraindicatedIds.has(a.id) ? 2 : recommendedIds.has(a.id) ? 0 : 1;
-      const bRank = contraindicatedIds.has(b.id) ? 2 : recommendedIds.has(b.id) ? 0 : 1;
-      return aRank - bRank;
+    return [...items].sort((left, right) => {
+      const leftRank = contraindicatedIds.has(left.id) ? 2 : recommendedIds.has(left.id) ? 0 : 1;
+      const rightRank = contraindicatedIds.has(right.id) ? 2 : recommendedIds.has(right.id) ? 0 : 1;
+      return leftRank - rightRank;
     });
-  }, [activeCategory, recommendedIds, contraindicatedIds]);
+  }, [activeCategory, contraindicatedIds, recommendedIds]);
 
   const handleAddStandard = (medication: StandardMedication) => {
     if (existingNames.has(medication.name.toLowerCase())) return;
@@ -103,7 +124,7 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
   };
 
   const handleAddFromAi = (suggestion: AiMedicationSuggestion) => {
-    if (suggestion.name.includes('chống chỉ định')) return;
+    if (containsHardWarning(suggestion)) return;
     if (existingNames.has(suggestion.name.toLowerCase())) return;
 
     const matchedMed = recommendations.recommended.find(
@@ -118,9 +139,9 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
     onAdd({
       id: `rx-ai-${suggestion.id}-${Date.now()}`,
       name: suggestion.name,
-      dosage: 'Theo chỉ định',
-      quantity: 'Theo liệu trình',
-      instructions: 'Theo hướng dẫn bác sĩ và gợi ý lâm sàng',
+      dosage: suggestion.dosage?.trim() || 'Theo chỉ định',
+      quantity: suggestion.quantity?.trim() || 'Theo liệu trình',
+      instructions: suggestion.instructions?.trim() || 'Theo hướng dẫn bác sĩ và gợi ý lâm sàng',
     });
   };
 
@@ -145,78 +166,93 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
   };
 
   return (
-    <div className="bg-white border border-[#c3c6d6]/60 rounded-2xl shadow-sm shadow-[#2563eb]/5 overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#c3c6d6]/40">
+    <div className="overflow-hidden rounded-2xl border border-[#c3c6d6]/60 bg-white shadow-sm shadow-[#2563eb]/5">
+      <div className="flex items-center justify-between gap-3 border-b border-[#c3c6d6]/40 px-5 py-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-sm font-semibold text-[#191c1e]">Kê đơn thuốc</h3>
             {!isEditing && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[#737685] bg-[#f8f9fb] px-2 py-0.5 rounded-full border border-[#c3c6d6]/50">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#c3c6d6]/50 bg-[#f8f9fb] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#737685]">
                 <Lock size={10} />
                 Chỉ xem
               </span>
             )}
           </div>
-          <p className="text-[11px] text-[#737685] mt-0.5 flex items-center gap-1 truncate">
+          <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-[#737685]">
             <Link2 size={11} className="shrink-0" />
             Liên kết khám lâm sàng: {contextSummary}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <span className="text-xs font-medium text-[#434654]">Gợi ý lâm sàng</span>
           <Toggle checked={aiEnabled} onChange={onAiToggle} disabled={!isEditing} />
-          {aiEnabled && (
-            <span className="text-[10px] font-bold uppercase text-emerald-600">On</span>
-          )}
+          {aiEnabled && <span className="text-[10px] font-bold uppercase text-emerald-600">On</span>}
         </div>
       </div>
 
       {aiEnabled && (
-        <div className="mx-5 mt-4 p-4 rounded-xl bg-gradient-to-br from-[#e8f0fe] to-indigo-50 border border-[#2563eb]/10">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="mx-5 mt-4 rounded-xl border border-[#2563eb]/10 bg-gradient-to-br from-[#e8f0fe] to-indigo-50 p-4">
+          <div className="mb-3 flex items-center gap-2">
             <Sparkles size={16} className="text-[#2563eb]" />
             <span className="text-xs font-bold uppercase tracking-wide text-[#2563eb]">
-              Đề xuất theo chẩn đoán ICD-10 / WHO
+              Đề xuất theo chẩn đoán ICD-10 / AI / WHO
             </span>
             {!isEditing && (
-              <span className="text-[10px] text-[#737685] font-normal normal-case">(chỉ xem)</span>
+              <span className="text-[10px] font-normal normal-case text-[#737685]">(chỉ xem)</span>
             )}
           </div>
-          {aiSuggestions.length === 0 ? (
+
+          {aiSuggestions.length === 0 && !aiLoading ? (
             <p className="text-xs text-[#737685]">
               Cập nhật triệu chứng và chẩn đoán sơ bộ để nhận gợi ý thuốc phù hợp.
             </p>
           ) : (
             <div className="space-y-2">
+              {aiLoading && (
+                <p className="text-xs text-[#2563eb]">AI đang phân tích thêm thuốc phù hợp...</p>
+              )}
+              {!aiLoading && aiError && (
+                <p className="text-xs text-amber-700">{aiError}</p>
+              )}
+
               {aiSuggestions.map((suggestion) => {
-                const isWarning = suggestion.name.includes('chống chỉ định');
+                const isWarning = containsHardWarning(suggestion) || Boolean(suggestion.warning);
                 const alreadyAdded = !isWarning && existingNames.has(suggestion.name.toLowerCase());
+
                 return (
                   <div
                     key={suggestion.id}
                     className={`flex items-start gap-2 rounded-lg px-2 py-1.5 ${
-                      isWarning ? 'bg-rose-50/80 border border-rose-100' : ''
+                      isWarning ? 'border border-rose-100 bg-rose-50/80' : ''
                     }`}
                   >
                     {isWarning && (
-                      <AlertTriangle size={14} className="text-rose-600 shrink-0 mt-0.5" />
+                      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-rose-600" />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-semibold ${
-                          isWarning ? 'text-rose-700' : 'text-[#191c1e]'
-                        }`}
-                      >
+
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-semibold ${isWarning ? 'text-rose-700' : 'text-[#191c1e]'}`}>
                         {suggestion.name}
                       </p>
-                      <p className="text-xs text-[#737685] mt-0.5">{suggestion.reason}</p>
+                      <p className="mt-0.5 text-xs text-[#737685]">{suggestion.reason}</p>
+                      {(suggestion.dosage || suggestion.quantity || suggestion.instructions) && (
+                        <p className="mt-1 text-[11px] text-[#5d6472]">
+                          {[suggestion.dosage, suggestion.quantity, suggestion.instructions]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      )}
+                      {suggestion.warning && (
+                        <p className="mt-1 text-[11px] text-rose-700">{suggestion.warning}</p>
+                      )}
                     </div>
+
                     {!isWarning && isEditing && (
                       <button
                         type="button"
                         onClick={() => handleAddFromAi(suggestion)}
                         disabled={alreadyAdded}
-                        className="shrink-0 p-1.5 rounded-lg text-[#2563eb] hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="shrink-0 rounded-lg p-1.5 text-[#2563eb] transition-colors hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label={`Thêm ${suggestion.name}`}
                       >
                         <Plus size={14} />
@@ -231,17 +267,17 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
       )}
 
       <div className="p-5">
-        <div className="overflow-x-auto -mx-1">
+        <div className="-mx-1 overflow-x-auto">
           <table className="w-full min-w-[280px]">
             <thead>
               <tr className="border-b border-[#c3c6d6]/30">
-                <th className="text-left text-[10px] font-semibold uppercase tracking-wider text-[#737685] pb-2 pr-3">
+                <th className="pb-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-[#737685]">
                   Thuốc
                 </th>
-                <th className="text-left text-[10px] font-semibold uppercase tracking-wider text-[#737685] pb-2 pr-3">
+                <th className="pb-2 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-[#737685]">
                   SL
                 </th>
-                <th className="text-left text-[10px] font-semibold uppercase tracking-wider text-[#737685] pb-2">
+                <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-[#737685]">
                   Hướng dẫn
                 </th>
                 {isEditing && <th className="w-8 pb-2" aria-hidden />}
@@ -256,21 +292,19 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
                 </tr>
               ) : (
                 prescriptions.map((item) => (
-                  <tr key={item.id} className="border-b border-[#c3c6d6]/15 last:border-0">
+                  <tr key={item.id} className="last:border-0 border-b border-[#c3c6d6]/15">
                     <td className="py-3 pr-3">
                       <p className="text-sm font-medium text-[#191c1e]">{item.name}</p>
                       <p className="text-xs text-[#737685]">{item.dosage}</p>
                     </td>
-                    <td className="py-3 pr-3 text-sm text-[#434654] whitespace-nowrap">
-                      {item.quantity}
-                    </td>
+                    <td className="whitespace-nowrap py-3 pr-3 text-sm text-[#434654]">{item.quantity}</td>
                     <td className="py-3 text-xs text-[#434654]">{item.instructions}</td>
                     {isEditing && (
                       <td className="py-3">
                         <button
                           type="button"
                           onClick={() => onRemovePrescription(item.id)}
-                          className="p-1 rounded-lg text-[#737685] hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="rounded-lg p-1 text-[#737685] transition-colors hover:bg-rose-50 hover:text-rose-600"
                           aria-label="Xóa thuốc"
                         >
                           <Trash2 size={14} />
@@ -293,180 +327,180 @@ const PrescriptionCard: React.FC<PrescriptionCardProps> = ({
             >
               <Plus size={16} />
               Thêm thuốc thủ công
-              <ChevronDown
-                size={14}
-                className={`transition-transform ${pickerOpen ? 'rotate-180' : ''}`}
-              />
+              <ChevronDown size={14} className={`transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {pickerOpen && (
-            <div className="mt-3 rounded-xl border border-[#c3c6d6]/60 bg-[#f8f9fb]/50 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#c3c6d6]/40 bg-white">
-                <div>
-                  <p className="text-sm font-semibold text-[#191c1e]">Thuốc theo khám lâm sàng</p>
-                  <p className="text-xs text-[#737685] mt-0.5">
-                    Lọc theo ICD-10, triệu chứng; kiểm tra dị ứng theo chuẩn lâm sàng
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen(false)}
-                  className="p-1.5 rounded-lg text-[#737685] hover:bg-[#f8f9fb]"
-                  aria-label="Đóng"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {recommendations.recommended.length > 0 && (
-                <div className="px-4 py-3 border-b border-[#c3c6d6]/30 bg-gradient-to-br from-[#e8f0fe]/60 to-white">
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#2563eb] mb-2">
-                    Đề xuất theo chẩn đoán & triệu chứng
-                  </p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {recommendations.recommended.slice(0, 5).map((entry) => {
-                      const alreadyAdded = existingNames.has(entry.item.name.toLowerCase());
-                      return (
-                        <button
-                          key={`rec-${entry.item.id}`}
-                          type="button"
-                          onClick={() => handleAddStandard(entry.item)}
-                          disabled={alreadyAdded}
-                          className={`w-full text-left rounded-lg border px-3 py-2.5 transition-colors ${
-                            alreadyAdded
-                              ? 'border-[#c3c6d6]/40 bg-[#f8f9fb]/60 opacity-60 cursor-not-allowed'
-                              : 'border-[#2563eb]/15 bg-white hover:border-[#2563eb]/30 hover:bg-[#e8f0fe]/30'
-                          }`}
-                        >
-                          <p className="text-sm font-medium text-[#191c1e]">{entry.item.name}</p>
-                          <p className="text-[11px] text-[#737685] mt-0.5 line-clamp-2">
-                            {entry.rationale}
-                          </p>
-                        </button>
-                      );
-                    })}
+              <div className="mt-3 overflow-hidden rounded-xl border border-[#c3c6d6]/60 bg-[#f8f9fb]/50">
+                <div className="flex items-center justify-between border-b border-[#c3c6d6]/40 bg-white px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#191c1e]">Thuốc theo khám lâm sàng</p>
+                    <p className="mt-0.5 text-xs text-[#737685]">
+                      Lọc theo ICD-10, triệu chứng; kiểm tra dị ứng theo chuẩn lâm sàng
+                    </p>
                   </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-1.5 px-4 py-3 border-b border-[#c3c6d6]/30 bg-white">
-                {STANDARD_MEDICATION_CATEGORIES.map((category) => (
                   <button
-                    key={category}
                     type="button"
-                    onClick={() => setActiveCategory(category)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      activeCategory === category
-                        ? 'bg-[#2563eb] text-white'
-                        : 'bg-[#f8f9fb] text-[#434654] hover:bg-[#e8f0fe] hover:text-[#2563eb]'
-                    }`}
+                    onClick={() => setPickerOpen(false)}
+                    className="rounded-lg p-1.5 text-[#737685] hover:bg-[#f8f9fb]"
+                    aria-label="Đóng"
                   >
-                    {category}
+                    <X size={16} />
                   </button>
-                ))}
-              </div>
+                </div>
 
-              <div className="max-h-56 overflow-y-auto divide-y divide-[#c3c6d6]/20 bg-white">
-                {categoryMedications.map((medication) => {
-                  const alreadyAdded = existingNames.has(medication.name.toLowerCase());
-                  const isRecommended = recommendedIds.has(medication.id);
-                  const isContraindicated = contraindicatedIds.has(medication.id);
-                  const rec = recommendationMap.get(medication.id);
-                  return (
+                {recommendations.recommended.length > 0 && (
+                  <div className="border-b border-[#c3c6d6]/30 bg-gradient-to-br from-[#e8f0fe]/60 to-white px-4 py-3">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#2563eb]">
+                      Đề xuất theo chẩn đoán & triệu chứng
+                    </p>
+                    <div className="max-h-40 space-y-2 overflow-y-auto">
+                      {recommendations.recommended.slice(0, 5).map((entry) => {
+                        const alreadyAdded = existingNames.has(entry.item.name.toLowerCase());
+                        return (
+                          <button
+                            key={`rec-${entry.item.id}`}
+                            type="button"
+                            onClick={() => handleAddStandard(entry.item)}
+                            disabled={alreadyAdded}
+                            className={`w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                              alreadyAdded
+                                ? 'cursor-not-allowed border-[#c3c6d6]/40 bg-[#f8f9fb]/60 opacity-60'
+                                : 'border-[#2563eb]/15 bg-white hover:border-[#2563eb]/30 hover:bg-[#e8f0fe]/30'
+                            }`}
+                          >
+                            <p className="text-sm font-medium text-[#191c1e]">{entry.item.name}</p>
+                            <p className="mt-0.5 line-clamp-2 text-[11px] text-[#737685]">
+                              {entry.rationale}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-1.5 border-b border-[#c3c6d6]/30 bg-white px-4 py-3">
+                  {STANDARD_MEDICATION_CATEGORIES.map((category) => (
                     <button
-                      key={medication.id}
+                      key={category}
                       type="button"
-                      onClick={() => handleAddStandard(medication)}
-                      disabled={alreadyAdded || isContraindicated}
-                      className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${
-                        alreadyAdded || isContraindicated
-                          ? 'opacity-50 cursor-not-allowed bg-[#f8f9fb]/40'
-                          : isRecommended
-                            ? 'bg-[#e8f0fe]/25 hover:bg-[#e8f0fe]/50'
-                            : 'hover:bg-[#e8f0fe]/40'
+                      onClick={() => setActiveCategory(category)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                        activeCategory === category
+                          ? 'bg-[#2563eb] text-white'
+                          : 'bg-[#f8f9fb] text-[#434654] hover:bg-[#e8f0fe] hover:text-[#2563eb]'
                       }`}
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium text-[#191c1e]">{medication.name}</p>
-                          {isRecommended && (
-                            <span className="text-[10px] font-semibold uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                              Phù hợp
-                            </span>
-                          )}
-                          {isContraindicated && (
-                            <span className="text-[10px] font-semibold uppercase text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
-                              Chống chỉ định
-                            </span>
+                      {category}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="max-h-56 divide-y divide-[#c3c6d6]/20 overflow-y-auto bg-white">
+                  {categoryMedications.map((medication) => {
+                    const alreadyAdded = existingNames.has(medication.name.toLowerCase());
+                    const isRecommended = recommendedIds.has(medication.id);
+                    const isContraindicated = contraindicatedIds.has(medication.id);
+                    const recommendation = recommendationMap.get(medication.id);
+
+                    return (
+                      <button
+                        key={medication.id}
+                        type="button"
+                        onClick={() => handleAddStandard(medication)}
+                        disabled={alreadyAdded || isContraindicated}
+                        className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors ${
+                          alreadyAdded || isContraindicated
+                            ? 'cursor-not-allowed bg-[#f8f9fb]/40 opacity-50'
+                            : isRecommended
+                              ? 'bg-[#e8f0fe]/25 hover:bg-[#e8f0fe]/50'
+                              : 'hover:bg-[#e8f0fe]/40'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium text-[#191c1e]">{medication.name}</p>
+                            {isRecommended && (
+                              <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+                                Phù hợp
+                              </span>
+                            )}
+                            {isContraindicated && (
+                              <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-700">
+                                Chống chỉ định
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-xs text-[#737685]">
+                            {medication.quantity} · {medication.instructions}
+                          </p>
+                          {recommendation && (
+                            <p className="mt-0.5 line-clamp-1 text-[11px] text-[#737685]">
+                              {recommendation.rationale}
+                            </p>
                           )}
                         </div>
-                        <p className="text-xs text-[#737685] mt-0.5">
-                          {medication.quantity} · {medication.instructions}
-                        </p>
-                        {rec && (
-                          <p className="text-[11px] text-[#737685] mt-0.5 line-clamp-1">{rec.rationale}</p>
+                        {alreadyAdded ? (
+                          <span className="shrink-0 text-xs text-[#737685]">Đã có</span>
+                        ) : isContraindicated ? (
+                          <AlertTriangle size={14} className="mt-0.5 shrink-0 text-rose-600" />
+                        ) : (
+                          <Plus size={14} className="mt-0.5 shrink-0 text-[#2563eb]" />
                         )}
-                      </div>
-                      {alreadyAdded ? (
-                        <span className="text-xs text-[#737685] shrink-0">Đã có</span>
-                      ) : isContraindicated ? (
-                        <AlertTriangle size={14} className="text-rose-600 shrink-0 mt-0.5" />
-                      ) : (
-                        <Plus size={14} className="text-[#2563eb] shrink-0 mt-0.5" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="px-4 py-3 border-t border-[#c3c6d6]/30 bg-white space-y-2">
-                <p className="text-xs font-medium text-[#737685]">Hoặc nhập thuốc tùy chỉnh</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    value={customForm.name}
-                    onChange={(e) => setCustomForm((f) => ({ ...f, name: e.target.value }))}
-                    placeholder="Tên thuốc (VD: Amlodipine 5mg)"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
-                  />
-                  <input
-                    type="text"
-                    value={customForm.dosage}
-                    onChange={(e) => setCustomForm((f) => ({ ...f, dosage: e.target.value }))}
-                    placeholder="Liều dùng (VD: 5mg)"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
-                  />
-                  <input
-                    type="text"
-                    value={customForm.quantity}
-                    onChange={(e) => setCustomForm((f) => ({ ...f, quantity: e.target.value }))}
-                    placeholder="Số lượng (VD: 30 viên)"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
-                  />
-                  <input
-                    type="text"
-                    value={customForm.instructions}
-                    onChange={(e) => setCustomForm((f) => ({ ...f, instructions: e.target.value }))}
-                    placeholder="Hướng dẫn dùng"
-                    className="px-3 py-2 text-sm border border-[#c3c6d6]/60 rounded-lg outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
-                  />
+                      </button>
+                    );
+                  })}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddCustom}
-                  disabled={
-                    !customForm.name.trim() ||
-                    !customForm.dosage.trim() ||
-                    !customForm.quantity.trim() ||
-                    !customForm.instructions.trim()
-                  }
-                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#2563eb] rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Thêm vào đơn
-                </button>
+
+                <div className="space-y-2 border-t border-[#c3c6d6]/30 bg-white px-4 py-3">
+                  <p className="text-xs font-medium text-[#737685]">Hoặc nhập thuốc tùy chỉnh</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input
+                      type="text"
+                      value={customForm.name}
+                      onChange={(event) => setCustomForm((form) => ({ ...form, name: event.target.value }))}
+                      placeholder="Tên thuốc (VD: Amlodipine 5mg)"
+                      className="rounded-lg border border-[#c3c6d6]/60 px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
+                    />
+                    <input
+                      type="text"
+                      value={customForm.dosage}
+                      onChange={(event) => setCustomForm((form) => ({ ...form, dosage: event.target.value }))}
+                      placeholder="Liều dùng (VD: 5mg)"
+                      className="rounded-lg border border-[#c3c6d6]/60 px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
+                    />
+                    <input
+                      type="text"
+                      value={customForm.quantity}
+                      onChange={(event) => setCustomForm((form) => ({ ...form, quantity: event.target.value }))}
+                      placeholder="Số lượng (VD: 30 viên)"
+                      className="rounded-lg border border-[#c3c6d6]/60 px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
+                    />
+                    <input
+                      type="text"
+                      value={customForm.instructions}
+                      onChange={(event) => setCustomForm((form) => ({ ...form, instructions: event.target.value }))}
+                      placeholder="Hướng dẫn dùng"
+                      className="rounded-lg border border-[#c3c6d6]/60 px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddCustom}
+                    disabled={
+                      !customForm.name.trim() ||
+                      !customForm.dosage.trim() ||
+                      !customForm.quantity.trim() ||
+                      !customForm.instructions.trim()
+                    }
+                    className="w-full rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    Thêm vào đơn
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
         )}
       </div>
