@@ -40,9 +40,7 @@ export const AdminRoomsPage: React.FC = () => {
     setDepartment,
     statusFilter,
     setStatusFilter,
-    deleteRoom,
-    addRoom,
-    updateRoom,
+    refreshRooms,
   } = useAdminRooms();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
@@ -71,20 +69,9 @@ export const AdminRoomsPage: React.FC = () => {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.name.trim()) {
-      setError('Vui lòng nhập tên phòng.');
-      return;
-    }
-    if (!form.department.trim()) {
-      setError('Vui lòng nhập khoa phụ trách.');
-      return;
-    }
-    if (editing) {
-      updateRoom(editing.id, form);
-    } else {
-      addRoom(form);
-    }
-    setModalOpen(false);
+    setError(
+      'Trang này đang dùng dữ liệu thật từ hệ thống. Chức năng thêm hoặc sửa phòng sẽ được nối API riêng sau.',
+    );
   };
 
   return (
@@ -95,7 +82,7 @@ export const AdminRoomsPage: React.FC = () => {
             Quản lý Phòng khám
           </h1>
           <p className="text-gray-500 dark:text-slate-400">
-            Quản lý danh sách, trạng thái và phân bổ phòng khám bệnh
+            Quản lý danh sách, trạng thái và phân bổ phòng khám bệnh theo dữ liệu thật của hệ thống
           </p>
         </div>
         <Button leftIcon={<Plus size={16} />} onClick={openCreate}>
@@ -112,7 +99,7 @@ export const AdminRoomsPage: React.FC = () => {
       <Card padding="sm">
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Lọc theo Khoa</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Lọc theo khoa</label>
             <select
               value={department}
               onChange={(event) => {
@@ -145,7 +132,14 @@ export const AdminRoomsPage: React.FC = () => {
               <option value="maintenance">{ROOM_STATUS_LABELS.maintenance}</option>
             </select>
           </div>
-          <Button variant="outline" leftIcon={<Filter size={16} />} onClick={() => setPage(1)}>
+          <Button
+            variant="outline"
+            leftIcon={<Filter size={16} />}
+            onClick={() => {
+              setPage(1);
+              refreshRooms();
+            }}
+          >
             Áp dụng lọc
           </Button>
         </div>
@@ -181,15 +175,16 @@ export const AdminRoomsPage: React.FC = () => {
                         type="button"
                         title="Sửa"
                         onClick={() => openEdit(room)}
-                        className="p-2 rounded-lg text-gray-500 hover:bg-blue-50 hover:text-[#1a56db] transition-colors"
+                        className="p-2 rounded-lg text-gray-300 cursor-not-allowed"
+                        disabled
                       >
                         <Pencil size={16} />
                       </button>
                       <button
                         type="button"
-                        onClick={() => deleteRoom(room.id)}
                         title="Xóa"
-                        className="p-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors"
+                        className="p-2 rounded-lg text-gray-300 cursor-not-allowed"
+                        disabled
                       >
                         <Trash2 size={16} />
                       </button>
@@ -209,7 +204,8 @@ export const AdminRoomsPage: React.FC = () => {
 
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-gray-100 dark:border-slate-700">
           <p className="text-sm text-gray-500">
-            Hiển thị {rooms.length === 0 ? 0 : start + 1} - {start + pageItems.length} của {total} phòng
+            Hiển thị {rooms.length === 0 ? 0 : start + 1} - {start + pageItems.length} của {total}{' '}
+            phòng
           </p>
           <Pagination currentPage={currentPage} totalPages={totalPages} onChange={(value) => setPage(value)} />
         </div>
@@ -219,7 +215,9 @@ export const AdminRoomsPage: React.FC = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? 'Chỉnh sửa phòng' : 'Thêm phòng mới'}
-        description={editing ? `Mã phòng: ${editing.id}` : 'Tạo phòng khám trong hệ thống'}
+        description={
+          editing ? `Mã phòng: ${editing.id}` : 'Phòng khám đang được đồng bộ từ dữ liệu bác sĩ trong hệ thống'
+        }
         footer={
           <>
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
@@ -239,7 +237,7 @@ export const AdminRoomsPage: React.FC = () => {
             </label>
             <input
               value={form.name}
-              placeholder="VD: Phòng khám Nội 03"
+              placeholder="VD: Phòng XK001 - Khoa Cơ xương khớp"
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               className={selectClass}
             />
