@@ -37,11 +37,12 @@ const toChatHistory = (messages: ChatMessage[]): AiChatMessage[] =>
 const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ onClick }) => {
   const messages = useChatStore((state) => state.messages);
   const unread = useChatStore((state) => state.unread);
+  const open = useChatStore((state) => state.open);
   const addMessage = useChatStore((state) => state.addMessage);
   const markAllRead = useChatStore((state) => state.markAllRead);
   const bumpUnread = useChatStore((state) => state.bumpUnread);
+  const setOpen = useChatStore((state) => state.setOpen);
 
-  const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,7 +68,7 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ onClick }) => {
       onClick();
       return;
     }
-    setOpen((prev) => !prev);
+    setOpen(!open);
   };
 
   const sendMessage = async (text: string) => {

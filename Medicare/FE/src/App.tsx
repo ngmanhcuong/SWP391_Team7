@@ -44,6 +44,7 @@ const ReceptionistBillingPayment = lazy(() => import('./pages/receptionist').the
 const ReceptionistPaymentsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistPaymentsPage })));
 const ReceptionistNotificationsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistNotificationsPage })));
 const ReceptionistProfilePage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistProfilePage })));
+const ReceptionistDepartmentsPage = lazy(() => import('./pages/receptionist').then(m => ({ default: m.ReceptionistDepartmentsPage })));
 
 const AdminDashboardPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import('./pages/admin').then(m => ({ default: m.AdminUsersPage })));
@@ -120,6 +121,7 @@ const App: React.FC = () => (
             <Route path="tiep-nhan" element={<ReceptionistReceptionPage />} />
             <Route path="hang-cho" element={<ReceptionistQueuePage />} />
             <Route path="lich-hen" element={<ReceptionistAppointmentsPage />} />
+            <Route path="khoa-kham" element={<ReceptionistDepartmentsPage />} />
             <Route path="benh-nhan" element={<ReceptionistPatientRegisterPage />} />
             <Route path="thanh-toan" element={<ReceptionistBillingPayment />} />
             <Route path="hoa-don" element={<ReceptionistPaymentsPage />} />
