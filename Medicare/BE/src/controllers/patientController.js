@@ -132,6 +132,8 @@ const mapDoctor = (doc) => ({
   experienceYears: doc.experienceYears,
   tag: { label: doc.tag?.label || '', variant: doc.tag?.variant || 'potential' },
   nextAvailableSlot: doc.nextAvailableSlot ?? null,
+  roomCode: doc.roomCode ?? null,
+  roomName: doc.roomName ?? null,
   isAvailable: doc.isAvailable,
   avatarBg: doc.avatarBg,
 });
@@ -551,6 +553,9 @@ const createAppointment = async (req, res) => {
       additionalNotes: additionalNotes?.trim() || '',
       consultationFee,
       depositAmount,
+      depositPaymentMethod,
+      depositPaidAt: now,
+      receptionDepositConfirmed: false,
       insured: Boolean(patientRecord?.insurance?.code),
       status: 'pending',
       source: 'patient',
@@ -857,8 +862,11 @@ const markNotificationsRead = async (req, res) => {
 // ─── Reviews ─────────────────────────────────────────────
 const getReviews = async (req, res) => {
   try {
-    const [paidInvoices, reviewDocs] = await Promise.all([
-      Invoice.find({ patientUser: req.user._id, status: 'paid' }).sort({ paidAt: -1 }),
+    const [completedAppointments, patientInvoices, reviewDocs] = await Promise.all([
+      Appointment.find({ patientUser: req.user._id, status: 'done' })
+        .select('_id date time doctor department')
+        .sort({ date: -1, time: -1 }),
+      Invoice.find({ patientUser: req.user._id }).sort({ visitDate: -1, createdAt: -1 }),
       Review.find({ patientUser: req.user._id }).sort({ submittedAt: -1 }),
     ]);
 
@@ -866,16 +874,28 @@ const getReviews = async (req, res) => {
       reviewDocs.filter((r) => r.invoice).map((r) => r.invoice.toString()),
     );
 
-    const pendingVisits = paidInvoices
-      .filter((inv) => !reviewedInvoiceIds.has(inv._id.toString()))
-      .map((inv) => ({
-        id: inv._id.toString(),
-        visitDate: formatDateVN(inv.visitDate),
-        doctorName: inv.doctorName,
-        specialtyName: inv.specialtyName,
-        facility: inv.facility || FACILITY_NAME,
-        invoiceCode: inv.code,
-      }));
+    const invoiceByAppointmentId = new Map(
+      patientInvoices
+        .filter((inv) => inv.appointment)
+        .map((inv) => [inv.appointment.toString(), inv]),
+    );
+
+    const pendingVisits = completedAppointments
+      .map((appointment) => {
+        const linkedInvoice = invoiceByAppointmentId.get(appointment._id.toString()) || null;
+        if (!linkedInvoice) return null;
+        if (reviewedInvoiceIds.has(linkedInvoice._id.toString())) return null;
+
+        return {
+          id: linkedInvoice._id.toString(),
+          visitDate: formatDateVN(linkedInvoice.visitDate || appointment.date),
+          doctorName: linkedInvoice.doctorName || appointment.doctor || 'Bác sĩ phụ trách',
+          specialtyName: linkedInvoice.specialtyName || appointment.department || 'Chuyên khoa',
+          facility: linkedInvoice.facility || FACILITY_NAME,
+          invoiceCode: linkedInvoice.code,
+        };
+      })
+      .filter(Boolean);
 
     const reviews = reviewDocs.map(mapReview);
     const averageRating =
