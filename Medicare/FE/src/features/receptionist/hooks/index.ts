@@ -65,6 +65,14 @@ export const useCreateAppointment = () => {
   });
 };
 
+export const useConfirmAppointmentDeposit = () => {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) => receptionistApi.confirmAppointmentDeposit(id),
+    onSuccess: invalidate,
+  });
+};
+
 export const useUpdateAppointmentStatus = () => {
   const invalidate = useInvalidateAll();
   return useMutation({

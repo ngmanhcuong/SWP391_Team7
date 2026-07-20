@@ -29,6 +29,8 @@ export const receptionistApi = {
     unwrap(await api.get('/receptionist/appointments', { params: filters })),
   createAppointment: async (input: CreateAppointmentInput): Promise<Appointment> =>
     unwrap(await api.post('/receptionist/appointments', input)),
+  confirmAppointmentDeposit: async (id: string): Promise<Appointment> =>
+    unwrap(await api.post(`/receptionist/appointments/${id}/confirm-deposit`)),
   updateAppointmentStatus: async (id: string, status: string): Promise<Appointment> =>
     unwrap(await api.patch(`/receptionist/appointments/${id}/status`, { status })),
   checkinAppointment: async (id: string): Promise<{ appointment: Appointment; ticket: number }> =>

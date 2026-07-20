@@ -9,11 +9,11 @@ interface ReviewsEmptyStateProps {
 const MESSAGES: Record<ReviewFilter, { title: string; description: string }> = {
   all: {
     title: 'Chưa có lượt khám để đánh giá',
-    description: 'Sau khi hoàn tất khám và thanh toán, bạn có thể đánh giá dịch vụ tại đây.',
+    description: 'Sau khi bác sĩ hoàn tất ca khám, lượt khám đủ điều kiện sẽ xuất hiện tại đây để bạn đánh giá.',
   },
   pending: {
     title: 'Không có lượt khám chờ đánh giá',
-    description: 'Bạn đã đánh giá hết các lượt khám đã thanh toán gần đây.',
+    description: 'Bạn đã đánh giá hết các lượt khám đã hoàn tất gần đây.',
   },
   submitted: {
     title: 'Chưa có đánh giá nào',
@@ -30,7 +30,7 @@ const ReviewsEmptyState: React.FC<ReviewsEmptyStateProps> = ({ filter }) => {
         <Star size={22} className="text-amber-500" />
       </div>
       <p className="text-base font-medium text-[#191c1e]">{message.title}</p>
-      <p className="text-sm text-[#434654] mt-2 max-w-md mx-auto">{message.description}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-[#434654]">{message.description}</p>
     </div>
   );
 };

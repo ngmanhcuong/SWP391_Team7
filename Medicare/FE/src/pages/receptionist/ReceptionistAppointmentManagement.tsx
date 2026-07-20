@@ -14,9 +14,10 @@ import { Card, Modal, Spinner } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import {
   useAppointments,
-  useReceptionistCatalog,
   useCheckinAppointment,
+  useConfirmAppointmentDeposit,
   useCreateAppointment,
+  useReceptionistCatalog,
   useUpdateAppointmentStatus,
 } from '../../features/receptionist/hooks';
 import { Appointment, AppointmentStatus } from '../../features/receptionist/types';
@@ -44,7 +45,6 @@ const STATUS_FILTER_OPTIONS: { value: 'all' | AppointmentStatus; label: string }
 ];
 
 const DEPARTMENTS = CLINIC_DEPARTMENTS;
-
 const PAGE_SIZE = 5;
 
 const todayISO = () => new Date().toISOString().split('T')[0];
@@ -54,6 +54,29 @@ const formatDate = (iso?: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return 'Chưa ghi nhận';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Chưa ghi nhận';
+  return new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+};
+
+const formatCurrency = (amount?: number) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount ?? 0);
+
+const PAYMENT_METHOD_LABELS: Record<'vnpay' | 'momo' | 'banking' | '', string> = {
+  '': 'Chưa có',
+  vnpay: 'VNPay',
+  momo: 'MoMo',
+  banking: 'Chuyển khoản ngân hàng',
 };
 
 interface NewAppointmentForm {
@@ -77,15 +100,49 @@ const EMPTY_NEW_FORM: NewAppointmentForm = {
 };
 
 const TIMELINE = [
-  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', detail: 'Khám nhi tổng quát • BS. Vũ Hà Phương', state: 'done' as const, note: 'ĐÃ HOÀN THÀNH' },
+  { code: '#LH-9795', name: 'Nguyễn Diệu Nhi', detail: 'Khám nhi tổng quát • BS. Vũ Hà Phương', state: 'done' as const, note: 'Đã hoàn thành' },
   { code: '#LH-9799', name: 'Lê Hoàng Nam', detail: 'Khám chấn thương • BS. Đặng Quốc Anh', state: 'active' as const, note: 'Đang khám...' },
   { code: '#LH-9802', name: 'Trần Văn Tú', detail: 'Khám nội tổng quát • Chờ BS. Lê Minh Hoàng', state: 'upcoming' as const, note: 'Sắp tới (08:30)' },
 ];
+
+const getDepositStatusMeta = (appointment: Appointment) => {
+  const needsDeposit = appointment.source === 'patient' && (appointment.depositAmount ?? 0) > 0;
+  if (!needsDeposit) {
+    return {
+      label: 'Không yêu cầu đặt cọc',
+      className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+      description: 'Lịch do lễ tân tạo tại quầy hoặc lịch này không cần giữ chỗ bằng tiền cọc.',
+    };
+  }
+
+  if (appointment.receptionDepositConfirmed) {
+    return {
+      label: 'Đã xác nhận đặt cọc',
+      className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40',
+      description: 'Lễ tân đã đối chiếu đúng số tiền bệnh nhân chuyển và có thể tiếp tục duyệt lịch hẹn.',
+    };
+  }
+
+  if (appointment.depositPaidAt) {
+    return {
+      label: 'Chờ xác nhận đặt cọc',
+      className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40',
+      description: 'Bệnh nhân đã báo đã chuyển tiền cọc. Lễ tân cần xác minh trước khi xác nhận lịch.',
+    };
+  }
+
+  return {
+    label: 'Chưa có xác nhận thanh toán',
+    className: 'bg-red-100 text-red-600 dark:bg-red-950/40',
+    description: 'Bệnh nhân chưa xác nhận đã thanh toán khoản cọc giữ lịch.',
+  };
+};
 
 const ReceptionistAppointmentManagement: React.FC = () => {
   const { data: appointments = [], isLoading, isError } = useAppointments();
   const { data: catalog } = useReceptionistCatalog();
   const createAppointment = useCreateAppointment();
+  const confirmDeposit = useConfirmAppointmentDeposit();
   const updateStatus = useUpdateAppointmentStatus();
   const checkin = useCheckinAppointment();
 
@@ -93,7 +150,6 @@ const ReceptionistAppointmentManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | AppointmentStatus>('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [page, setPage] = useState(1);
-
   const [detail, setDetail] = useState<Appointment | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newForm, setNewForm] = useState<NewAppointmentForm>(EMPTY_NEW_FORM);
@@ -152,11 +208,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
       const doctor = doctors.includes(form.doctor) ? form.doctor : doctors[0] ?? '';
       const service = services.includes(form.service) ? form.service : services[0] ?? '';
 
-      if (
-        department === form.department &&
-        doctor === form.doctor &&
-        service === form.service
-      ) {
+      if (department === form.department && doctor === form.doctor && service === form.service) {
         return form;
       }
 
@@ -170,11 +222,10 @@ const ReceptionistAppointmentManagement: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  // Keep the detail modal in sync after a status mutation.
   useEffect(() => {
     if (!detail) return;
     const fresh = appointments.find((a) => a.id === detail.id);
-    if (fresh && fresh.status !== detail.status) setDetail(fresh);
+    if (fresh) setDetail(fresh);
   }, [appointments, detail]);
 
   const stats: { label: string; value: number; icon: LucideIcon; tone: string }[] = useMemo(() => {
@@ -219,7 +270,6 @@ const ReceptionistAppointmentManagement: React.FC = () => {
     );
   };
 
-  // Check-in trực tiếp lịch hẹn đã xác nhận: tạo số thứ tự và đưa vào hàng chờ.
   const handleCheckin = (appt: Appointment) => {
     checkin.mutate(appt.id, {
       onSuccess: ({ ticket }) =>
@@ -228,6 +278,18 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         const message =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message
           || 'Không thể check-in. Vui lòng thử lại.';
+        setToast(message);
+      },
+    });
+  };
+
+  const handleConfirmDeposit = (appt: Appointment) => {
+    confirmDeposit.mutate(appt.id, {
+      onSuccess: () => setToast(`Đã xác nhận đặt cọc cho lịch ${appt.code}.`),
+      onError: (err: unknown) => {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          || 'Không thể xác nhận đặt cọc.';
         setToast(message);
       },
     });
@@ -267,13 +329,21 @@ const ReceptionistAppointmentManagement: React.FC = () => {
     );
   };
 
+  const detailDepositStatus = detail ? getDepositStatusMeta(detail) : null;
+  const detailNeedsDepositConfirmation = Boolean(
+    detail &&
+      detail.status === 'pending' &&
+      detail.source === 'patient' &&
+      (detail.depositAmount ?? 0) > 0 &&
+      !detail.receptionDepositConfirmed,
+  );
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-[#1a56db]" style={{ fontFamily: 'Lexend' }}>
         Quản lý lịch hẹn
       </h1>
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, tone }) => (
           <Card key={label}>
@@ -290,18 +360,17 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Filters */}
       <Card>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <label className="flex-1">
             <span className="mb-1 block text-xs font-medium text-gray-500 dark:text-slate-400">Tìm kiếm</span>
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-2 focus-within:border-[#1a56db]">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 focus-within:border-[#1a56db] dark:border-slate-600">
               <Search size={16} className="text-gray-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Mã LH, Tên bệnh nhân, SĐT..."
+                placeholder="Mã LH, tên bệnh nhân, SĐT..."
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
               />
             </div>
@@ -311,7 +380,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | AppointmentStatus)}
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db] dark:border-slate-600"
             >
               {STATUS_FILTER_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -325,7 +394,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db]"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#1a56db] dark:border-slate-600"
             >
               <option value="all">Tất cả các khoa</option>
               {availableDepartments.map((dept) => (
@@ -341,7 +410,6 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         </div>
       </Card>
 
-      {/* Table */}
       <Card padding="none" className="overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
@@ -353,7 +421,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-slate-700">
+                <tr className="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:border-slate-700">
                   <th className="px-5 py-3">Mã LH</th>
                   <th className="px-3 py-3">Bệnh nhân</th>
                   <th className="px-3 py-3">Bác sĩ</th>
@@ -404,7 +472,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
             </table>
           </div>
         )}
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 dark:border-slate-700">
+        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3 dark:border-slate-700">
           <p className="text-xs text-gray-400">
             Hiển thị {paginated.length} trên {filtered.length} kết quả
           </p>
@@ -413,7 +481,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-8 w-8 rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600"
               aria-label="Trang trước"
             >
               ‹
@@ -426,7 +494,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
                 className={`h-8 w-8 rounded-lg text-sm font-medium ${
                   p === currentPage
                     ? 'bg-[#1a56db] text-white'
-                    : 'border border-gray-200 dark:border-slate-600 text-gray-600 hover:bg-gray-50'
+                    : 'border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-slate-600'
                 }`}
               >
                 {p}
@@ -436,7 +504,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="h-8 w-8 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-8 w-8 rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600"
               aria-label="Trang sau"
             >
               ›
@@ -445,10 +513,9 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         </div>
       </Card>
 
-      {/* Bottom: timeline + note */}
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card>
-          <div className="flex items-center justify-between mb-5">
+          <div className="mb-5 flex items-center justify-between">
             <h2 className="text-base font-semibold">Tiến độ khám bệnh hôm nay</h2>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Trực tiếp
@@ -491,21 +558,22 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         </Card>
 
         <div className="rounded-2xl bg-gradient-to-br from-[#1a56db] to-[#1e40af] p-5 text-white shadow-lg">
-          <h2 className="text-base font-semibold mb-3">Ghi chú quan trọng</h2>
+          <h2 className="mb-3 text-base font-semibold">Ghi chú quan trọng</h2>
           <p className="text-sm text-blue-50">
-            Hôm nay có lịch họp giao ban định kỳ lúc 10:30 AM tại phòng hội nghị tầng 3. Các bác sĩ khoa Nội cần chuẩn bị báo cáo tháng.
+            Hôm nay ưu tiên xử lý các lịch bệnh nhân tự đặt đang chờ duyệt cọc trước khi gọi check-in để tránh sai lệch trạng thái.
           </p>
           <div className="mt-4 flex gap-3 rounded-xl bg-white/10 p-3">
             <Info size={18} className="shrink-0" />
             <div>
-              <p className="text-sm font-semibold">Cập nhật hệ thống</p>
-              <p className="mt-0.5 text-xs text-blue-100">Phiên bản 2.4.0 sẽ được triển khai vào 22:00 đêm nay.</p>
+              <p className="text-sm font-semibold">Lưu ý vận hành</p>
+              <p className="mt-0.5 text-xs text-blue-100">
+                Lễ tân chỉ xác nhận lịch hẹn sau khi đã kiểm tra đúng khoản đặt cọc đối với lịch do bệnh nhân đặt online.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Detail modal */}
       <Modal
         open={detail !== null}
         onClose={() => setDetail(null)}
@@ -525,12 +593,21 @@ const ReceptionistAppointmentManagement: React.FC = () => {
                   >
                     Hủy lịch
                   </Button>
+                  {detailNeedsDepositConfirmation && (
+                    <Button
+                      loading={confirmDeposit.isPending}
+                      onClick={() => handleConfirmDeposit(detail)}
+                    >
+                      Xác nhận đặt cọc
+                    </Button>
+                  )}
                   <Button
                     loading={updateStatus.isPending}
+                    disabled={detailNeedsDepositConfirmation}
                     onClick={() => changeStatus(detail.id, 'confirmed', `Đã xác nhận lịch hẹn ${detail.code}.`)}
                     leftIcon={<CheckCircle2 size={16} />}
                   >
-                    Xác nhận
+                    Xác nhận lịch
                   </Button>
                 </>
               )}
@@ -556,51 +633,106 @@ const ReceptionistAppointmentManagement: React.FC = () => {
           )
         }
       >
-        {detail && (
+        {detail && detailDepositStatus && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{detail.patientName}</p>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[detail.status].className}`}>
-                {STATUS_STYLES[detail.status].label}
-              </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">{detail.patientName}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {detail.source === 'patient' ? 'Bệnh nhân tự đặt lịch online' : 'Lễ tân tạo lịch tại quầy'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[detail.status].className}`}>
+                  {STATUS_STYLES[detail.status].label}
+                </span>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${detailDepositStatus.className}`}>
+                  {detailDepositStatus.label}
+                </span>
+              </div>
             </div>
-            <dl className="divide-y divide-gray-100 dark:divide-slate-700 rounded-xl border border-gray-100 dark:border-slate-700 text-sm">
-              {[
-                { label: 'Số điện thoại', value: detail.phone || '—' },
-                { label: 'Bác sĩ', value: detail.doctor },
-                { label: 'Khoa khám', value: detail.department },
-                { label: 'Ngày khám', value: formatDate(detail.date) },
-                { label: 'Giờ khám', value: detail.time },
-                { label: 'Số thứ tự', value: detail.queueTicket ? `#${detail.queueTicket}` : 'Chưa check-in' },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between px-4 py-2.5">
-                  <dt className="text-gray-500 dark:text-slate-400">{item.label}</dt>
-                  <dd className="font-medium text-slate-800 dark:text-slate-200">{item.value}</dd>
+
+            <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">Luồng xử lý hiện tại</p>
+              <p className="mt-1 leading-6">{detailDepositStatus.description}</p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-gray-100 text-sm dark:border-slate-700">
+                <div className="border-b border-gray-100 px-4 py-3 font-medium text-slate-900 dark:border-slate-700 dark:text-slate-100">
+                  Thông tin lịch hẹn
                 </div>
-              ))}
-            </dl>
+                <dl className="divide-y divide-gray-100 dark:divide-slate-700">
+                  {[
+                    { label: 'Số điện thoại', value: detail.phone || '—' },
+                    { label: 'Bác sĩ', value: detail.doctor },
+                    { label: 'Khoa khám', value: detail.department },
+                    { label: 'Dịch vụ', value: detail.service || 'Khám tổng quát' },
+                    { label: 'Ngày khám', value: formatDate(detail.date) },
+                    { label: 'Giờ khám', value: detail.time },
+                    { label: 'Phòng khám', value: detail.room || 'Chưa phân phòng' },
+                    { label: 'Số thứ tự', value: detail.queueTicket ? `#${detail.queueTicket}` : 'Chưa check-in' },
+                  ].map((item) => (
+                    <div key={item.label} className="flex justify-between gap-4 px-4 py-2.5">
+                      <dt className="text-gray-500 dark:text-slate-400">{item.label}</dt>
+                      <dd className="text-right font-medium text-slate-800 dark:text-slate-200">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 text-sm dark:border-slate-700">
+                <div className="border-b border-gray-100 px-4 py-3 font-medium text-slate-900 dark:border-slate-700 dark:text-slate-100">
+                  Thông tin đặt cọc
+                </div>
+                <dl className="divide-y divide-gray-100 dark:divide-slate-700">
+                  {[
+                    { label: 'Yêu cầu đặt cọc', value: detail.source === 'patient' && (detail.depositAmount ?? 0) > 0 ? 'Có' : 'Không' },
+                    { label: 'Số tiền đặt cọc', value: (detail.depositAmount ?? 0) > 0 ? formatCurrency(detail.depositAmount) : 'Không áp dụng' },
+                    { label: 'Phương thức', value: PAYMENT_METHOD_LABELS[detail.depositPaymentMethod ?? ''] },
+                    { label: 'Bệnh nhân xác nhận lúc', value: formatDateTime(detail.depositPaidAt) },
+                    { label: 'Lễ tân xác nhận cọc', value: detail.receptionDepositConfirmed ? 'Đã xác nhận' : 'Chưa xác nhận' },
+                    { label: 'Bảo hiểm', value: detail.insured ? 'Có bảo hiểm' : 'Không có bảo hiểm' },
+                  ].map((item) => (
+                    <div key={item.label} className="flex justify-between gap-4 px-4 py-2.5">
+                      <dt className="text-gray-500 dark:text-slate-400">{item.label}</dt>
+                      <dd className="text-right font-medium text-slate-800 dark:text-slate-200">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
+
             {(detail.status === 'cancelled' || detail.status === 'done' || detail.status === 'checked-in') && (
               <p className="text-xs text-gray-400">
                 {detail.status === 'cancelled'
                   ? 'Lịch hẹn này đã bị hủy.'
                   : detail.status === 'done'
-                  ? 'Lịch hẹn này đã hoàn thành.'
-                  : 'Bệnh nhân đã check-in và đang trong hàng chờ.'}
+                    ? 'Lịch hẹn này đã hoàn thành.'
+                    : 'Bệnh nhân đã check-in và đang trong hàng chờ.'}
               </p>
             )}
           </div>
         )}
       </Modal>
 
-      {/* Create modal */}
       <Modal
         open={createOpen}
-        onClose={() => { setCreateOpen(false); setNewErrors({}); }}
+        onClose={() => {
+          setCreateOpen(false);
+          setNewErrors({});
+        }}
         title="Tạo lịch hẹn mới"
         description="Lịch hẹn mới sẽ ở trạng thái Chờ xác nhận."
         footer={
           <>
-            <Button variant="ghost" onClick={() => { setCreateOpen(false); setNewErrors({}); }}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCreateOpen(false);
+                setNewErrors({});
+              }}
+            >
               Hủy
             </Button>
             <Button onClick={handleCreate} loading={createAppointment.isPending} leftIcon={<Plus size={16} />}>
@@ -620,11 +752,12 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="VD: Nguyễn Văn A"
               className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
-                newErrors.name ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+                newErrors.name ? 'border-red-400' : 'border-gray-200 focus:border-[#1a56db] dark:border-slate-600'
               }`}
             />
             {newErrors.name && <span className="mt-1 block text-xs text-red-500">{newErrors.name}</span>}
           </label>
+
           <label className="block sm:col-span-2">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
               Số điện thoại <span className="text-red-500">*</span>
@@ -636,11 +769,12 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
               placeholder="090..."
               className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
-                newErrors.phone ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+                newErrors.phone ? 'border-red-400' : 'border-gray-200 focus:border-[#1a56db] dark:border-slate-600'
               }`}
             />
             {newErrors.phone && <span className="mt-1 block text-xs text-red-500">{newErrors.phone}</span>}
           </label>
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Khoa khám</span>
             <select
@@ -656,37 +790,40 @@ const ReceptionistAppointmentManagement: React.FC = () => {
                   service: services[0] ?? '',
                 }));
               }}
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db] dark:border-slate-600"
             >
               {departmentOptions.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </label>
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Bác sĩ</span>
             <select
               value={newForm.doctor}
               onChange={(e) => setNewForm((f) => ({ ...f, doctor: e.target.value }))}
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db] dark:border-slate-600"
             >
               {(doctorsByDepartment[newForm.department] ?? []).map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </label>
+
           <label className="block sm:col-span-2">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">Dịch vụ khám</span>
             <select
               value={newForm.service}
               onChange={(e) => setNewForm((f) => ({ ...f, service: e.target.value }))}
-              className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db]"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[#1a56db] dark:border-slate-600"
             >
               {(servicesByDepartment[newForm.department] ?? []).map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </label>
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
               Ngày khám <span className="text-red-500">*</span>
@@ -697,11 +834,12 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               min={todayISO()}
               onChange={(e) => setNewForm((f) => ({ ...f, date: e.target.value }))}
               className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
-                newErrors.date ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+                newErrors.date ? 'border-red-400' : 'border-gray-200 focus:border-[#1a56db] dark:border-slate-600'
               }`}
             />
             {newErrors.date && <span className="mt-1 block text-xs text-red-500">{newErrors.date}</span>}
           </label>
+
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-gray-600 dark:text-slate-300">
               Giờ khám <span className="text-red-500">*</span>
@@ -711,7 +849,7 @@ const ReceptionistAppointmentManagement: React.FC = () => {
               value={newForm.time}
               onChange={(e) => setNewForm((f) => ({ ...f, time: e.target.value }))}
               className={`w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none ${
-                newErrors.time ? 'border-red-400' : 'border-gray-200 dark:border-slate-600 focus:border-[#1a56db]'
+                newErrors.time ? 'border-red-400' : 'border-gray-200 focus:border-[#1a56db] dark:border-slate-600'
               }`}
             />
             {newErrors.time && <span className="mt-1 block text-xs text-red-500">{newErrors.time}</span>}
@@ -719,7 +857,6 @@ const ReceptionistAppointmentManagement: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Toast */}
       {toast && (
         <div
           role="status"

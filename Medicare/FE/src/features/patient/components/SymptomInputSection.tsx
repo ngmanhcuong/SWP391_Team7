@@ -166,27 +166,31 @@ const SymptomInputSection: React.FC<SymptomInputSectionProps> = ({
   };
 
   return (
-    <div className="bg-white border border-slate-200/70 rounded-[24px] shadow-soft p-6 flex flex-col gap-4 h-full">
+    <div className="flex h-full flex-col gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Stethoscope size={18} className="text-[#2563eb] shrink-0" />
-          <h2 className="text-xl font-bold text-slate-900">Mô tả triệu chứng của bạn</h2>
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-200">
+            <Stethoscope size={18} className="text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900">Mô tả triệu chứng của bạn</h2>
         </div>
-        <span className="text-xs font-medium text-slate-500 whitespace-nowrap">
+        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">
           Tối thiểu {MIN_SYMPTOM_LENGTH} ký tự
         </span>
       </div>
 
+      {/* Textarea */}
       <div className="relative">
         <textarea
           value={symptoms}
           onChange={(event) => onSymptomsChange(event.target.value)}
           placeholder={'Hãy mô tả tình trạng sức khỏe, các cơn đau hoặc biểu hiện bất thường\nmà bạn đang gặp phải...'}
           rows={8}
-          className="w-full min-h-[220px] resize-y rounded-xl border border-slate-200 bg-slate-50 px-6 py-6 text-base text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:bg-white transition-all"
+          className="w-full min-h-[200px] resize-y rounded-xl border border-gray-200 bg-gray-50/50 px-5 py-5 text-[15px] leading-relaxed text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-blue-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
         />
         {isRecording && (
-          <span className="absolute top-3 right-4 inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600 ring-1 ring-rose-100">
+          <span className="absolute top-3 right-4 inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-600 shadow-sm ring-1 ring-rose-100">
             <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
             Đang nghe...
           </span>
@@ -194,21 +198,22 @@ const SymptomInputSection: React.FC<SymptomInputSectionProps> = ({
       </div>
 
       {voiceError && (
-        <p className="text-xs font-medium text-rose-600 -mt-1">{voiceError}</p>
+        <p className="text-xs font-medium text-rose-600 -mt-2">{voiceError}</p>
       )}
 
+      {/* Image previews */}
       {images.length > 0 && (
         <div className="flex flex-wrap gap-3">
           {images.map((image) => (
             <div
               key={image.id}
-              className="group relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200"
+              className="group relative h-20 w-20 overflow-hidden rounded-xl border border-gray-200 shadow-sm transition-transform hover:scale-105"
             >
               <img src={image.url} alt={image.file.name} className="h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => removeImage(image.id)}
-                className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
                 aria-label="Xóa ảnh"
               >
                 <X size={12} />
@@ -227,49 +232,67 @@ const SymptomInputSection: React.FC<SymptomInputSectionProps> = ({
         className="hidden"
       />
 
-      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-3">
+      {/* Action bar */}
+      <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2.5">
           <button
             type="button"
             onClick={toggleRecording}
             disabled={!speechSupported}
-            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
               isRecording
-                ? 'border-rose-200 bg-rose-50 text-rose-600'
-                : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                ? 'border-rose-200 bg-rose-50 text-rose-600 shadow-sm shadow-rose-100'
+                : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
             }`}
           >
             {isRecording ? (
-              <MicOff size={14} className="text-rose-600" />
+              <MicOff size={15} className="text-rose-500" />
             ) : (
-              <Mic size={14} className="text-emerald-600" />
+              <Mic size={15} className="text-emerald-500" />
             )}
             {isRecording ? 'Dừng ghi âm' : 'Ghi âm'}
           </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-600 transition-all hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm"
           >
-            <Paperclip size={14} className="text-[#2563eb]" />
+            <Paperclip size={15} className="text-blue-500" />
             Tải ảnh triệu chứng
             {images.length > 0 && (
-              <span className="ml-0.5 rounded-full bg-blue-50 px-1.5 text-[10px] font-bold text-[#2563eb]">
+              <span className="ml-0.5 rounded-full bg-blue-100 px-1.5 text-[10px] font-bold text-blue-600">
                 {images.length}
               </span>
             )}
           </button>
         </div>
 
-        <Button
+        <button
+          type="button"
           onClick={onAnalyze}
-          disabled={!canAnalyze}
-          loading={isAnalyzing}
-          leftIcon={<Sparkles size={18} />}
-          className="!bg-[#2563eb] !border-[#2563eb] hover:!bg-[#1d4ed8] !rounded-lg !px-8 !py-3 !text-base shrink-0"
+          disabled={!canAnalyze || isAnalyzing}
+          className={`group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md transition-all ${
+            canAnalyze && !isAnalyzing
+              ? 'bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 active:scale-[0.98]'
+              : 'cursor-not-allowed bg-gray-300 shadow-none'
+          }`}
         >
-          Phân tích bằng AI
-        </Button>
+          {/* Shimmer effect */}
+          {canAnalyze && !isAnalyzing && (
+            <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          )}
+          {isAnalyzing ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Đang phân tích...
+            </>
+          ) : (
+            <>
+              <Sparkles size={18} />
+              Phân tích bằng AI
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

@@ -14,7 +14,6 @@ interface TimeSelectionSectionProps {
   onWeekOffsetChange: (offset: number) => void;
   onSelectDate: (date: string) => void;
   onSelectSlot: (slotId: string) => void;
-  onClearSelection: () => void;
 }
 
 const TimeSelectionSection: React.FC<TimeSelectionSectionProps> = ({
@@ -27,7 +26,6 @@ const TimeSelectionSection: React.FC<TimeSelectionSectionProps> = ({
   onWeekOffsetChange,
   onSelectDate,
   onSelectSlot,
-  onClearSelection,
 }) => {
   const selectedDaySlots = useMemo(() => {
     if (!selectedDate) return [];
@@ -71,7 +69,6 @@ const TimeSelectionSection: React.FC<TimeSelectionSectionProps> = ({
         specialtyName={specialtyName}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
-        onClearSelection={onClearSelection}
       />
     </div>
   );

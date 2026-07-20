@@ -3,6 +3,7 @@ import {
   AdminAppointment,
   AdminDepartment,
   AdminDoctor,
+  AdminRoom,
   AdminReview,
   AuditLogEntry,
   PatientTrendPoint,
@@ -67,6 +68,9 @@ export interface AdminReviewsResponse {
 }
 
 export interface AdminReportsResponse {
+  period: 'day' | 'week' | 'month' | 'year';
+  anchorDate: string;
+  rangeLabel: string;
   stats: {
     patients: number;
     revenue: number;
@@ -81,6 +85,11 @@ export interface AdminReportsResponse {
   generatedAt: string;
 }
 
+export interface AdminReportsQuery {
+  period: 'day' | 'week' | 'month' | 'year';
+  anchorDate: string;
+}
+
 export interface AdminAuditLogsResponse {
   items: AuditLogEntry[];
   total: number;
@@ -93,17 +102,30 @@ export interface AdminAuditLogsResponse {
   };
 }
 
+export interface AdminRoomsResponse {
+  items: AdminRoom[];
+  total: number;
+  stats: {
+    total: number;
+    available: number;
+    inUse: number;
+    maintenance: number;
+    departments: number;
+  };
+}
+
 export const adminApi = {
   // Dashboard
   getDashboard: async (): Promise<AdminDashboardResponse> =>
     unwrap(await api.get('/admin/dashboard')),
-  getReports: async (): Promise<AdminReportsResponse> =>
-    unwrap(await api.get('/admin/reports')),
+  getReports: async (params: AdminReportsQuery): Promise<AdminReportsResponse> =>
+    unwrap(await api.get('/admin/reports', { params })),
   getAuditLogs: async (): Promise<AdminAuditLogsResponse> =>
     unwrap(await api.get('/admin/audit-logs')),
 
   // Doctors
   getDoctors: async (): Promise<AdminDoctor[]> => unwrap(await api.get('/admin/doctors')),
+  getRooms: async (): Promise<AdminRoomsResponse> => unwrap(await api.get('/admin/rooms')),
   syncDoctorAccounts: async (): Promise<{ total: number }> =>
     unwrap(await api.post('/admin/doctors/sync-accounts')),
   createDoctor: async (input: AdminDoctorInput): Promise<AdminDoctor> =>

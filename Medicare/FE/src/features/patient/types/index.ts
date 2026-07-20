@@ -298,6 +298,8 @@ export interface BookingDoctor {
     variant: DoctorTagVariant;
   };
   nextAvailableSlot: string | null;
+  roomCode: string | null;
+  roomName: string | null;
   isAvailable: boolean;
   avatarBg: string;
 }

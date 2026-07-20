@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled', 'checked-in', 'done'];
+const DEPOSIT_PAYMENT_METHODS = ['vnpay', 'momo', 'banking', ''];
 
 const appointmentSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, trim: true },
@@ -27,6 +28,9 @@ const appointmentSchema = new mongoose.Schema({
   additionalNotes: { type: String, trim: true, default: '' },
   consultationFee: { type: Number, default: 0 },
   depositAmount: { type: Number, default: 0 },
+  depositPaymentMethod: { type: String, enum: DEPOSIT_PAYMENT_METHODS, default: '' },
+  depositPaidAt: { type: Date, default: null },
+  receptionDepositConfirmed: { type: Boolean, default: false },
   source: { type: String, enum: ['reception', 'patient'], default: 'reception' },
   isSeed: { type: Boolean, default: false },
 }, {

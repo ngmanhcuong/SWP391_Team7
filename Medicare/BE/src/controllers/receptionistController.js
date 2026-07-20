@@ -102,12 +102,38 @@ const listPatients = async (req, res) => {
 
 const createPatient = async (req, res) => {
   try {
-    const { fullName, phone, nationalId, dob, gender, address, email, insurance } = req.body;
+    const {
+      fullName,
+      phone,
+      nationalId,
+      dob,
+      gender,
+      address,
+      email,
+      emergencyPhone,
+      occupation,
+      bio,
+      height,
+      weight,
+      insurance,
+    } = req.body;
     if (!fullName || !fullName.trim()) {
       return res.status(400).json({ success: false, message: 'Vui lòng nhập họ và tên.' });
     }
     if (!/^0\d{9}$/.test(String(phone || '').trim())) {
       return res.status(400).json({ success: false, message: 'Số điện thoại không hợp lệ.' });
+    }
+    if (!dob) {
+      return res.status(400).json({ success: false, message: 'Vui lòng chọn ngày sinh.' });
+    }
+    if (!insurance?.code || !String(insurance.code).trim()) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập mã bảo hiểm.' });
+    }
+    if (!height || Number(height) <= 0) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập chiều cao hợp lệ.' });
+    }
+    if (!weight || Number(weight) <= 0) {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập cân nặng hợp lệ.' });
     }
     const code = await genPatientCode();
     const patient = await Patient.create({
@@ -119,6 +145,11 @@ const createPatient = async (req, res) => {
       gender,
       address: address?.trim(),
       email: email?.trim(),
+      emergencyPhone: emergencyPhone?.trim(),
+      occupation: occupation?.trim(),
+      bio: bio?.trim(),
+      height: Number(height),
+      weight: Number(weight),
       insurance: {
         code: insurance?.code?.trim() || '',
         expiry: insurance?.expiry ? new Date(insurance.expiry) : null,
@@ -144,6 +175,39 @@ const listAppointments = async (req, res) => {
     }
     const appointments = await Appointment.find(filter).sort({ date: 1, time: 1 });
     return res.json({ success: true, data: appointments });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const confirmAppointmentDeposit = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy lịch hẹn.' });
+    }
+
+    if (appointment.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: 'Lịch hẹn đã bị hủy.' });
+    }
+
+    if (appointment.source !== 'patient' || !appointment.depositAmount) {
+      appointment.receptionDepositConfirmed = true;
+      await appointment.save();
+      return res.json({ success: true, data: appointment });
+    }
+
+    if (!appointment.depositPaidAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bệnh nhân chưa gửi xác nhận thanh toán đặt cọc.',
+      });
+    }
+
+    appointment.receptionDepositConfirmed = true;
+    await appointment.save();
+
+    return res.json({ success: true, data: appointment });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -438,6 +502,7 @@ module.exports = {
   listPatients,
   createPatient,
   listAppointments,
+  confirmAppointmentDeposit,
   createAppointment,
   updateAppointmentStatus,
   checkinAppointment,

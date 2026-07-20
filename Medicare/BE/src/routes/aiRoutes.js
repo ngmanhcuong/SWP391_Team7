@@ -7,5 +7,6 @@ router.use(protect); // chỉ người dùng đã đăng nhập mới dùng đư
 
 router.post('/analyze-symptoms', aiController.analyzeSymptoms);
 router.post('/chat', aiController.chat);
+router.post('/suggest-medications', aiController.suggestMedicationList);
 
 module.exports = router;

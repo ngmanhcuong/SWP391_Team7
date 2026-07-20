@@ -14,6 +14,7 @@ router.get('/audit-logs', ctrl.getAuditLogs);
 
 // Doctors
 router.get('/doctors', ctrl.listDoctors);
+router.get('/rooms', ctrl.listRooms);
 router.post('/doctors/sync-accounts', ctrl.syncDoctorAccounts);
 router.post('/doctors', ctrl.createDoctor);
 router.put('/doctors/:id', ctrl.updateDoctor);

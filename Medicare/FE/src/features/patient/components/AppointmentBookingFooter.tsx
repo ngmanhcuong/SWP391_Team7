@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarCheck, Save } from 'lucide-react';
 import { Spinner } from '../../../components/ui';
 import { APPOINTMENT_BOOKING_STEPS } from '../constants/appointmentBookingSteps';
 import { AppointmentBookingStep } from '../types';
@@ -34,6 +34,58 @@ const getBackLabel = (currentStep: AppointmentBookingStep): string => {
   return 'Quay lại';
 };
 
+const BackButton: React.FC<{
+  onClick?: () => void;
+  disabled?: boolean;
+  label: string;
+}> = ({ onClick, disabled, label }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+  >
+    <ArrowLeft size={16} />
+    {label}
+  </button>
+);
+
+const ContinueButton: React.FC<{
+  onClick: () => void;
+  disabled: boolean;
+  label: string;
+  isSubmitting?: boolean;
+}> = ({ onClick, disabled, label, isSubmitting }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={`inline-flex items-center justify-center gap-2.5 rounded-xl px-8 py-3 text-sm font-semibold shadow-md transition-all ${
+      !disabled
+        ? 'bg-gradient-to-r from-[#003d9b] to-[#2563eb] text-white shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 active:scale-[0.98]'
+        : 'cursor-not-allowed bg-gray-200 text-gray-400 shadow-none'
+    }`}
+  >
+    {isSubmitting ? (
+      <>
+        <Spinner size="sm" color="#ffffff" />
+        Đang đăng ký...
+      </>
+    ) : (
+      <>
+        {label}
+        <ArrowRight size={16} />
+      </>
+    )}
+  </button>
+);
+
+const InfoChip: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-sm text-gray-600 text-center">
+    {children}
+  </p>
+);
+
 const AppointmentBookingFooter: React.FC<AppointmentBookingFooterProps> = ({
   currentStep,
   canContinue,
@@ -45,105 +97,95 @@ const AppointmentBookingFooter: React.FC<AppointmentBookingFooterProps> = ({
   selectedDate,
   selectedTime,
 }) => {
+  // Step 1 — Home + Save + Continue
+  if (currentStep === 1) {
+    return (
+      <div className="rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Link
+          to="/patient"
+          className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-700"
+        >
+          <ArrowLeft size={16} />
+          Quay lại trang chủ
+        </Link>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+          >
+            <Save size={15} />
+            Lưu nháp
+          </button>
+          <ContinueButton
+            onClick={onContinue}
+            disabled={!canContinue}
+            label={getNextLabel(currentStep)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Step 3 — Doctor selection
   if (currentStep === 3) {
     return (
-      <div className="flex flex-col gap-4 border-t border-[#c3c6d6] pt-6 lg:flex-row lg:items-center lg:justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-3 text-base text-[#434654] hover:text-[#003d9b] transition-colors disabled:opacity-50"
-        >
-          <ArrowLeft size={16} />
-          {getBackLabel(currentStep)}
-        </button>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-4 border-t border-gray-100 pt-6 lg:flex-row lg:items-center lg:justify-between">
+        <BackButton onClick={onBack} disabled={isSubmitting} label={getBackLabel(currentStep)} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           {selectedDoctorName && (
-            <p className="text-base text-[#434654] text-center sm:text-right">
+            <InfoChip>
               Bạn đang chọn:{' '}
-              <span className="font-bold text-[#191c1e]">{selectedDoctorName}</span>
-            </p>
+              <span className="font-semibold text-gray-900">{selectedDoctorName}</span>
+            </InfoChip>
           )}
-          <button
-            type="button"
+          <ContinueButton
             onClick={onContinue}
             disabled={!canContinue || isSubmitting}
-            className={`inline-flex items-center justify-center gap-2 rounded px-10 py-3 text-base shadow-sm transition-colors ${
-              canContinue && !isSubmitting
-                ? 'bg-[#003d9b] text-white hover:bg-[#002d75]'
-                : 'bg-[#003d9b]/50 text-white cursor-not-allowed'
-            }`}
-          >
-            {getNextLabel(currentStep)}
-            <ArrowRight size={16} />
-          </button>
+            label={getNextLabel(currentStep)}
+          />
         </div>
       </div>
     );
   }
 
+  // Step 4 — Time selection
   if (currentStep === 4) {
     return (
-      <div className="flex flex-col gap-4 border-t border-[#c3c6d6] pt-6 lg:flex-row lg:items-center lg:justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-3 text-base text-[#434654] hover:text-[#003d9b] transition-colors disabled:opacity-50"
-        >
-          <ArrowLeft size={16} />
-          {getBackLabel(currentStep)}
-        </button>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-4 border-t border-gray-100 pt-6 lg:flex-row lg:items-center lg:justify-between">
+        <BackButton onClick={onBack} disabled={isSubmitting} label={getBackLabel(currentStep)} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           {selectedDate && selectedTime && (
-            <p className="text-base text-[#434654] text-center sm:text-right">
+            <InfoChip>
               Lịch đã chọn:{' '}
-              <span className="font-bold text-[#191c1e]">
+              <span className="font-semibold text-gray-900">
                 {formatScheduleDateShort(selectedDate)} · {selectedTime}
               </span>
-            </p>
+            </InfoChip>
           )}
-          <button
-            type="button"
+          <ContinueButton
             onClick={onContinue}
             disabled={!canContinue || isSubmitting}
-            className={`inline-flex items-center justify-center gap-2 rounded px-10 py-3 text-base shadow-sm transition-colors ${
-              canContinue && !isSubmitting
-                ? 'bg-[#003d9b] text-white hover:bg-[#002d75]'
-                : 'bg-[#003d9b]/50 text-white cursor-not-allowed'
-            }`}
-          >
-            {getNextLabel(currentStep)}
-            <ArrowRight size={16} />
-          </button>
+            label={getNextLabel(currentStep)}
+          />
         </div>
       </div>
     );
   }
 
+  // Step 5 — Confirmation
   if (currentStep === 5) {
     return (
-      <div className="flex flex-col gap-4 border-t border-[#c3c6d6] pt-6 lg:flex-row lg:items-center lg:justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-2 px-6 py-3 text-base text-[#434654] hover:text-[#003d9b] transition-colors disabled:opacity-50"
-        >
-          <ArrowLeft size={16} />
-          {getBackLabel(currentStep)}
-        </button>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-4 border-t border-gray-100 pt-6 lg:flex-row lg:items-center lg:justify-between">
+        <BackButton onClick={onBack} disabled={isSubmitting} label={getBackLabel(currentStep)} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           {!depositPaid && (
-            <p className="text-sm text-[#851800] text-center sm:text-right">
+            <p className="rounded-full border border-red-100 bg-red-50 px-4 py-1.5 text-xs font-medium text-red-600 text-center">
               Vui lòng đặt cọc trước khi đăng ký lịch hẹn
             </p>
           )}
           {depositPaid && !canContinue && (
-            <p className="text-sm text-[#434654] text-center sm:text-right">
+            <p className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-medium text-gray-500 text-center">
               Vui lòng đồng ý điều khoản để hoàn tất
             </p>
           )}
@@ -151,10 +193,10 @@ const AppointmentBookingFooter: React.FC<AppointmentBookingFooterProps> = ({
             type="button"
             onClick={onContinue}
             disabled={!canContinue || isSubmitting}
-            className={`inline-flex items-center justify-center gap-2 rounded px-10 py-3 text-base shadow-sm transition-colors min-w-[220px] ${
+            className={`inline-flex min-w-[220px] items-center justify-center gap-2.5 rounded-xl px-8 py-3 text-sm font-bold shadow-md transition-all ${
               canContinue && !isSubmitting
-                ? 'bg-[#003d9b] text-white hover:bg-[#002d75]'
-                : 'bg-[#003d9b]/50 text-white cursor-not-allowed'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-emerald-200 hover:shadow-lg hover:shadow-emerald-300 active:scale-[0.98]'
+                : 'cursor-not-allowed bg-gray-200 text-gray-400 shadow-none'
             }`}
           >
             {isSubmitting ? (
@@ -164,8 +206,8 @@ const AppointmentBookingFooter: React.FC<AppointmentBookingFooterProps> = ({
               </>
             ) : (
               <>
+                <CalendarCheck size={18} />
                 {getNextLabel(currentStep)}
-                <ArrowRight size={16} />
               </>
             )}
           </button>
@@ -174,66 +216,15 @@ const AppointmentBookingFooter: React.FC<AppointmentBookingFooterProps> = ({
     );
   }
 
-  if (currentStep >= 2) {
-    return (
-      <div className="flex flex-col gap-4 border-t border-[#c3c6d6] pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#737685] px-6 py-3 text-base text-[#191c1e] hover:bg-[#f8f9fb] transition-colors"
-        >
-          <ArrowLeft size={16} />
-          {getBackLabel(currentStep)}
-        </button>
-
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!canContinue}
-          className={`inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3 text-base shadow-sm transition-colors ${
-            canContinue
-              ? 'bg-[#003d9b] text-white hover:bg-[#002d75]'
-              : 'bg-[#003d9b]/50 text-white cursor-not-allowed'
-          }`}
-        >
-          {getNextLabel(currentStep)}
-          <ArrowRight size={16} />
-        </button>
-      </div>
-    );
-  }
-
+  // Steps 2+ generic
   return (
-    <div className="bg-white border border-[#c3c6d6] rounded-2xl shadow-sm px-4 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <Link
-        to="/patient"
-        className="inline-flex items-center gap-2 px-6 py-3 text-base text-[#434654] hover:text-[#003d9b] transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Quay lại trang chủ
-      </Link>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button
-          type="button"
-          className="rounded-lg border border-[#c3c6d6] px-6 py-3 text-base text-[#191c1e] hover:bg-[#f8f9fb] transition-colors"
-        >
-          Lưu nháp
-        </button>
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!canContinue}
-          className={`inline-flex items-center justify-center gap-2 rounded-lg px-8 py-3 text-base transition-colors ${
-            canContinue
-              ? 'bg-[#003d9b] text-white hover:bg-[#002d75]'
-              : 'bg-[#e7e8ea] text-[#434654] cursor-not-allowed'
-          }`}
-        >
-          {getNextLabel(currentStep)}
-          <ArrowRight size={16} />
-        </button>
-      </div>
+    <div className="flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <BackButton onClick={onBack} label={getBackLabel(currentStep)} />
+      <ContinueButton
+        onClick={onContinue}
+        disabled={!canContinue}
+        label={getNextLabel(currentStep)}
+      />
     </div>
   );
 };

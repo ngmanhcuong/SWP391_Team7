@@ -18,9 +18,11 @@ const createInitialMessages = (): ChatMessage[] => [
 interface ChatState {
   messages: ChatMessage[];
   unread: number;
+  open: boolean;
   addMessage: (message: ChatMessage) => void;
   markAllRead: () => void;
   bumpUnread: () => void;
+  setOpen: (open: boolean) => void;
   reset: () => void;
 }
 
@@ -31,10 +33,12 @@ export const useChatStore = create<ChatState>()(
     (set) => ({
       messages: createInitialMessages(),
       unread: 1,
+      open: false,
       addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
       markAllRead: () => set({ unread: 0 }),
       bumpUnread: () => set((state) => ({ unread: state.unread + 1 })),
-      reset: () => set({ messages: createInitialMessages(), unread: 1 }),
+      setOpen: (open) => set({ open }),
+      reset: () => set({ messages: createInitialMessages(), unread: 1, open: false }),
     }),
     { name: 'medicare-chat-history' },
   ),

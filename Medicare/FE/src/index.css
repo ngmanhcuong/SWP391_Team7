@@ -108,6 +108,19 @@ input, select, textarea { font-family: inherit; }
 .stagger-5 { animation-delay: 0.25s; }
 .stagger-6 { animation-delay: 0.3s; }
 
+/* Shimmer sweep for CTA buttons */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Subtle pulse glow for AI icons */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3); }
+  50% { box-shadow: 0 0 16px 4px rgba(37, 99, 235, 0.15); }
+}
+.animate-pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
 /* Premium soft shadow used across cards */
 .shadow-soft { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12); }
 .shadow-soft-lg { box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 16px 40px -16px rgba(37, 99, 235, 0.18); }

@@ -11,3 +11,4 @@ export { default as ReceptionistQueuePage } from './ReceptionistQueuePage';
 export { default as ReceptionistNotificationsPage } from './ReceptionistNotificationsPage';
 export { default as ReceptionistPaymentsPage } from './ReceptionistPaymentsPage';
 export { default as ReceptionistBillingPayment } from './ReceptionistBillingPayment';
+export { default as ReceptionistDepartmentsPage } from './ReceptionistDepartmentsPage';

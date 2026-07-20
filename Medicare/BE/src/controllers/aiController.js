@@ -1,9 +1,15 @@
 const geminiService = require('../services/geminiService');
+const {
+  suggestMedications,
+  MedicationSuggestionError,
+} = require('../services/medicationSuggestionService');
 
 const MIN_SYMPTOM_LENGTH = 10;
 const MAX_SYMPTOM_LENGTH = 4000;
+const MAX_HISTORY = 16;
+const MAX_MESSAGE_LENGTH = 2000;
+const ALLOWED_ROLES = ['user', 'model'];
 
-// POST /api/ai/analyze-symptoms
 const analyzeSymptoms = async (req, res) => {
   const symptoms = typeof req.body?.symptoms === 'string' ? req.body.symptoms.trim() : '';
 
@@ -27,11 +33,6 @@ const analyzeSymptoms = async (req, res) => {
   }
 };
 
-const MAX_HISTORY = 16;
-const MAX_MESSAGE_LENGTH = 2000;
-const ALLOWED_ROLES = ['user', 'model'];
-
-// POST /api/ai/chat
 const chat = async (req, res) => {
   const rawMessages = Array.isArray(req.body?.messages) ? req.body.messages : null;
 
@@ -40,9 +41,17 @@ const chat = async (req, res) => {
   }
 
   const messages = rawMessages
-    .filter((m) => m && ALLOWED_ROLES.includes(m.role) && typeof m.text === 'string' && m.text.trim())
+    .filter((message) => (
+      message &&
+      ALLOWED_ROLES.includes(message.role) &&
+      typeof message.text === 'string' &&
+      message.text.trim()
+    ))
     .slice(-MAX_HISTORY)
-    .map((m) => ({ role: m.role, text: m.text.trim().slice(0, MAX_MESSAGE_LENGTH) }));
+    .map((message) => ({
+      role: message.role,
+      text: message.text.trim().slice(0, MAX_MESSAGE_LENGTH),
+    }));
 
   if (messages.length === 0) {
     return res.status(400).json({ success: false, message: 'Nội dung tin nhắn không hợp lệ' });
@@ -61,4 +70,53 @@ const chat = async (req, res) => {
   }
 };
 
-module.exports = { analyzeSymptoms, chat };
+const suggestMedicationList = async (req, res) => {
+  const clinicalSymptoms = typeof req.body?.clinicalSymptoms === 'string'
+    ? req.body.clinicalSymptoms.trim()
+    : '';
+  const preliminaryDiagnosis = typeof req.body?.preliminaryDiagnosis === 'string'
+    ? req.body.preliminaryDiagnosis.trim()
+    : '';
+  const additionalNotes = typeof req.body?.additionalNotes === 'string'
+    ? req.body.additionalNotes.trim()
+    : '';
+  const allergies = Array.isArray(req.body?.allergies)
+    ? req.body.allergies.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const medicalHistory = Array.isArray(req.body?.medicalHistory)
+    ? req.body.medicalHistory.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+
+  if (!clinicalSymptoms && !preliminaryDiagnosis) {
+    return res.status(400).json({
+      success: false,
+      message: 'Cần có triệu chứng hoặc chẩn đoán sơ bộ để AI gợi ý thuốc.',
+    });
+  }
+
+  try {
+    const suggestions = await suggestMedications({
+      clinicalSymptoms: clinicalSymptoms.slice(0, MAX_MESSAGE_LENGTH),
+      preliminaryDiagnosis: preliminaryDiagnosis.slice(0, MAX_MESSAGE_LENGTH),
+      additionalNotes: additionalNotes.slice(0, MAX_MESSAGE_LENGTH),
+      allergies,
+      medicalHistory,
+    });
+
+    return res.status(200).json({ success: true, data: { suggestions } });
+  } catch (error) {
+    const status = error instanceof MedicationSuggestionError ? 503 : 500;
+    console.error('[AI] suggestMedicationList failed:', error.message);
+    return res.status(status).json({
+      success: false,
+      message: 'Không thể tạo gợi ý thuốc bằng AI lúc này. Hệ thống sẽ dùng gợi ý lâm sàng mặc định.',
+      code: 'AI_MEDICATION_UNAVAILABLE',
+    });
+  }
+};
+
+module.exports = {
+  analyzeSymptoms,
+  chat,
+  suggestMedicationList,
+};

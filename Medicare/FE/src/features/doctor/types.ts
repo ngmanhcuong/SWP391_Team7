@@ -211,6 +211,10 @@ export interface AiMedicationSuggestion {
   id: string;
   name: string;
   reason: string;
+  dosage?: string;
+  quantity?: string;
+  instructions?: string;
+  warning?: string;
 }
 
 export interface ParaclinicalTest {

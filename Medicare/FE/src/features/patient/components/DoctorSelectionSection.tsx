@@ -1,14 +1,12 @@
 import React, { useMemo } from 'react';
 import { BookingDoctor } from '../types';
 import DoctorCard from './DoctorCard';
-import DoctorSuggestionCard from './DoctorSuggestionCard';
 
 interface DoctorSelectionSectionProps {
   doctors: BookingDoctor[];
   selectedDoctorId: string | null;
   searchQuery: string;
   onSelect: (doctorId: string) => void;
-  onSuggest: () => void;
 }
 
 const DoctorSelectionSection: React.FC<DoctorSelectionSectionProps> = ({
@@ -16,7 +14,6 @@ const DoctorSelectionSection: React.FC<DoctorSelectionSectionProps> = ({
   selectedDoctorId,
   searchQuery,
   onSelect,
-  onSuggest,
 }) => {
   const filteredDoctors = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -40,8 +37,6 @@ const DoctorSelectionSection: React.FC<DoctorSelectionSectionProps> = ({
           <p className="text-base text-[#434654]">Không tìm thấy bác sĩ phù hợp với từ khóa tìm kiếm.</p>
         </div>
       )}
-
-      <DoctorSuggestionCard onSuggest={onSuggest} />
     </div>
   );
 };
