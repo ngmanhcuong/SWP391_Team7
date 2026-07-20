@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
@@ -6,7 +6,6 @@ import Button from '../../components/ui/Button';
 import {
   CurrentExaminationCard,
   ExaminationHistoryCard,
-  ImportantWarningCard,
   LatestTestResultsCard,
   MedicalRecordActionBar,
   MedicalRecordHeader,
@@ -42,7 +41,7 @@ export const DoctorRecordsPage: React.FC = () => {
   });
   const { data: scheduleAppointments } = useQuery({
     queryKey: ['doctor', 'appointments'],
-    queryFn: doctorApi.getAppointments,
+    queryFn: () => doctorApi.getAppointments(),
   });
 
   const dbPatient = useMemo(
@@ -97,6 +96,27 @@ export const DoctorRecordsPage: React.FC = () => {
     }),
     [examination, recordData],
   );
+
+  const deferredClinicalContext = useDeferredValue(clinicalContext);
+
+  const shouldSuggestMedications =
+    aiEnabled &&
+    (
+      deferredClinicalContext.clinicalSymptoms.trim().length >= 8 ||
+      deferredClinicalContext.preliminaryDiagnosis.trim().length >= 3
+    );
+
+  const {
+    data: aiMedicationSuggestions = [],
+    isFetching: isLoadingAiMedicationSuggestions,
+    isError: isAiMedicationSuggestionError,
+  } = useQuery({
+    queryKey: ['doctor', 'ai-medications', deferredClinicalContext],
+    queryFn: () => doctorApi.suggestMedications(deferredClinicalContext),
+    enabled: shouldSuggestMedications,
+    staleTime: 30_000,
+    retry: 1,
+  });
 
   const examinationHistory = useMemo<ExaminationHistoryEntry[]>(
     () => (patientHistory && patientHistory.length > 0 ? patientHistory : recordData?.examinationHistory ?? []),
@@ -326,15 +346,14 @@ export const DoctorRecordsPage: React.FC = () => {
         </p>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-12 items-start">
-        <div className="xl:col-span-3 space-y-5">
+      <div className="grid items-start gap-5 2xl:grid-cols-[minmax(320px,1.05fr)_minmax(460px,1.25fr)_minmax(380px,1fr)] xl:grid-cols-12">
+        <div className="space-y-5 xl:col-span-4 2xl:col-auto">
           <PatientInfoCard patient={recordData.patient} />
-          <ImportantWarningCard patient={recordData.patient} />
           <ExaminationHistoryCard history={examinationHistory} />
           <WaitingPatientsWidget patients={recordData.waitingPatients} />
         </div>
 
-        <div className="xl:col-span-5 space-y-5">
+        <div className="space-y-5 xl:col-span-5 2xl:col-auto">
           <CurrentExaminationCard examination={examination} isEditing={isEditing} onChange={handleExaminationChange} />
           <ParaclinicalIndicationsCard
             tests={paraclinicalTests}
@@ -346,10 +365,19 @@ export const DoctorRecordsPage: React.FC = () => {
           <LatestTestResultsCard results={recordData.labResults} />
         </div>
 
-        <div className="xl:col-span-4 space-y-5">
+        <div className="space-y-5 xl:col-span-3 2xl:col-auto">
           <PrescriptionCard
             prescriptions={prescriptions}
             clinicalContext={clinicalContext}
+            aiSuggestions={aiMedicationSuggestions}
+            aiLoading={isLoadingAiMedicationSuggestions}
+            aiError={
+              isAiMedicationSuggestionError
+                ? 'AI chưa phản hồi, hệ thống đang dùng gợi ý lâm sàng mặc định.'
+                : (!shouldSuggestMedications && aiMedicationSuggestions.length === 0)
+                  ? 'AI chưa có đủ dữ kiện để mở rộng gợi ý thuốc.'
+                  : ''
+            }
             isEditing={isEditing}
             aiEnabled={aiEnabled}
             onAiToggle={setAiEnabled}
